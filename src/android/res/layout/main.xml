@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Copyright 2008 Google Inc.
+  
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+  
+       http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+  -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent" >
+    <fr.tarotclub.TarotEngine
+      android:id="@+id/tarot"
+      android:layout_width="fill_parent"
+      android:layout_height="fill_parent" />
+    <RelativeLayout
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent" >
+        <TextView
+          android:id="@+id/text"
+          android:text=""
+          android:visibility="visible"
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:layout_centerInParent="true"
+          android:gravity="center_horizontal"
+          />
+     </RelativeLayout>
+
+	<AbsoluteLayout android:id="@+id/widget0" android:layout_width="fill_parent"
+					android:layout_height="fill_parent"
+					xmlns:android="http://schemas.android.com/apk/res/android">
+	<Button
+		android:id="@+id/buttonPasse"
+		android:layout_width="100px"
+		android:layout_height="wrap_content"
+		android:text="Passe"
+		android:layout_x="310px"
+		android:layout_y="110px"
+	/>
+	<Button
+		android:id="@+id/buttonPrise"
+		android:layout_width="100px"
+		android:layout_height="wrap_content"
+		android:text="Prise"
+		android:layout_x="260px"
+		android:layout_y="5px"
+	/>
+	<Button
+		android:id="@+id/buttonGarde"
+		android:layout_width="100px"
+		android:layout_height="wrap_content"
+		android:text="Garde"
+		android:layout_x="365px"
+		android:layout_y="5px"
+	/>
+	<Button
+		android:id="@+id/buttonGardeSans"
+		android:layout_width="100px"
+		android:layout_height="wrap_content"
+		android:text="Garde sans"
+		android:layout_x="260px"
+		android:layout_y="55px"
+	/>
+	<Button
+		android:id="@+id/buttonGardeContre"
+		android:layout_width="100px"
+		android:layout_height="wrap_content"
+		android:text="Garde contre"
+		android:layout_x="365px"
+		android:layout_y="55px"
+	/>
+	</AbsoluteLayout>
+
+</FrameLayout>
+
+
+
+

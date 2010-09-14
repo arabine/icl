@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">TarotClub</string>
+    <string name="menu_newgame">New Game</string>
+    <string name="menu_about">About</string>
+    <string name="menu_quit">Quit</string>
+	<string name="about_text">
+TarotClub is an open source Tarot card game!\n\n
+More information on http://www.tarotclub.fr.\n\n
+This software is licensed under the terms of the CeCILL license.
+</string>
+    <string name="win_text">You Win!\n\nUse the menu to start a new game.</string>
+</resources>
