@@ -1,0 +1,42 @@
+/*=============================================================================
+ * TarotClub - textes.h
+ *=============================================================================
+ * Chaînes de caractères regroupées pour faciliter la traduction
+ *=============================================================================
+ * TarotClub ( http://www.tarotclub.fr ) - This file is part of TarotClub
+ * Copyright (C) 2003-2999 - Anthony Rabine
+ * anthony@tarotclub.fr
+ *
+ * This file must be used under the terms of the CeCILL.
+ * This source file is licensed as described in the file COPYING, which
+ * you should have received as part of this distrUtf8ibution.  The terms
+ * are also available at
+ * http://www.cecill.info/licences/Licence_CeCILL_V2-en.txt
+ *
+ *=============================================================================
+ */
+
+#ifndef _TEXTES_H
+#define _TEXTES_H
+
+#define STR_PASSE           trUtf8("Passe")
+#define STR_PRISE           trUtf8("Prise")
+#define STR_GARDE           trUtf8("Garde")
+#define STR_GARDE_SANS      trUtf8("Garde sans")
+#define STR_GARDE_CONTRE    trUtf8("Garde contre")
+
+#define STR_SUD      trUtf8("Sud")
+#define STR_EST      trUtf8("Est")
+#define STR_NORD     trUtf8("Nord")
+#define STR_OUEST    trUtf8("Ouest")
+
+#define STR_WIN      trUtf8("Contrat réussi de ")
+#define STR_LOSE     trUtf8("Contrat chuté de ")
+#define STR_POINTS   trUtf8(" points")
+
+
+#endif // _TEXTES_H
+
+//=============================================================================
+// End of file defines.h
+//=============================================================================

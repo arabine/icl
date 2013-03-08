@@ -1,0 +1,22 @@
+TarotClub install
+------------------
+
+* Windows
+==========
+
+Use the Setup executable. Shortcut is in the start menu.
+
+* Linux 
+=========
+
+Debian/Ubuntu : use .deb install package
+
+Other distributions:
+
+Decompress the .tar.gz archive where you want in your system. You'll probably have to install 
+suitable Qt libraries
+
+* Mac
+=======
+
+No ready-to-use executable available yet. Compile from the source code.
