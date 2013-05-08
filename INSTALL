@@ -1,0 +1,25 @@
+TarotClub install
+------------------
+
+* Windows
+==========
+
+Use the Setup executable. Shortcut is in the start menu.
+
+* Ubuntu
+=========
+
+Ubuntu : use .deb install package
+
+* Generic Linux
+===============
+
+Decompress the .tar.bzip2 archive where you want in your system. You'll probably have to install 
+suitable Qt libraries (Qt5.0).
+
+Run the install script "install.sh" located at the TarotClub root directory. This script will add a new character font in your system.
+
+* Mac
+=======
+
+There is no ready-to-use executable available yet. Compile TarotClub from the source code.
