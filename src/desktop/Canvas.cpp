@@ -134,14 +134,14 @@ bool Canvas::Initialize(ClientOptions &opt)
         }
         else if (i == 2)
         {
-            varImg = "trefle";
+            varImg = "carreau";
         }
         else
         {
-            varImg = "carreau";
+            varImg = "trefle";
         }
 
-        // de l'as au roi (14 cartes)
+        // from 1 to the king (14)
         for (j = 0; j < 14; j++)
         {
             //  n = i * 14 + j;
@@ -474,6 +474,7 @@ void Canvas::SetPlayerIdentity(QMap<Place, Identity> &players, Place myPlace)
 
         playerBox.value(rel)->SetPlayerName(i.value().name.data());
         playerBox.value(rel)->SetAvatar(QString(i.value().avatar.data()));
+        playerBox.value(rel)->EnableAvatar(true);
     }
 }
 /*****************************************************************************/
@@ -597,8 +598,12 @@ void Canvas::InitBoard()
         i.next();
         i.value()->HighlightPlayer(false);
         i.value()->SelectPlayer(false);
+        i.value()->EnableAvatar(false);
         i.value()->SetBidText("");
     }
+
+    HidePopup();
+    HideBidsChoice();
 }
 /*****************************************************************************/
 void Canvas::ResetCards()

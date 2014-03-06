@@ -51,23 +51,21 @@ void Lobby::Initialize()
 
     Game::Shuffle sh;
     sh.type = Game::RANDOM_DEAL;
-    int tcpPort = DEFAULT_TCP_PORT;
+    int tcpPort = 33000; // FIXME: make this as an option
 
     for (int j = 0; j < SERVER_MAX_SALOONS; j++)
     {
         for (int i = 0; i < SERVER_MAX_TABLES; i++)
         {
             saloons[j].tables[i].table.SetTcpPort(tcpPort);
+            saloons[j].tables[i].table.Initialize(); // Start all threads and TCP sockets
             saloons[j].tables[i].table.CreateGame(Game::ONE_DEAL, 4U, sh);
-
-            // Start all threads
-            saloons[j].tables[i].table.Initialize();
-
             // Each table has a unique port
             tcpPort++;
         }
     }
 
+    // Lobby TCP server
     mTcpServer.Start(4242, 20U);
 }
 /*****************************************************************************/
@@ -87,9 +85,10 @@ void Lobby::ReadData(int socket, const std::string &data)
     // server looks if it was a get request and sends a very simple ASCII
 
     // Remove trailing \n
-    data.back();
+    std::string command = data;
+    command.pop_back();
 
-    std::vector<std::string> tokens = Util::Split(data, ":");
+    std::vector<std::string> tokens = Util::Split(command, ":");
     std::stringstream ss;
 
     if (tokens[0] == "GET")

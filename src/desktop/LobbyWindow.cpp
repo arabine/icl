@@ -52,16 +52,15 @@ LobbyWindow::LobbyWindow(QWidget *parent = 0)
     connect(ui.joinButton, &QPushButton::clicked, this, &LobbyWindow::slotJoin);
     connect(ui.closeButton, &QPushButton::clicked, this, &LobbyWindow::slotClose);
 
-    selectedTable.isValid = false;
+    Initialize();
 }
-
 /*****************************************************************************/
 void LobbyWindow::slotRoomSelected(QListWidgetItem *item)
 {
     selectedTable.isValid = false;
     // get list of tables in this room
     QTextStream os(&socket);
-    os << "GET:TABLES:" << item->text();
+    os << "GET:TABLES:" << item->text() << "\n";
     os.flush();
 }
 /*****************************************************************************/
@@ -70,7 +69,7 @@ void LobbyWindow::slotTableSelected(QListWidgetItem *item)
     selectedTable.isValid = false;
     // get the tcp/ip port of this table
     QTextStream os(&socket);
-    os << "GET:PORT:" << ui.roomList->selectedItems().at(0)->text() << "," << item->text();
+    os << "GET:PORT:" << ui.roomList->selectedItems().at(0)->text() << "," << item->text() << "\n";
     os.flush();
 }
 /*****************************************************************************/
@@ -98,6 +97,15 @@ void LobbyWindow::slotClose()
     this->reject();
 }
 /*****************************************************************************/
+void LobbyWindow::Initialize()
+{
+    selectedTable.isValid = false;
+    QString txt = trUtf8("Not connected.");
+    ui.infoLabel->setText(txt);
+    ui.tableList->clear();
+    ui.roomList->clear();
+}
+/*****************************************************************************/
 void LobbyWindow::socketReadData()
 {
     QTcpSocket *s = (QTcpSocket *)sender();
@@ -107,23 +115,27 @@ void LobbyWindow::socketReadData()
         // remove new line character
         line.remove('\n');
         QStringList tokens = line.split(':', QString::SkipEmptyParts, Qt::CaseSensitive);
-        if (tokens[0] == "SALOON")
+
+        if (tokens.size() == 2)
         {
-            QStringList list = tokens[1].split(',');
-            ui.roomList->clear();
-            ui.roomList->addItems(list);
-        }
-        else if (tokens[0] == "TABLES")
-        {
-            QStringList list = tokens[1].split(',');
-            ui.tableList->clear();
-            ui.tableList->addItems(list);
-        }
-        else if (tokens[0] == "PORT")
-        {
-            selectedTable.port = tokens[1].toUInt();
-            selectedTable.ip = ui.ipAddress->text();
-            selectedTable.isValid = true;
+            if (tokens[0] == "SALOON")
+            {
+                QStringList list = tokens[1].split(',');
+                ui.roomList->clear();
+                ui.roomList->addItems(list);
+            }
+            else if (tokens[0] == "TABLES")
+            {
+                QStringList list = tokens[1].split(',');
+                ui.tableList->clear();
+                ui.tableList->addItems(list);
+            }
+            else if (tokens[0] == "PORT")
+            {
+                selectedTable.port = tokens[1].toUInt();
+                selectedTable.ip = ui.ipAddress->text();
+                selectedTable.isValid = true;
+            }
         }
     }
 }
