@@ -1,0 +1,26 @@
+<RCC>
+    <qresource prefix="/">
+        <file>images/fileopen.png</file>
+        <file>images/next.png</file>
+        <file>images/previous.png</file>
+        <file>images/splash.png</file>
+        <file>images/podium.svg</file>
+        <file>images/avatars/bender.png</file>
+        <file>images/avatars/amy.png</file>
+        <file>images/avatars/farnsworth.png</file>
+        <file>images/avatars/fry.png</file>
+        <file>images/avatars/hermes.png</file>
+        <file>images/avatars/leela.png</file>
+        <file>images/avatars/nibbler.png</file>
+        <file>images/avatars/scruffy.png</file>
+        <file>images/avatars/zoidberg.png</file>
+        <file>images/tick.svg</file>
+        <file>images/version.jpg</file>
+        <file>icons/club.svg</file>
+        <file>icons/diamond.svg</file>
+        <file>icons/heart.svg</file>
+        <file>icons/spade.svg</file>
+        <file>icons/trump.svg</file>
+        <file>images/avatars/empty.png</file>
+    </qresource>
+</RCC>
