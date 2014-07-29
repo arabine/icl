@@ -1,0 +1,179 @@
+HISTORY OF TAROTCLUB VERSIONS
+
++ new feature
+~ bug corrected
+- feature removed
+
+* version 2.3.5 <Snowboard>
+  -------------------------------
+    ~ Correction: About box was too large (switched to a text edit control)
+    ~ Change in the network protocol: clear separation between a game and a deal
+    ~ Various defense AI corrections and function bugs
+    ~ JS script context is now reloaded at each new game with a proper heap cleaning
+    + New AI attack, basic version, with discard build
+
+* version 2.3.4 <Snowboard>
+  -------------------------------
+    ~ Correction: little endian bonus in case of slam and fool in last trick was not detected
+    ~ Correction: translated deal result text in french
+    ~ Correction of the highest suit dection (trick winner)
+    ~ Correction of the last trick, it was not taken into account
+    + New drop shadow effect on cards
+    + New radial gradient effect for the background color
+
+* version 2.3.3 <Snowboard>
+  -------------------------------
+    ~ Correction: show handle sequence was not managed well
+    ~ Correction: the dog cards was hidden in the player's hand
+    ~ Correction: the slam tick was not cleared between two deals
+    
+* version 2.3.2 <Snowboard>
+  -------------------------------
+    ~ Correction: the user does not send the discard to the server
+    ~ Correction: the deal JSON output was not JSON compliant
+    ~ Removed winner message box (no sense for one deal)
+    + Auto play works also for bid step
+    + JSON reader now uses its own parser instead of the Duktape's one
+    + New JSON configuration file for AI scripts
+
+* version 2.3.1 <Snowboard>
+  -------------------------------
+    ~ Corrected french translation, bug in translation file loading and in Canvas item texts
+    ~ Make the debian package dependant of QtSvg
+
+* version 2.3.0 <Snowboard>
+  -------------------------------
+    + Show south cards with a constant padding, middle alignment
+    + Use JSON instead of XML for client/server configuration and various generated files (deals, statistics ...)
+    + Advanced logging system in files and in the DebugDock window
+    + Network protocol robustness's: better header, more synchronization with clients, separate class file
+    + Restart game without previous disconnection
+    + Exit game gracefully, cooperative termination of threads with join()
+    + Beginner AI level (defense only)
+    + New option: suit order selection
+    + Show the game result in the Canvas instead of a Window (Android compatibility)
+    + Big internal rework of code architecture (
+    + Full standard C++11 dedicated server, without Qt. Compatible with MSVC++ 2013 Express.
+    + Separate and independant, platform agnostic C++ library classes
+    + JSON and ScriptEngine standard interface
+    ~ Modified the JavaScript engine: use of Duktape 0.10
+    - Removed integrated help system. Replace by the launch of a web browser showing provided HTML help pages
+
+* version 2.2.0 <Juliette>
+  -------------------------------
+    + Dedicated server with multi game rooms, independent executable
+    + Connection to a server, server hosting inside the graphical client
+    + Resize cards and canvas contents with the window size
+    + First version of the dedicated server
+    + Network engine: class serializations for all packets (same as Identity.h)
+    + New board organization, in game menu, larger Avatars
+    + Show declared handles on the screen
+	~ Updated code style and translation into English
+
+* version 2.1.0 <GLaDOS>
+  -------------------------------
+    + Script Engine for AI using QtScript, first version of Javascript API
+    + Rework options and config files (separation between server and client)
+    + Qt 5.0 version
+    + Various user interface improvements
+    + Integrated help system including Tarot game rules in English and French
+    + New avatars from Futurama
+    + New source code design, new code style, translated most of the code (class names, file names, methods, comments) into English
+    + Enhanced network protocol
+    + Add a shadow under each card area
+    + Allow to validate turn by clicking - or - timeout
+    + Add a lexical and Tarot rules in the help menu (using QtHelp system)
+    + Translation files (French and English)
+    + Debian/Ubuntu installation packages
+    + On each platform, store the configuration files in HOME_DIR/.tarotclub/
+
+* version 2.0.0 <Kritzkrieg>
+  -------------------------------
+    + Configure time between players and at the end of a turn
+    + Windows installer with Innosetup
+    + Tournament mode (10 rounds) and one shot round
+    + Give the seed used to generate the current deal
+    + Deal editor
+    + Ubuntu package
+    + Show player's deck statistics
+    + Show cards played each turn in a dock window
+    + Chelem + poignées implementation and scoring
+    + Show the total of points in the score table
+    + Server-side tournament mode and result UI
+
+* version 1.3.0 <Dragon Ball>
+  -------------------------------
+    + Nouveau système de dock windows pour afficher des informations
+    + Dock window pour le chat durant les parties réseau
+    + Compatible complètement avec Qt 4.3.0 (plus de Q3Support)
+    + Architecture client/serveur complète avec serveur dédié indépendant
+    + Support de bots prévu dès la conception
+
+* version 1.2.1 <Tschaď>
+  -------------------------------
+    + Traduction anglaise
+    + Sélection de la langue dans les options
+    + Exécutable plus petit grâce à UPX (http://upx.sourceforge.net/)
+
+* version 1.2.0 <Tschaď>
+  -------------------------------
+    + Le jeu en réseau
+    + Splash screen au démarrage
+    + Choix du tapis de jeu
+    + Refonte du système de sauvegarde
+    + Nouvelle version de fichier XML de préférences
+    + Passage à Qt 4.0.1
+    + Abandon de Visual C++ au profit de MinGW (Windows)
+    ~ Modification du choix des avatars
+    - Abandon (temporaire) des scripts Lua
+
+* version 1.1.3 <Winnie>
+  -------------------------------
+    + Nouvelle donnée de l'API : cartesJoueurs[]
+    + Nouveau fichier d'IA : contribution de Hervé BENOIT
+    ~ Correction de l'appartenance des cartes
+    ~ Changement de l'icône de l'exécutable (Windows seulement)
+    ~ Passage à Lua 5.0.2
+    ~ Séparation du code du moteur de jeu et du code de l'interface
+    ~ Passage à 65000 donnes différentes
+    ~ Changements dans le menu
+    ~ Bug de sauvegarde des avatars corrigé
+
+* version 1.1.2 <Winnie>
+  -------------------------------
+    + Le Chien s'affiche rangé par couleur
+    + Portage du code de Qt 2.3 à Qt 3.2.1
+    + Changements des Id des cartes
+    + Les scripts Lua doivent maintenant ętre dans des fonctions
+    + Donnes numérotées et possibilité de fournir une donne précise
+    ~ Console Lua améliorée
+    ~ L'ordinateur produit un chien valide (sans Roi ni atouts)
+
+* version 1.1.1 <Winnie>
+  -------------------------------
+    + Nouvelles fonctions de l'API :
+    + println() : affiche un message dans la console
+    + maitre() : retourne la position du maitre
+    + place() : (retourne : nord, sud, etc.)
+    + des variables globales pour accéder cartes déjà jouées etc.
+
+* version 1.1 <Winnie>
+  -------------------------------
+    + Une console Lua permet de visualiser les messages d'erreurs
+    + Nouvelle option : visualisation du pli précédent
+    + Indication du joueur qui joue : plus de boule mais la boite du joueur est cerclées de rouge
+    + Le nom des joueurs s'affiche également dans la table des scores
+    + La taille de la fenętre s'adapte à la résolution de l'écran
+    + Le nom des joueurs est limité à 10 caractčres
+    + Nouvelle option pour modifier les temps de pause dans le séquençage du jeu
+    ~ Le Chelem est maintenant convenablement détecté
+    ~ Le chien n'est pas affiché en cas de Garde sans ou de Garde Contre
+    ~ Chemins relatifs changés en absolus : on peut maintenant démarrer TarotClub depuis n'importe quel emplacement
+    ~ Quelques bugs corrigés et des simplifications de code
+    ~ Classe Deck complètement refondue : + simple et ne fait plus planter le jeu
+
+* version 1.0 <Teddy>
+  -------------------------------
+	+ Version initiale
+
+(end of HISTORY)
