@@ -1,0 +1,7 @@
+syntax: glob
+build-*
+*.gcov
+*~
+*.user
+pkg/ubuntu/deb_temp
+cov-int
