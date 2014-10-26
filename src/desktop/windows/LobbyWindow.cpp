@@ -1,0 +1,189 @@
+/*=============================================================================
+ * TarotClub - LobbyWindow.cpp
+ *=============================================================================
+ * Lobby window, includes a chat area and the tables available on the server
+ *=============================================================================
+ * TarotClub ( http://www.tarotclub.fr ) - This file is part of TarotClub
+ * Copyright (C) 2003-2999 - Anthony Rabine
+ * anthony@tarotclub.fr
+ *
+ * TarotClub is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * TarotClub is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with TarotClub.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *=============================================================================
+ */
+
+#include <QTextStream>
+#include <QHostInfo>
+#include <QtNetwork>
+#include "LobbyWindow.h"
+#include "ServerConfig.h"
+
+/*
+ *
+ * QString txt = trUtf8("Connected to the server.");
+    QString txt = trUtf8("Connection to the server ....");
+    QString txt = trUtf8("The connection has been closed by the server.");
+    QString txt = trUtf8("Socket error - code: ") + QString().setNum((int)code);
+ */
+
+/*****************************************************************************/
+LobbyWindow::LobbyWindow(QWidget *parent = 0)
+    : QDialog(parent, Qt::Window)
+{
+    setModal(false);
+    ui.setupUi(this);
+    ui.serverAddress->setCursorPosition(0);
+    ui.serverPort->setValue(4269);
+
+#ifdef QT_DEBUG
+    ui.serverAddress->setText("127.0.0.1");
+#endif
+
+    connect(ui.connectButton, &QPushButton::clicked, this, &LobbyWindow::slotConnect);
+    connect(ui.joinButton, &QPushButton::clicked, this, &LobbyWindow::slotJoin);
+    connect(ui.quitButton, &QPushButton::clicked, this, &LobbyWindow::slotQuit);
+    connect(ui.closeButton, &QPushButton::clicked, this, &LobbyWindow::slotClose);
+
+    Initialize();
+}
+/*****************************************************************************/
+void LobbyWindow::slotConnect()
+{
+    QHostInfo info = QHostInfo::fromName(ui.serverAddress->text());
+
+    if (info.error() == QHostInfo::NoError)
+    {
+        QList<QHostAddress>	addresses = info.addresses();
+        // Try each IP address to find any suitable server
+        for (QList<QHostAddress>::iterator iter = addresses.begin(); iter != addresses.end(); ++iter)
+        {
+            QString reply;
+            QString request = QString("http://") + iter->toString() + QString(":8080");
+            if (RequestHttp(request + "/tables", reply))
+            {
+                // found something interesting
+                QStringList strList = reply.split(",");
+                ui.tableList->clear();
+                mTableList.clear();
+
+                QRegExp rex("^(\\w+)\\((\\d+)\\)");
+                for (int i = 0; i < strList.size(); i++)
+                {
+                    int pos = rex.indexIn(strList[i]);
+                    if ((pos > -1) && (rex.captureCount() == 2))
+                    {
+                        QString name = rex.cap(1);
+                        std::uint32_t id = rex.cap(2).toULong();
+                        mTableList[name] = id;
+
+                        // Update the table list
+                        ui.tableList->addItem(name);
+                    }
+                }
+
+                // It seems that we have found a valid server, try to connect
+                emit sigConnect(iter->toString(), (std::uint16_t)ui.serverPort->value());
+
+            }
+            else
+            {
+                ui.textArea->append(reply);
+            }
+        }
+    }
+}
+/*****************************************************************************/
+void LobbyWindow::slotMessage(std::string message)
+{
+    ui.textArea->append(QString(message.c_str()));
+}
+/*****************************************************************************/
+void LobbyWindow::slotJoin()
+{
+    // Gets the table name
+    QListWidgetItem * item = ui.tableList->currentItem();
+    if (item != NULL)
+    {
+        QString name = item->text();
+        if (mTableList.contains(name))
+        {
+            emit sigJoinTable(mTableList[name]);
+        }
+    }
+}
+/*****************************************************************************/
+void LobbyWindow::slotQuit()
+{
+    // Gets the table name
+    QListWidgetItem * item = ui.tableList->currentItem();
+    if (item != NULL)
+    {
+        QString name = item->text();
+        if (mTableList.contains(name))
+        {
+            emit sigQuitTable(mTableList[name]);
+        }
+    }
+}
+/*****************************************************************************/
+void LobbyWindow::slotClose()
+{
+    this->hide();
+}
+/*****************************************************************************/
+void LobbyWindow::Initialize()
+{
+    QString txt = trUtf8("Not connected.");
+    ui.infoLabel->setText(txt);
+    ui.tableList->clear();
+    ui.playerList->clear();
+    ui.textArea->clear();
+}
+/*****************************************************************************/
+bool LobbyWindow::RequestHttp(const QString &request, QString &reply)
+{
+    bool ret = false;
+    // create custom temporary event loop on stack
+    QEventLoop eventLoop;
+
+    // "quit()" the eventl-loop, when the network request "finished()"
+    QNetworkAccessManager mgr;
+    QObject::connect(&mgr, SIGNAL(finished(QNetworkReply*)), &eventLoop, SLOT(quit()));
+
+    QUrl url(request);
+    // the HTTP request
+    QNetworkRequest req(url);
+
+    QNetworkReply *netReply = mgr.get(req);
+    eventLoop.exec(); // blocks stack until "finished()" has been called
+
+    if (netReply->error() == QNetworkReply::NoError)
+    {
+        // Everything is ok => reply->readAll()
+        reply = netReply->readAll();
+        ret = true;
+    }
+    else
+    {
+        // error...
+        reply = netReply->errorString();
+        ret = false;
+    }
+    delete netReply;
+    return ret;
+}
+
+//=============================================================================
+// End of file LobbyWindow.cpp
+//=============================================================================
