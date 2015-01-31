@@ -1,0 +1,109 @@
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+	<script type="text/javascript" src="system.js"></script>
+	<script type="text/javascript" src="../../assets/ai/tarotlib/util.js"></script>
+	<script type="text/javascript" src="../../assets/ai/tarotlib/card.js"></script>
+	<script type="text/javascript" src="../../assets/ai/tarotlib/deck.js"></script>
+	
+	<script type="text/javascript" src="jquery-2.1.1.min.js"></script>
+	<script type="text/javascript" src="jquery-ui.min.js"></script>
+	<script type="text/javascript" src="jcanvas.min.js"></script>
+	
+<script type="text/javascript">
+	
+	function init() 
+    {
+        // Set up our canvas on the page before doing anything.
+        var canvas = document.getElementById("myCanvas");
+        // Get drawing context for the Canvas
+        var context = canvas.getContext("2d");
+	
+		context.rect(0, 0, canvas.width, canvas.height);
+		var grd = context.createRadialGradient(238, 50, 10, 238, 50, 300);
+		// light green
+		grd.addColorStop(0, '#008000');
+		// dark green
+		grd.addColorStop(1, '#002600');
+
+		context.fillStyle = grd;
+		context.fill();
+		
+		LoadTarotCards(context);
+    }
+	
+	function LoadTarotCards(context)
+	{
+		var deck = new TarotLib.Deck();
+		deck.makeTarotDeck();
+		
+		// sources is our list of image files
+		var sources = [];
+		
+//		for (var i = 0; i < deck.size(); i++)
+		{
+//			var card = deck.get(i);
+//			sources[i] = "../../assets/cards/default/" + card.getName() + ".svg";
+		}	
+		
+		sources[0] = "../../assets/cards/default/" + deck.get(0).getName() + ".svg";
+		
+		function getFileName(path) {
+			var fileNameIndex = path.lastIndexOf("/") + 1;
+			var filename = path.substr(fileNameIndex, 4);
+			return filename;
+		}
+		
+		loadImages(sources, function(images) {
+			//draw your canvas elements here
+//			context.shadowOffsetX = 4;
+	//		context.shadowOffsetY = 4;
+//			context.shadowColor = "rgba( 0, 0, 0, 0.3 )";
+//			context.shadowBlur = 3;
+			
+			for(var i = 0; i < images.length; i++) {
+//				context.drawImage(images[i], 50 + 10*i, 0, 61, 112);
+				
+				var layerName = getFileName(images[i].src);
+				$('canvas').drawImage({
+					layer: true,
+					draggable: true,
+					name: layerName,
+					source: images[i],
+					
+					shadowColor: "rgba( 0, 0, 0, 0.3 )",
+					shadowBlur: 3,
+					shadowX: 4, shadowY: 4,
+					x: 200 + 20*i, y: 150,
+					scale: 2.0
+				});
+			}
+		});
+	}
+	
+	function loadImages(sources, callback) {
+        var images = [];
+        var loadedImages = 0;
+
+        for(var i = 0; i < sources.length; i++) {
+			images[i] = new Image();
+			images[i].onload = function() {
+				if(++loadedImages >= sources.length) {
+					callback(images);
+				}
+			};
+			images[i].src = sources[i];
+        }
+    }
+ 
+</script>
+
+
+</head>
+
+<body onload="init()">
+	<canvas id="myCanvas" width="800" height="400"></canvas>
+
+</body>
+</html>
+ 
