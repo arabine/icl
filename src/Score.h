@@ -1,0 +1,100 @@
+/*=============================================================================
+ * TarotClub - Score.h
+ *=============================================================================
+ * Helper class to store score for one deal or tournament
+ *=============================================================================
+ * TarotClub ( http://www.tarotclub.fr ) - This file is part of TarotClub
+ * Copyright (C) 2003-2999 - Anthony Rabine
+ * anthony@tarotclub.fr
+ *
+ * TarotClub is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * TarotClub is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with TarotClub.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ *=============================================================================
+ */
+#ifndef SCORE_H
+#define SCORE_H
+
+#include <string>
+#include <map>
+#include "Common.h"
+#include "ByteStreamReader.h"
+#include "ByteStreamWriter.h"
+#include "ServerConfig.h"
+
+/*****************************************************************************/
+struct Points
+{
+    std::int32_t pointsAttack;   // Points of cards
+    std::int32_t scoreAttack;    // Final score calculated, including all bonuses
+    std::int32_t oudlers;
+    std::int32_t littleEndianPoints; // positive if attack bonus, otherwise negative
+    std::int32_t handlePoints;
+    std::int32_t slamPoints;
+
+    Points();
+    void Clear();
+    Team Winner() const;
+    std::int32_t GetAttackScore() const;
+    std::int32_t GetDefenseScore() const;
+    std::int32_t Difference() const;
+
+    friend ByteStreamWriter &operator<<(ByteStreamWriter &out, const Points &points)
+    {
+        out << points.pointsAttack
+            << points.scoreAttack
+            << points.oudlers
+            << points.littleEndianPoints
+            << points.handlePoints
+            << points.slamPoints;
+        return out;
+    }
+
+    friend ByteStreamReader &operator>>(ByteStreamReader &in, Points &points)
+    {
+        in >> points.pointsAttack;
+        in >> points.scoreAttack;
+        in >> points.oudlers;
+        in >> points.littleEndianPoints;
+        in >> points.handlePoints;
+        in >> points.slamPoints;
+        return in;
+    }
+};
+/*****************************************************************************/
+class Score
+{
+public:
+    Score();
+
+    void NewGame(std::uint8_t numberOfTurns);
+    void NewDeal();
+
+    std::uint8_t GetNumberOfTurns() { return mNumberOfTurns; }
+
+    bool AddPoints(const Points &points, const Tarot::Bid &bid, std::uint8_t numberOfPlayers);
+    int GetTotalPoints(Place p) const;
+    std::map<int, Place> GetPodium();
+
+private:
+    // scores of previous deals
+    std::uint32_t dealCounter;
+    int scores[ServerConfig::MAX_NUMBER_OF_TURNS][5];   // score of each turn players, 5 players max
+    std::uint8_t mNumberOfTurns;
+};
+
+#endif // SCORE_H
+
+//=============================================================================
+// End of file Score.h
+//=============================================================================
