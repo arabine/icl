@@ -1,0 +1,12 @@
+{
+    "level": "noob",
+    "files": [
+        "tarotlib/util.js",
+        "tarotlib/card.js",
+        "tarotlib/deck.js",
+        "tarotlib/player.js",
+        "tarotlib/bot.js",
+        "tarotlib/game.js",
+        "main.js"
+    ]
+}
