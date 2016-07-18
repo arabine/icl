@@ -1,13 +1,11 @@
 
-# ---------------------------------------------- VERSION 2.6 --------------------------------------------------
+# ---------------------------------------------- VERSION 2.7 --------------------------------------------------
 
 ##  Desktop client
 
-  * New option for no avatar (Le fait de cacher les avatars ne diminue pas la taille des encadrés des joueurs, il faudrait que ce soit le cas sinon je ne vois pas trop l’intérêt.)
   * Lobby: add buttons to add a bot on a table
   * New option to hide the south identity bloc on the screen (or show a minimized one)
   * Propose to upgrade to a newer version if available (periodic check or at lobby connection)
-  * Re-enable in-game network hosting table
   * Add an option to display the deals window at the end of a played deal
   * Pourrait on choisir une image pour le tapis au lieu d'une couleur unie
 
@@ -29,24 +27,17 @@
   * Show the discard at the end of the deal (and the points)
   * Add animation when player cards are played
 
-  * Bug: refresh current ui setting of the options window if clicked on "default" button
-
-## Code architecture / engine / network
-
-  * New network commands: change nick, change avatar (Hizoka (ubuntu-fr) les avatars ne sont changés que lors du redémarrage du logiciel, on ne peut pas le faire en direct )
-
 
 # ---------------------------------------------- BACKLOG --------------------------------------------------  
 
-## Bugs
+## Library
 
-  * Correct the Z-value of handle display (triple handle is shown under the avatar boxes)
+  * Util.cpp/UserDirectory: under windows (and Linux?), use WinAPI to detect because env variable can be modified
 
 ## Code architecture / engine / network
 
   * Change the network protocol into JSON-RPC
   * Encrypted protocol / authenticated server
-  * WebSocket server (allow HTML5 JS clients)
   * Log raw bad packets with IPs
   * Create an Observer status to only be a spectator for a current game
   * Add a timer when playing online
@@ -71,12 +62,11 @@
 ## General
 
   * Develop a TarotStudio : tournament manager (print score papers, record players, add scores manually, quick score calculation ...)
-  * Move the DealCreator in the TarotStudio
-  * TarotStudio --> new child UI in the TarotClub MDI window
   * JavaScript Editor
 
 ## UI improvements / Gfx engine
 
+  * New option for no avatar (Le fait de cacher les avatars ne diminue pas la taille des encadrés des joueurs, il faudrait que ce soit le cas sinon je ne vois pas trop l’intérêt.)
   * Try wrap Qt UI elements to allow easy porting
   * Dog / Handle: grey not allowed cards
   * Use an HTML5 canvas and JavaScript to allow an easy porting on all platforms

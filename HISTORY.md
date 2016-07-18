@@ -1,13 +1,17 @@
 
-## Changes in 2.7.0
+## Changes in 2.6.3
 
 DONE:
   * Tournament configuration is now in a dedicated Json file
 
 TODO:
   * Added new menu entry: creation of a hosted game server
-  * Ajouter un titre aux fenêtres popup
-  * Ajouter l'annonceur d'une poignée lorsque celle ci est montrée
+  * Tester la création de serveur hôte + le joignage
+  * Bug: après avoir lancé le jeu, impossible de créer une parties
+  * Le Z-level des cartes affichées n'est pas bon pour la première carte elle est montrée au dessus des autres
+  * Lorsque le chien est affiché des cartes sont encore tournées (rotation aléatoire)
+  * Bug: refresh current ui setting of the options window if clicked on "default" button
+  * Correct the Z-value of handle display (triple handle is shown under the avatar boxes)
 
 # Branch 2.6
 
