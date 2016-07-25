@@ -1,0 +1,7 @@
+*.o
+build-*
+*.gcov
+*~
+*.user
+pkg/ubuntu/deb_temp
+cov-int
