@@ -97,7 +97,7 @@ TARGET = TarotClub # name of the output executable
 
 # Specific OS stuff
 win32 {
-    RC_FILE = desktop/icon.rc
+    RC_FILE = assets/windows/icon.rc
     LIBS +=  libws2_32 -lpsapi
     DEFINES += USE_WINDOWS_OS
 
@@ -130,10 +130,16 @@ DEFINES += DUK_OPT_NO_JC
 # Common defines for all platforms
 DEFINES += DESKTOP_PROJECT
 
+
+# ------------------------------------------------------------------------------
+# Project description files
+# ------------------------------------------------------------------------------
+OTHER_FILES += HISTORY.md TODO.md README.md
+
 # ------------------------------------------------------------------------------
 # JavaScript files
 # ------------------------------------------------------------------------------
-OTHER_FILES = noob.js \
+OTHER_FILES += noob.js \
               card.js \
               util.js \
               deck.js \

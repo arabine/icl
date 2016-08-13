@@ -1,101 +1,108 @@
 
 # ---------------------------------------------- VERSION 2.7 --------------------------------------------------
 
-##  Desktop client
+Commencer par la partie protocole et rÃ©seau
 
-  * Lobby: add buttons to add a bot on a table
-  * New option to hide the south identity bloc on the screen (or show a minimized one)
-  * Propose to upgrade to a newer version if available (periodic check or at lobby connection)
-  * Add an option to display the deals window at the end of a played deal
-  * Pourrait on choisir une image pour le tapis au lieu d'une couleur unie
+  * Use epoll under Linux
+  * Change the network protocol into JSON-RPC ==> JSON over TarotProtocol
 
-## IA strategy
+Puis avancer la partie Web:
+  * client WebSocket (juste le chat, chatbox)
+  * connection using the account
 
-  * Un joueur joue son 21 alors que j'ai déjà joué et qu'il n'y a aucun point... (il avait d'autres petits atouts evidemment)
-  * Par contre le preneur a encore joué le petit pour faire tomber les atouts .
-  * Don't display the avatar box when no avatar is selected
-  * Un truc pas clair dans la logique, le preneur fait tomber les atouts, mais continue même quand les autres n'en ont plus ?!
-    Tout ça pour finir avec son petit... qu'il aurait pu garder pour la fin du jeu.
+Enfin on attaque un peu de refonte graphique en partant sur l'infrastructure Canvas (objetif: mobile)
+
+  * Span the table border to the view, allow 16/9 form factor (better visualization of the player's deck)
+  * Remplacer tous les menus "jeu" par un menu sur le Canvas
+  * A la fin de la donne, autoriser plusieurs options (voir les donnes passÃ©es, les records... voir Ticket To Train)
+
+
+# ---------------------------------------------- JAVASCRIPT / BOT / AI --------------------------------------------------
+
+## Bot management
+
   * Allow a multi-language AI script execution by using standard input/ouput and launching external process
   * Add Duktape debug and JSEditor for in-game modification of scripts
 
-## UI improvements / Gfx engine
+## IA strategy
 
-  * Span the table border to the view, allow 16/9 form factor (better visualization of the player's deck)
+  * Un joueur joue son 21 alors que j'ai dÃ©jÃ  jouÃ© et qu'il n'y a aucun point... (il avait d'autres petits atouts evidemment)
+  * Par contre le preneur a encore jouÃ© le petit pour faire tomber les atouts .
+  * Un truc pas clair dans la logique, le preneur fait tomber les atouts, mais continue mÃªme quand les autres n'en ont plus ?!
+    Tout Ã§a pour finir avec son petit... qu'il aurait pu garder pour la fin du jeu.
+
+# ---------------------------------------------- GFX --------------------------------------------------
+
+  * Don't display the avatar box when no avatar is selected (Le fait de cacher les avatars ne diminue pas la taille des encadrÃ©s des joueurs, il faudrait que ce soit le cas sinon je ne vois pas trop lÂ’intÃ©rÃªt.)
+  * Display icon close to the avatar when a player has declared a handle and/or a slam
+  * Use the Canvas to propose Handle (with the menu)
+  * Add a nice title in all popup window (to show the dog or handle)
+  * Display the player's declared handle by clicking on the icon
+  * J'aimerais bien qu'un clic droit sur une carte l'affiche par dessus les autres afin de bien la voir
+  * Pour les poignÃ©es, le probleme c'est que ca affiche juste poignÃ©e, il faudrait que ca precise, double, triple... voire meme, encore mieux qu'il propose les differentes possibilitÃ© poignÃ©es (grisÃ© si pas assez d'atout), et si on clic il choisit les cartes, a ce moment on peut les modifier si on en a plus et on valide le tout...
+  * Show a tournament podium at the end
+  * Display IP address of the newly created server for convenience (for self-hosted games)
+  * Dog / Handle: grey not allowed cards
+  * Dynamically create SVG images (usage of one card "background" for all the cards, and a set of illustrations for all the cards)
+  * Create a old-style gradient (pale-yellow) in all the cards
   * Improve the previously played deals visualizer (Add more informations (discard, dog, turns number) Display cards like player around the table (south, north ...)
-  * Display the dog / discard at the end of the deal (correction: in the deals visualizer)
+  * Deal visualiser: Move it to the central widget + display the dog / discard
   * Show the discard at the end of the deal (and the points)
   * Add animation when player cards are played
 
+Add images:
 
-# ---------------------------------------------- BACKLOG --------------------------------------------------  
+keywords:
+  Ornament svg
+  Underline Swirl
+  decorative frame
+  vintage
+  interlaced border
+  celtic knot
+  table felt
 
-## Library
+# ---------------------------------------------- LIBRARIES / ENGINE --------------------------------------------------
+
 
   * Util.cpp/UserDirectory: under windows (and Linux?), use WinAPI to detect because env variable can be modified
 
-## Code architecture / engine / network
-
-  * Change the network protocol into JSON-RPC
   * Encrypted protocol / authenticated server
   * Log raw bad packets with IPs
   * Create an Observer status to only be a spectator for a current game
   * Add a timer when playing online
 
+# ---------------------------------------------- TAROT GAME FEATURES --------------------------------------------------
+
 ##  Desktop client
 
   * Save and load game
-  * Display icon close to the avatar when a player has declared a handle and/or a slam
   * Re-enable local server creation with the TarotClub desktop, includes the mongoose HTTP source to manage REST API
-  * Use the Canvas to propose Handle (with the menu)
   * Lobby improvements: see status, number of connected players, scores, player names
-  * Add a nice title in all popup window (to show the dog or handle)
-  * Display the player's declared handle by clicking on the icon
-  * J'aimerais bien qu'un clic droit sur une carte l'affiche par dessus les autres afin de bien la voir
-  * Create a previous trick dock window (to comply to the offcial Tarot rules, even if it is redundant with the deal info dock)
-  * Pour les poignées, le probleme c'est que ca affiche juste poignée, il faudrait que ca precise, double, triple... voire meme, encore mieux qu'il propose les differentes possibilité poignées (grisé si pas assez d'atout), et si on clic il choisit les cartes, a ce moment on peut les modifier si on en a plus et on valide le tout...
-  * Show a tournament podium at the end
+  * Create a previous trick dock window (to comply to the offcial Tarot rules, even if it is redundant with the deal info dock)  
   * Statistic graphs (points at each round)
-  * Display IP address of the newly created server for convenience (for self-hosted games)
-  * Add an option to allow declaring missing figures (alias "misères de tête")
+  * Add an option to allow declaring missing figures (alias "misÃ¨res de tÃªte")
+  * Lobby: add buttons to add a bot on a table
+  * New option to hide the south identity block on the screen (or show a minimized one)
+  * Propose to upgrade to a newer version if available (periodic check or at lobby connection)
+  * Add an option to display the deals window at the end of a played deal
+  * Pourrait on choisir une image pour le tapis au lieu d'une couleur unie
 
-## General
+# ---------------------------------------------- TOOLS / WEBSITE --------------------------------------------------
 
   * Develop a TarotStudio : tournament manager (print score papers, record players, add scores manually, quick score calculation ...)
-  * JavaScript Editor
+  * TarotWorld website: allow variant games with tarot cards (magic-like, role-play, solitaire)
 
-## UI improvements / Gfx engine
 
-  * New option for no avatar (Le fait de cacher les avatars ne diminue pas la taille des encadrés des joueurs, il faudrait que ce soit le cas sinon je ne vois pas trop l’intérêt.)
-  * Try wrap Qt UI elements to allow easy porting
-  * Dog / Handle: grey not allowed cards
-  * Use an HTML5 canvas and JavaScript to allow an easy porting on all platforms
-  * Dynamically create SVG images (usage of one card "background" for all the cards, and a set of illustrations for all the cards)
-  * Create a old-style gradient (pale-yellow) in all the cards
+# ---------------------------------------------- TAROT 2 PLAYERS --------------------------------------------------
 
-keywords:
-Ornament svg
-Underline Swirl
-decorative frame
-vintage
-interlaced border
-celtic knot
-table felt
+(TarotBattle!)
 
-## Porting to other OS
+Certains m'ayant posÃ© la question, il existe plusieurs variantes du jeu de tarot Ã  2 joueurs.
+Je vous livre ici celle qui me semble la meilleure (l'ayant souvent pratiquÃ©e).
 
-  * Mac OS X version
-  * iPhone version
-  * Windows Phone version
+Pour commencer, imaginez qu'une ligne sur la table vous sÃ©pare de votre adversaire, et que de part et d'autre de cette ligne, il y a 8 emplacements en deux rangÃ©es de 4.
 
-## Tarot 2 players (TarotBattle!)
-
-Certains m'ayant posé la question, il existe plusieurs variantes du jeu de tarot à 2 joueurs.
-Je vous livre ici celle qui me semble la meilleure (l'ayant souvent pratiquée).
-
-Pour commencer, imaginez qu'une ligne sur la table vous sépare de votre adversaire, et que de part et d'autre de cette ligne, il y a 8 emplacements en deux rangées de 4.
-
-Schématiquement cela donne ceci :
+SchÃ©matiquement cela donne ceci :
 
 x x x x cette zone est le
 x x x x camp de l'adversaire
@@ -104,64 +111,64 @@ x x x x cette zone est votre
 x x x x camp
 
 
-En pratique, au début de la partie, sur chaque emplacement marqué d'un "x" est posé un paquet de 2 cartes. Celle du dessous est posée face cachée, et celle qui est dessus face visible. Chacun des joueurs voit donc 8 cartes de l'adversaire.
-Les cartes qui sont placées face cachée sont dites cartes "inférieures", celles du dessus "supérieures". L'ensemble des cartes supérieures et inférieures est appelé "tablée".
+En pratique, au dÃ©but de la partie, sur chaque emplacement marquÃ© d'un "x" est posÃ© un paquet de 2 cartes. Celle du dessous est posÃ©e face cachÃ©e, et celle qui est dessus face visible. Chacun des joueurs voit donc 8 cartes de l'adversaire.
+Les cartes qui sont placÃ©es face cachÃ©e sont dites cartes "infÃ©rieures", celles du dessus "supÃ©rieures". L'ensemble des cartes supÃ©rieures et infÃ©rieures est appelÃ© "tablÃ©e".
 
-En outre, 5 paquets de cartes sont disposés sur le tapis.
-- Un chien de 6 cartes, comme dans le jeu à 3 ou 4.
-- pour chaque joueur, un paquet de 12 cartes nommé "principal", et un paquet de 8 cartes nommé "renfort".
+En outre, 5 paquets de cartes sont disposÃ©s sur le tapis.
+- Un chien de 6 cartes, comme dans le jeu Ã  3 ou 4.
+- pour chaque joueur, un paquet de 12 cartes nommÃ© "principal", et un paquet de 8 cartes nommÃ© "renfort".
 
-Au moment des enchères, chaque joueur prend en main son "principal" sans en montrer le contenu, et évalue son jeu en fonction des cartes qu'il contient et des cartes qu'il possède face visible sur la table (soit 20 cartes).
-Pour éviter la répétition des donnes, fastidieuse, le donneur fait d'office une "prise" (ou petite). Mais la "pousse" est rétablie, son décompte est un compromis entre prise et garde, seuls les points de passe ou de chute étant multipliés par 2. Lorsque c'est son tour de parler, le donneur peut monter sur sa prise d'office si l'adversaire a passé.
-Lorsque le tour d'enchère est fini, chaque joueur s'empare alors de son renfort et le mêle à son jeu sans que l'autre le voie, et il est disposé du chien comme dans le jeu classique à 3 ou 4 joueurs.
+Au moment des enchÃ¨res, chaque joueur prend en main son "principal" sans en montrer le contenu, et Ã©value son jeu en fonction des cartes qu'il contient et des cartes qu'il possÃ¨de face visible sur la table (soit 20 cartes).
+Pour Ã©viter la rÃ©pÃ©tition des donnes, fastidieuse, le donneur fait d'office une "prise" (ou petite). Mais la "pousse" est rÃ©tablie, son dÃ©compte est un compromis entre prise et garde, seuls les points de passe ou de chute Ã©tant multipliÃ©s par 2. Lorsque c'est son tour de parler, le donneur peut monter sur sa prise d'office si l'adversaire a passÃ©.
+Lorsque le tour d'enchÃ¨re est fini, chaque joueur s'empare alors de son renfort et le mÃªle Ã  son jeu sans que l'autre le voie, et il est disposÃ© du chien comme dans le jeu classique Ã  3 ou 4 joueurs.
 
-Lorsque vient votre tour de jouer, vous avez le choix de jouer une carte de votre main, ou une carte de votre camp dans la tablée. Vous ne pouvez jouer une carte de la tablée que si vous ne faites pas de renonce (pas question de couper trefle par exemple si vous n'en avez pas en main mais qu'il y en a dans votre tablée).
-Lorsque vous jouez une carte de la tablée et qu'elle en recouvre une autre, vous devez attendre la fin du pli pour découvrir la carte du dessous et la mettre face visible à la place de celle qui vient d'être jouée. On ne peut jouer une carte de la tablée que si elle est face visible.
+Lorsque vient votre tour de jouer, vous avez le choix de jouer une carte de votre main, ou une carte de votre camp dans la tablÃ©e. Vous ne pouvez jouer une carte de la tablÃ©e que si vous ne faites pas de renonce (pas question de couper trefle par exemple si vous n'en avez pas en main mais qu'il y en a dans votre tablÃ©e).
+Lorsque vous jouez une carte de la tablÃ©e et qu'elle en recouvre une autre, vous devez attendre la fin du pli pour dÃ©couvrir la carte du dessous et la mettre face visible Ã  la place de celle qui vient d'Ãªtre jouÃ©e. On ne peut jouer une carte de la tablÃ©e que si elle est face visible.
 
-La poignée est à 14 atouts, la double à 17 et la triple à 22. Comptent dans la poignée les atouts détenus en main ainsi que ceux qui figurent sur la table dans votre camp. La présentation de la poignée se fait en étalant les atouts nécessaire qu'on avait en main et éventuellement en désignant du doigt ceux de son camp sur la table.
+La poignÃ©e est Ã  14 atouts, la double Ã  17 et la triple Ã  22. Comptent dans la poignÃ©e les atouts dÃ©tenus en main ainsi que ceux qui figurent sur la table dans votre camp. La prÃ©sentation de la poignÃ©e se fait en Ã©talant les atouts nÃ©cessaire qu'on avait en main et Ã©ventuellement en dÃ©signant du doigt ceux de son camp sur la table.
 
-Toutes les autres règles du jeu sont identiques au jeu classique, en dehors de la spécificité de la donne et de quelques cas particuliers.
+Toutes les autres rÃ¨gles du jeu sont identiques au jeu classique, en dehors de la spÃ©cificitÃ© de la donne et de quelques cas particuliers.
 
 Cas particulier du petit au bout.
-Le petit est également considéré au bout si un joueur ne possède plus de cartes en main et n'a sur sa tablée qu'un seul paquet de 2 cartes, le petit étant la carte du dessus.
-Il y a un autre cas de petit au bout, à l'antépénultième pli (voir à chélem ci après).
+Le petit est Ã©galement considÃ©rÃ© au bout si un joueur ne possÃ¨de plus de cartes en main et n'a sur sa tablÃ©e qu'un seul paquet de 2 cartes, le petit Ã©tant la carte du dessus.
+Il y a un autre cas de petit au bout, Ã  l'antÃ©pÃ©nultiÃ¨me pli (voir Ã  chÃ©lem ci aprÃ¨s).
 
-Cas du chélem
-Dans la même configuration (un seul paquet de 2 cartes devant le joueur et plus rien en main), si c'est l'excuse qui est dessus elle est considérée comme étant menée au bout dans le cas d'un chélem.
-S'il s'agit d'un chélem non annoncé et que tous les plis ont été réalisés par le détenteur de l'excuse, cette dernière est victorieuse du pli, quelle que soit la carte en face. Si un pli (ou +) a été réalisé par l'adversaire, elle sera considérée comme une excuse normalement menée à l'avant dernier pli, et donc ne le remportera pas mais restera la propriété de son détenteur.
-S'il s'agit d'un chélem annoncé, l'excuse sera toujours victorieuse, même si l'adversaire a déjà réalisé un (ou +) pli.
-Bien entendu, ces cas de figure rarissimes font que c'est la carte située sous l'excuse qui décide de la réussite ou de l'échec du chélem.
-Bien entendu, si ce cas venait à se présenter, pour que le petit soit considéré au bout il faut qu'il ait été joué au coup immédiatement précédent.
+Cas du chÃ©lem
+Dans la mÃªme configuration (un seul paquet de 2 cartes devant le joueur et plus rien en main), si c'est l'excuse qui est dessus elle est considÃ©rÃ©e comme Ã©tant menÃ©e au bout dans le cas d'un chÃ©lem.
+S'il s'agit d'un chÃ©lem non annoncÃ© et que tous les plis ont Ã©tÃ© rÃ©alisÃ©s par le dÃ©tenteur de l'excuse, cette derniÃ¨re est victorieuse du pli, quelle que soit la carte en face. Si un pli (ou +) a Ã©tÃ© rÃ©alisÃ© par l'adversaire, elle sera considÃ©rÃ©e comme une excuse normalement menÃ©e Ã  l'avant dernier pli, et donc ne le remportera pas mais restera la propriÃ©tÃ© de son dÃ©tenteur.
+S'il s'agit d'un chÃ©lem annoncÃ©, l'excuse sera toujours victorieuse, mÃªme si l'adversaire a dÃ©jÃ  rÃ©alisÃ© un (ou +) pli.
+Bien entendu, ces cas de figure rarissimes font que c'est la carte situÃ©e sous l'excuse qui dÃ©cide de la rÃ©ussite ou de l'Ã©chec du chÃ©lem.
+Bien entendu, si ce cas venait Ã  se prÃ©senter, pour que le petit soit considÃ©rÃ© au bout il faut qu'il ait Ã©tÃ© jouÃ© au coup immÃ©diatement prÃ©cÃ©dent.
 
-Cas de l'excuse dernière carte jouée et retournée
-Sauf en cas de chélem, l'excuse jouée en dernier change de camp, même si le joueur n'a pas pu faire autrement (par exemple il n'a plus de carte en main et un seul paquet de 2 devant lui, la carte du dessous étant l'excuse).
+Cas de l'excuse derniÃ¨re carte jouÃ©e et retournÃ©e
+Sauf en cas de chÃ©lem, l'excuse jouÃ©e en dernier change de camp, mÃªme si le joueur n'a pas pu faire autrement (par exemple il n'a plus de carte en main et un seul paquet de 2 devant lui, la carte du dessous Ã©tant l'excuse).
 
 La donne
-La donne est extrèmement importante. D'une part les cartes doivent être soigneusement mélangées entre 2 parties. D'autre part la répartition oblige à respecter certains principes.
-- On donne d'abord à l'adversaire, puis à soi.
-- La première et la dernière cartes du paquet ne peuvent aller ni au chien ni dans la tablée.
-- Lorsqu'une carte est distribuée dans la tablée, qu'il s'agisse d'une carte cachée ou d'une carte à face visible, la suivante doit obligatoirement être posée en symétrique dans le camp adverse.
-Toutefois, les cartes inférieures peuvent être données 1 fois par rangée entière (soit 4 cartes) et/ou 2 fois par demi-rangée (soit 2 cartes à chaque fois), à condition que le symétrique soit immédiatement réalisé dans le camp adverse.
-( vous pouvez donc donner : soit une rangée de 4 ainsi qu'une ou deux demi-rangées, soit 1 ou 2 demi-rangées).
-- Avant de pouvoir distribuer une carte supérieure dans la tablée, les 4 cartes inférieures de la rangée doivent avoir été données pour chaque camp.
-- Le chien est constitué carte par carte
-- On donne au maximum deux cartes à la fois dans le paquet "principal" ou dans le paquet "renfort" de chaque joueur.
-- La distribution du principal et du renfort se fait de façon symétrique. Mettre des cartes au principal de l'adversaire implique que vous en mettiez le même nombre au vôtre, et identiquement pour le renfort.
-- La distribution du principal et du renfort doit être alternées au moins 3 fois.
+La donne est extrÃ¨mement importante. D'une part les cartes doivent Ãªtre soigneusement mÃ©langÃ©es entre 2 parties. D'autre part la rÃ©partition oblige Ã  respecter certains principes.
+- On donne d'abord Ã  l'adversaire, puis Ã  soi.
+- La premiÃ¨re et la derniÃ¨re cartes du paquet ne peuvent aller ni au chien ni dans la tablÃ©e.
+- Lorsqu'une carte est distribuÃ©e dans la tablÃ©e, qu'il s'agisse d'une carte cachÃ©e ou d'une carte Ã  face visible, la suivante doit obligatoirement Ãªtre posÃ©e en symÃ©trique dans le camp adverse.
+Toutefois, les cartes infÃ©rieures peuvent Ãªtre donnÃ©es 1 fois par rangÃ©e entiÃ¨re (soit 4 cartes) et/ou 2 fois par demi-rangÃ©e (soit 2 cartes Ã  chaque fois), Ã  condition que le symÃ©trique soit immÃ©diatement rÃ©alisÃ© dans le camp adverse.
+( vous pouvez donc donner : soit une rangÃ©e de 4 ainsi qu'une ou deux demi-rangÃ©es, soit 1 ou 2 demi-rangÃ©es).
+- Avant de pouvoir distribuer une carte supÃ©rieure dans la tablÃ©e, les 4 cartes infÃ©rieures de la rangÃ©e doivent avoir Ã©tÃ© donnÃ©es pour chaque camp.
+- Le chien est constituÃ© carte par carte
+- On donne au maximum deux cartes Ã  la fois dans le paquet "principal" ou dans le paquet "renfort" de chaque joueur.
+- La distribution du principal et du renfort se fait de faÃ§on symÃ©trique. Mettre des cartes au principal de l'adversaire implique que vous en mettiez le mÃªme nombre au vÃ´tre, et identiquement pour le renfort.
+- La distribution du principal et du renfort doit Ãªtre alternÃ©es au moins 3 fois.
 
 Mon avis
-Contrairement aux apparences, cette variante de jeu est agréable. Elle est même beaucoup plus scientifique qu'elle n'y parait, et oblige les joueurs à un calcul permanent. Certes, ça ne vaut pas le jeu à 4, mais c'est une bonne manière de tromper le temps à deux ... je sais, y'en a d'autres... mais on parle tarot, là, non ?
-En outre, l'obligation de prise pour le donneur évite de devoir redistribuer sans cesse et réserve parfois des surprises.
-Les règles de la distribution peuvent paraître rébarbatives, en fait vous vous apercevrez après 3 ou 4 donnes qu'elles sont très logiques et que la symétrie à laquelle elles obligent en simplifie grandement la mémorisation et la réalisation.
-Mais tant que vous ne maîtriserez pas bien le jeu, forcez vousde donner les cartes de la tablée au début, cela évitera les fausses donnes.
+Contrairement aux apparences, cette variante de jeu est agrÃ©able. Elle est mÃªme beaucoup plus scientifique qu'elle n'y parait, et oblige les joueurs Ã  un calcul permanent. Certes, Ã§a ne vaut pas le jeu Ã  4, mais c'est une bonne maniÃ¨re de tromper le temps Ã  deux ... je sais, y'en a d'autres... mais on parle tarot, lÃ , non ?
+En outre, l'obligation de prise pour le donneur Ã©vite de devoir redistribuer sans cesse et rÃ©serve parfois des surprises.
+Les rÃ¨gles de la distribution peuvent paraÃ®tre rÃ©barbatives, en fait vous vous apercevrez aprÃ¨s 3 ou 4 donnes qu'elles sont trÃ¨s logiques et que la symÃ©trie Ã  laquelle elles obligent en simplifie grandement la mÃ©morisation et la rÃ©alisation.
+Mais tant que vous ne maÃ®triserez pas bien le jeu, forcez vousde donner les cartes de la tablÃ©e au dÃ©but, cela Ã©vitera les fausses donnes.
 
 
 Un conseil.
-S'il peut être parfois utile de garder des cartes sur la table pour la fin, notamment des cartes cachées, et ce pour induire l'adversaire en erreur ou le mettre au moins dans le doute, l'expérience prouve qu'en général le preneur a intérêt à avoir retourné au plus vite les cartes inférieures, ce afin de mieux dominer l'adversaire.
-Le début de partie a donc moins d'importance que le milieu, la fin n'étant souvent qu'une suite logique mais calculée des coups qui précèdent.
+S'il peut Ãªtre parfois utile de garder des cartes sur la table pour la fin, notamment des cartes cachÃ©es, et ce pour induire l'adversaire en erreur ou le mettre au moins dans le doute, l'expÃ©rience prouve qu'en gÃ©nÃ©ral le preneur a intÃ©rÃªt Ã  avoir retournÃ© au plus vite les cartes infÃ©rieures, ce afin de mieux dominer l'adversaire.
+Le dÃ©but de partie a donc moins d'importance que le milieu, la fin n'Ã©tant souvent qu'une suite logique mais calculÃ©e des coups qui prÃ©cÃ¨dent.
 
-A noter que cette façon de jouer avec des cartes sur table existe aussi dans une variante à 3 joueurs, très scientifique et également agréable.
-Je tâcherai de vous la livrer prochainement, ainsi que la règle du tarot à 7 (idéal pour soirées de délire entre bons poteaux)
+A noter que cette faÃ§on de jouer avec des cartes sur table existe aussi dans une variante Ã  3 joueurs, trÃ¨s scientifique et Ã©galement agrÃ©able.
+Je tÃ¢cherai de vous la livrer prochainement, ainsi que la rÃ¨gle du tarot Ã  7 (idÃ©al pour soirÃ©es de dÃ©lire entre bons poteaux)
 
 
 Bon amusement aux couples

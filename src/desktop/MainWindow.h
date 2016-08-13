@@ -41,9 +41,6 @@
 #include "ui_QuickJoin.h"
 #include "DealsWindow.h"
 #include "ScoreCalculatorWindow.h"
-//#include "MiniBrowser.h"
-#include "CanvasWidget.h"
-#include "Environment.h"
 
 // Qt includes
 #include <QMainWindow>
@@ -94,16 +91,10 @@ private slots:
     void slotDisconnectFromLobby();
     void slotLobbyPlayersList();
 
-    // Canvas
-    void slotRun();
-    void slotReportScriptError(const QJSValue &error);
-
 private:
     void SetupDialogs();
     void SetupMenus();
     void SetupDocks();
-    void SetupCanvas2D();
-    void RunScript(const QString &fileName);
 
     QMdiArea *mdiArea;
     QMdiSubWindow *subWindow;
@@ -142,14 +133,6 @@ private:
     QAction *scoreCalcAct;
 
     TarotWidget *tarotWidget;
-
-    // Experimental Canvas2D back-end
-    QMdiSubWindow *mCanvasMdiSubWindow;
- //   test::MiniBrowser *mView;
-
-    Environment *mEnv;
-    CanvasWidget *mCanvasWidget;
-    QPushButton *mRunScriptButton;
 
     // Modal windows
     AboutWindow *about;

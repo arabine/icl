@@ -31,8 +31,6 @@
 #include "Defines.h"
 #include "JsonReader.h"
 #include "JsonWriter.h"
-//#include "MiniBrowser.h"
-#include "CanvasElement.h"
 
 // Qt includes
 #include <QStatusBar>
@@ -56,7 +54,6 @@ MainWindow::MainWindow(QWidget *parent)
     SetupDialogs();
     SetupDocks();
     SetupMenus();
-    SetupCanvas2D();
 
     setWindowTitle(QString(TAROT_TITLE.c_str()) + " " + QString(TAROT_VERSION.c_str()));
 
@@ -136,84 +133,6 @@ void MainWindow::Initialize()
     restoreGeometry(settings.value("mainWindowGeometry").toByteArray());
     restoreState(settings.value("mainWindowState").toByteArray());
     subWindow->restoreGeometry(settings.value("tarotwidgetGeometry").toByteArray());
-}
-/*****************************************************************************/
-void MainWindow::SetupCanvas2D()
-{
-    /*
-    mView = new test::MiniBrowser(this);
-
-    mView->setSource(QUrl::fromLocalFile("U:/tarotclub/assets/canvasjs/canvas2.qml"));
-    mView->show();
-
-  //  mView->Initialize();
-    mCanvasMdiSubWindow = mdiArea->addSubWindow(mView, Qt::WindowMinMaxButtonsHint);
-    mCanvasMdiSubWindow->show();
-
-    */
-/*
-    test::MiniBrowser *view = new test::MiniBrowser;
-    view->setSource(QUrl::fromLocalFile("U:/tarotclub/assets/canvasjs/canvas.qml"));
-    view->show();
-
-    */
-
-    mEnv = new Environment(this);
- //   QObject::connect(mEnv, SIGNAL(scriptError(QJSValue)),
- //                    this, SLOT(slotReportScriptError(QJSValue)));
-
-    QSize canvasSize(600, 500);
-    CanvasElement *canvas = mEnv->createCanvas("canvas");
-    canvas->setSize(canvasSize.width(), canvasSize.height());
-
-    mCanvasWidget = new CanvasWidget(mEnv, this);
-    mCanvasWidget->SetSize(canvasSize.width(), canvasSize.height());
-    QObject::connect(mEnv, SIGNAL(sigContentsChanged(QImage)), mCanvasWidget, SLOT(contentsChanged(QImage)));
-
-    mRunScriptButton = new QPushButton("RunMe", mCanvasWidget);
-    connect (mRunScriptButton, &QPushButton::clicked, this, &MainWindow::slotRun);
-
-    mCanvasMdiSubWindow = mdiArea->addSubWindow(mCanvasWidget, Qt::WindowMinMaxButtonsHint);
-    mCanvasMdiSubWindow->setAttribute(Qt::WA_DeleteOnClose);
-    mCanvasMdiSubWindow->show();
-}
-/*****************************************************************************/
-void MainWindow::slotReportScriptError(const QJSValue &error)
-{
-    std::cout <<  tr("Line %0: %1")
-                  .arg(error.property("lineNumber").toInt())
-                  .arg(error.toString()).toStdString() << std::endl;
-}
-/*****************************************************************************/
-void MainWindow::slotRun()
-{
-    mEnv->reset();
-
-    RunScript("U:/tarotclub/assets/canvasjs/engine.js");
-    RunScript("U:/tarotclub/assets/canvasjs/class.js");
-    RunScript("U:/tarotclub/assets/canvasjs/widgets.js");
-    RunScript("U:/tarotclub/assets/canvasjs/main.js");
-
-     QJSValue ret = mEnv->evaluate("init();");
-     if (ret.isError())
-     {
-        slotReportScriptError(ret);
-     }
-}
-/*****************************************************************************/
-void MainWindow::RunScript(const QString &fileName)
-{
-    QFile file(fileName);
-    file.open(QIODevice::ReadOnly);
-    QString contents = file.readAll();
-    file.close();
-
-    QJSValue ret = mEnv->evaluate(contents, fileName);
-
-    if (ret.isError())
-    {
-       slotReportScriptError(ret);
-    }
 }
 /*****************************************************************************/
 void MainWindow::slotAboutToQuit()
