@@ -36,6 +36,20 @@ Since I have no Macintosh computer, I cannot provide the game on this system (tr
 
 See the official documentation on http://www.tarotclub.fr
 
+# ICL dependency
+
+## Add Subtree
+git subtree add --prefix src/icl https://github.com/belegar/icl master --squash
+
+## Update Subtree
+git subtree pull --prefix src/icl https://github.com/belegar/icl master --squash
+
+
+Now we can use the subtree push command like the following:
+git subtree push --prefix=.vim/bundle/tpope-vim-surround/ durdn-vim-surround master
+
+
+
 # Credits / contributions
 
   * Hizoka, for all of his remarks, game testing and contributions
