@@ -54,11 +54,12 @@ public:
     static const std::uint32_t  MAXIMUM_TABLES; //!< Maximum number of tables
     static const std::uint32_t  NO_TABLE;       //!< Identifier for "no table"
 
-    struct PacketInfo
+
+    class Packet
     {
-        std::uint16_t offset;
-        std::uint16_t size;
+
     };
+
 
     enum Command
     {
@@ -124,53 +125,12 @@ public:
         ADMIN_GAME_FULL         = 0xC0  //!< Game is full, the admin can start a game
     };
 
-    class IWorkItem
-    {
-    public:
-        struct Data
-        {
-            std::shared_ptr<IWorkItem> item;
-            ByteArray data;
-            bool exit;
 
-            Data()
-                : item(nullptr)
-                , exit(false)
-            {
-
-            }
-
-            Data(bool e)
-                : item(nullptr)
-                , exit(e)
-            {
-
-            }
-
-            Data(const std::shared_ptr<IWorkItem> &w)
-                : item(w)
-                , exit(false)
-            {
-
-            }
-
-            Data(std::shared_ptr<IWorkItem> &w, const ByteArray &d)
-                : item(w)
-                , data(d)
-                , exit(false)
-            {
-
-            }
-        };
-
-        virtual ~IWorkItem() {}
-        virtual bool DoAction(std::uint8_t cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid, const ByteArray &data) = 0;
-    };
 
     Protocol();
     ~Protocol();
 
-    static Protocol &GetInstance();
+
     static std::uint32_t GetSourceUuid(const ByteArray &packet);
     static std::uint32_t GetDestUuid(const ByteArray &packet);
     static std::uint8_t GetCommand(const ByteArray &packet);
@@ -252,29 +212,11 @@ public:
     static ByteArray LobbyPlayersList(const std::map<uint32_t, Identity> &players);
 
 private:
+    std::uint32_t mSrcUuid;
+    std::uint32_t mDstUuid;
+    std::uint8_t mOption;
 
-    /**
-     * @brief Protocol executor shared thread
-     */
-    static void EntryPoint(void *pthis);
-    void Run();
 
-    /**
-     * @brief BuildCommand
-     * @param packet
-     * @param cmd
-     * @param uuid User Uniquer Identifier
-     * @return
-     */
-    static void BuildHeader(ByteArray &packet, Command cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid);
-    static void UpdateHeader(ByteArray &packet);
-    static ByteArray BuildCommand(Command cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid);
-
-    // Work thread that can execute work items
-    std::thread mThread;
-    ThreadQueue<IWorkItem::Data> mQueue; //!< Queue of network packets received
-    bool mInitialized;
-    std::mutex mMutex;
 };
 
 #endif // PROTOCOL_H

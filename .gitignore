@@ -5,3 +5,4 @@ build-*
 *.user
 pkg/ubuntu/deb_temp
 cov-int
+*.autosave

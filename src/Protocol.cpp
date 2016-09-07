@@ -49,9 +49,24 @@ static const std::uint32_t SRC_UUID_OFFSET  = 3U;
 static const std::uint32_t DEST_UUID_OFFSET = 7U;
 static const std::uint32_t COMMAND_OFFSET   = 11U;
 
+
+/**
+ * \page protocol Protocol format
+ * The aim of the protocol is to be simple and printable (all ASCII).
+ * Room is reserved for future improvements such as encryption facilities
+ *
+ *     :OO:XXXX:YYYY:S<command>:NNNN<data><cr><lf>
+ *
+ * OO protocol option byte, in HEX (ex: B4)
+ * XXXX is always a 4 digits unsigned integer in HEX that indicates the source UUID (max: FFFF)
+ * YYYY same format, indicates the destination UUID (max: FFFF)
+ * S: une byte, size of the command, followed by the ASCII command ((max: F, 255 bytes)
+ * NNNN (optional): the size of the data, followed by the data bytes<data>, typically in JSON format that allow complex structures
+ * <cr><lf> packet ending, also known as "\r\n"
+ */
+
 /*****************************************************************************/
 Protocol::Protocol()
-    : mInitialized(false)
 {
 
 
