@@ -26,12 +26,12 @@
 #include <chrono>
 #include <string>
 #include "Log.h"
-#include "Controller.h"
+#include "PlayingTable.h"
 #include "ByteStreamReader.h"
 #include "System.h"
 
 /*****************************************************************************/
-Controller::Controller(IData &handler)
+PlayingTable::PlayingTable(IData &handler)
     : mDataHandler(handler)
     , mFull(false)
     , mAdmin(Protocol::INVALID_UID)
@@ -42,29 +42,29 @@ Controller::Controller(IData &handler)
 
 }
 /*****************************************************************************/
-void Controller::Initialize()
+void PlayingTable::Initialize()
 {
     mEngine.Initialize();
 }
 /*****************************************************************************/
-void Controller::SetupGame(const Tarot::Game &game)
+void PlayingTable::SetupGame(const Tarot::Game &game)
 {
     mGame = game;
 }
 /*****************************************************************************/
-void Controller::SetAdminMode(bool enable)
+void PlayingTable::SetAdminMode(bool enable)
 {
     mAdminMode = enable;
 }
 /*****************************************************************************/
-void Controller::CreateTable(std::uint8_t nbPlayers)
+void PlayingTable::CreateTable(std::uint8_t nbPlayers)
 {
     mEngine.CreateTable(nbPlayers);
     mFull = false;
     mAdmin = Protocol::INVALID_UID;
 }
 /*****************************************************************************/
-Place Controller::AddPlayer(std::uint32_t uuid, std::uint8_t &nbPlayers)
+Place PlayingTable::AddPlayer(std::uint32_t uuid, std::uint8_t &nbPlayers)
 {
     Place assigned;
     nbPlayers = mEngine.GetNbPlayers();
@@ -91,7 +91,7 @@ Place Controller::AddPlayer(std::uint32_t uuid, std::uint8_t &nbPlayers)
     return assigned;
 }
 /*****************************************************************************/
-bool Controller::RemovePlayer(std::uint32_t kicked_player)
+bool PlayingTable::RemovePlayer(std::uint32_t kicked_player)
 {
     bool removeAllPlayers = false;
 
@@ -100,7 +100,7 @@ bool Controller::RemovePlayer(std::uint32_t kicked_player)
     if (place != Place::NOWHERE)
     {
         // If we are in a game, finish it and kick all players
-        if (mEngine.GetSequence() == TarotEngine::WAIT_FOR_PLAYERS)
+        if (mEngine.GetSequence() == Engine::WAIT_FOR_PLAYERS)
         {
             // Update the admin
             if (kicked_player == mAdmin)
@@ -133,14 +133,14 @@ bool Controller::RemovePlayer(std::uint32_t kicked_player)
     return removeAllPlayers;
 }
 /*****************************************************************************/
-bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid, const ByteArray &data)
+bool PlayingTable::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid, const std::string &arg)
 {
     (void) dest_uuid;
     bool ret = true;
-    ByteStreamReader in(data);
+    ByteStreamReader in(arg);
 
     std::stringstream dbg;
-    dbg << "Server controller command received: 0x" << std::hex << (int)cmd;
+    dbg << "Server PlayingTable command received: 0x" << std::hex << (int)cmd;
     TLogNetwork(dbg.str());
 
     switch (cmd)
@@ -153,7 +153,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
 
     case Protocol::CLIENT_SYNC_JOIN_TABLE:
     {
-        mFull = mEngine.Sync(TarotEngine::WAIT_FOR_PLAYERS, src_uuid);
+        mFull = mEngine.Sync(Engine::WAIT_FOR_PLAYERS, src_uuid);
         if (mFull)
         {
             if (mAdminMode)
@@ -185,7 +185,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         // Check if the uuid exists
         if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
         {
-            if (mEngine.Sync(TarotEngine::WAIT_FOR_READY, src_uuid))
+            if (mEngine.Sync(Engine::WAIT_FOR_READY, src_uuid))
             {
                 NewDeal();
             }
@@ -198,7 +198,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         // Check if the uuid exists
         if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
         {
-            if (mEngine.Sync(TarotEngine::WAIT_FOR_CARDS, src_uuid))
+            if (mEngine.Sync(Engine::WAIT_FOR_CARDS, src_uuid))
             {
                 // All the players have received their cards, launch the bid sequence
                 BidSequence();
@@ -223,7 +223,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
             if (p == mEngine.GetCurrentPlayer())
             {
                 // Check if we are in the good sequence
-                if (mEngine.GetSequence() == TarotEngine::WAIT_FOR_BID)
+                if (mEngine.GetSequence() == Engine::WAIT_FOR_BID)
                 {
                     Contract cont = mEngine.SetBid((Contract)c, (slam == 1U ? true : false), p);
                     // Broadcast player's bid, and wait for all acknowlegements
@@ -251,7 +251,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         // Check if the uuid exists
         if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
         {
-            if (mEngine.Sync(TarotEngine::WAIT_FOR_SHOW_BID, src_uuid))
+            if (mEngine.Sync(Engine::WAIT_FOR_SHOW_BID, src_uuid))
             {
                 // Continue/finish the bid sequence
                 BidSequence();
@@ -265,7 +265,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         // Check if the uuid exists
         if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
         {
-            if (mEngine.Sync(TarotEngine::WAIT_FOR_ALL_PASSED, src_uuid))
+            if (mEngine.Sync(Engine::WAIT_FOR_ALL_PASSED, src_uuid))
             {
                 NewDeal();
             }
@@ -278,7 +278,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         // Check if the uuid exists
         if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
         {
-            if (mEngine.Sync(TarotEngine::WAIT_FOR_SHOW_DOG, src_uuid))
+            if (mEngine.Sync(Engine::WAIT_FOR_SHOW_DOG, src_uuid))
             {
                 // When all the players have seen the dog, ask to the taker to build a discard
                 Player *player = mEngine.GetPlayer(mEngine.GetBid().taker);
@@ -307,7 +307,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         if (p != Place::NOWHERE)
         {
             // Check sequence
-            if (mEngine.GetSequence() == TarotEngine::WAIT_FOR_DISCARD)
+            if (mEngine.GetSequence() == Engine::WAIT_FOR_DISCARD)
             {
                 // Check if right player
                 if (mEngine.GetBid().taker == p)
@@ -332,7 +332,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         // Check if the uuid exists
         if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
         {
-            if (mEngine.Sync(TarotEngine::WAIT_FOR_START_DEAL, src_uuid))
+            if (mEngine.Sync(Engine::WAIT_FOR_START_DEAL, src_uuid))
             {
                 GameSequence();
             }
@@ -351,7 +351,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         if (p.Value() != Place::NOWHERE)
         {
             // Check sequence
-            if (mEngine.GetSequence() == TarotEngine::WAIT_FOR_HANDLE)
+            if (mEngine.GetSequence() == Engine::WAIT_FOR_HANDLE)
             {
                 // Check if right player
                 if (mEngine.GetCurrentPlayer() == p)
@@ -381,7 +381,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         // Check if the uuid exists
         if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
         {
-            if (mEngine.Sync(TarotEngine::WAIT_FOR_SHOW_HANDLE, src_uuid))
+            if (mEngine.Sync(Engine::WAIT_FOR_SHOW_HANDLE, src_uuid))
             {
                 GameSequence();
             }
@@ -405,7 +405,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
             if (p.Value() != Place::NOWHERE)
             {
                 // Check sequence
-                if (mEngine.GetSequence() == TarotEngine::WAIT_FOR_PLAYED_CARD)
+                if (mEngine.GetSequence() == Engine::WAIT_FOR_PLAYED_CARD)
                 {
                     // Check if right player
                     if (mEngine.GetCurrentPlayer() == p)
@@ -443,7 +443,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         // Check if the uuid exists
         if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
         {
-            if (mEngine.Sync(TarotEngine::WAIT_FOR_SHOW_CARD, src_uuid))
+            if (mEngine.Sync(Engine::WAIT_FOR_SHOW_CARD, src_uuid))
             {
                 GameSequence();
             }
@@ -456,7 +456,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         // Check if the uuid exists
         if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
         {
-            if (mEngine.Sync(TarotEngine::WAIT_FOR_END_OF_TRICK, src_uuid))
+            if (mEngine.Sync(Engine::WAIT_FOR_END_OF_TRICK, src_uuid))
             {
                 GameSequence();
             }
@@ -469,7 +469,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
         // Check if the uuid exists
         if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
         {
-            if (mEngine.Sync(TarotEngine::WAIT_FOR_END_OF_DEAL, src_uuid))
+            if (mEngine.Sync(Engine::WAIT_FOR_END_OF_DEAL, src_uuid))
             {
                 EndOfDeal();
             }
@@ -485,7 +485,7 @@ bool Controller::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::u
     return ret;
 }
 /*****************************************************************************/
-void Controller::EndOfDeal()
+void PlayingTable::EndOfDeal()
 {
     bool continueGame = mScore.AddPoints(mEngine.GetCurrentGamePoints(), mEngine.GetBid(), mEngine.GetNbPlayers());
 
@@ -500,14 +500,14 @@ void Controller::EndOfDeal()
     }
 }
 /*****************************************************************************/
-void Controller::NewGame()
+void PlayingTable::NewGame()
 {
     mScore.NewGame(mGame.deals.size());
     mEngine.NewGame();
     Send(Protocol::TableNewGame(mGame, mId));
 }
 /*****************************************************************************/
-void Controller::NewDeal()
+void PlayingTable::NewDeal()
 {
     if (mScore.GetCurrentCounter() < mGame.deals.size())
     {
@@ -532,33 +532,33 @@ void Controller::NewDeal()
     }
 }
 /*****************************************************************************/
-void Controller::StartDeal()
+void PlayingTable::StartDeal()
 {
     Place first = mEngine.StartDeal();
     Send(Protocol::TableStartDeal(first, mEngine.GetBid(), mGame.deals[mScore.GetCurrentCounter()], mId));
 }
 /*****************************************************************************/
-void Controller::BidSequence()
+void PlayingTable::BidSequence()
 {
     // Launch/continue the bid sequence
     mEngine.BidSequence();
 
-    TarotEngine::Sequence seq = mEngine.GetSequence();
+    Engine::Sequence seq = mEngine.GetSequence();
     switch (seq)
     {
-        case TarotEngine::WAIT_FOR_BID:
+        case Engine::WAIT_FOR_BID:
             Send(Protocol::TableBidRequest(mEngine.GetBid().contract, mEngine.GetCurrentPlayer(), mId));
             break;
 
-        case TarotEngine::WAIT_FOR_ALL_PASSED:
+        case Engine::WAIT_FOR_ALL_PASSED:
             Send(Protocol::TableAllPassed(mId));
             break;
 
-        case TarotEngine::WAIT_FOR_START_DEAL:
+        case Engine::WAIT_FOR_START_DEAL:
             StartDeal();
             break;
 
-        case TarotEngine::WAIT_FOR_SHOW_DOG:
+        case Engine::WAIT_FOR_SHOW_DOG:
             Send(Protocol::TableShowDog(mEngine.GetDog(), mId));
             break;
 
@@ -568,7 +568,7 @@ void Controller::BidSequence()
     }
 }
 /*****************************************************************************/
-void Controller::GameSequence()
+void PlayingTable::GameSequence()
 {
     mEngine.GameSequence();
 
@@ -579,21 +579,21 @@ void Controller::GameSequence()
     }
     else
     {
-        TarotEngine::Sequence seq = mEngine.GetSequence();
+        Engine::Sequence seq = mEngine.GetSequence();
 
         Place p = mEngine.GetCurrentPlayer();
 
         switch (seq)
         {
-            case TarotEngine::WAIT_FOR_END_OF_TRICK:
+            case Engine::WAIT_FOR_END_OF_TRICK:
                 Send(Protocol::TableEndOfTrick(p, mId));
                 break;
 
-            case TarotEngine::WAIT_FOR_PLAYED_CARD:
+            case Engine::WAIT_FOR_PLAYED_CARD:
                 Send(Protocol::TablePlayCard(p, mId));
                 break;
 
-            case TarotEngine::WAIT_FOR_HANDLE:
+            case Engine::WAIT_FOR_HANDLE:
             {
                 Player *player = mEngine.GetPlayer(p);
                 if (player != NULL)
@@ -614,11 +614,11 @@ void Controller::GameSequence()
     }
 }
 /*****************************************************************************/
-void Controller::Send(const ByteArray &block)
+void PlayingTable::Send(const ByteArray &block)
 {
     std::uint8_t cmd = Protocol::GetCommand(block);
     std::stringstream dbg;
-    dbg << "Server controller sending packet: 0x" << std::hex << (int)cmd;
+    dbg << "Server PlayingTable sending packet: 0x" << std::hex << (int)cmd;
     TLogNetwork(dbg.str());
 
     mDataHandler.SendData(block);

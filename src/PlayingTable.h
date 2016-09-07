@@ -1,5 +1,5 @@
 /*=============================================================================
- * TarotClub - Controller.h
+ * TarotClub - PlayingTable.h
  *=============================================================================
  * Manage TarotClub protocol requests within a Tarot context
  *=============================================================================
@@ -22,28 +22,16 @@
  *
  *=============================================================================
  */
-#ifndef CONTROLLER_H
-#define CONTROLLER_H
+#ifndef PLAYING_TABLE_H
+#define PLAYING_TABLE_H
 
 #include <vector>
 #include "Protocol.h"
-#include "TarotEngine.h"
+#include "Engine.h"
 #include "Observer.h"
 
 /*****************************************************************************/
-/**
- * @brief The Controller class
- *
- * A server instance creates one controller thread. All requests to the server must be
- * performed using a request packet sent to the send for executions.
- *
- * All the requests are queued in the order of arrival and executed in a FIFO mode.
- *
- * The TarotEngine is not accessible to protect accesses and enforce all the
- * calls within the thread context. This mechanism allow a protection by design against
- * multi-threaded application.
- */
-class Controller
+class PlayingTable
 {
 
 public:
@@ -57,8 +45,8 @@ public:
         virtual void SendData(const ByteArray &block) = 0;
     };
 
-    Controller(IData &handler);
-    virtual ~Controller () { /* nothing to do */ }
+    PlayingTable(IData &handler);
+    virtual ~PlayingTable () { /* nothing to do */ }
 
     void Initialize();
     bool ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid, const ByteArray &data);
@@ -77,7 +65,7 @@ public:
 
 private:
     IData     &mDataHandler;
-    TarotEngine mEngine;
+    Engine mEngine;
     bool mFull;
     std::uint32_t mAdmin;   ///< Admin player (first player connected)
     std::string mName;      ///< Name of this table
@@ -85,9 +73,6 @@ private:
     Score   mScore;         ///< Score of this table
     Tarot::Game mGame;      ///< Game mode
     bool mAdminMode;
-
-    // From Protocol::WorkItem
-    ByteArray GetPacket();
 
     void NewGame();
     void NewDeal();
@@ -98,8 +83,8 @@ private:
     void EndOfDeal();
 };
 
-#endif // CONTROLLER_H
+#endif // PLAYING_TABLE_H
 
 //=============================================================================
-// End of file Controller.h
+// End of file PlayingTable.h
 //=============================================================================
