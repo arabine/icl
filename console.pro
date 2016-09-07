@@ -39,34 +39,38 @@ RCC_DIR         = $$DESTDIR/rcc
 MOC_DIR         = $$DESTDIR/moc
 
 # ------------------------------------------------------------------------------
-# The search path to find supplied files
+# Console project: the search path for QtCreator & Make
 # ------------------------------------------------------------------------------
 VPATH += $$BASE_DIR/src
-VPATH += $$BASE_DIR/src/library
 VPATH += $$BASE_DIR/src/jsengine
 VPATH += $$BASE_DIR/src/json
-VPATH += $$BASE_DIR/src/network
 VPATH += $$BASE_DIR/src/zip
-VPATH += $$BASE_DIR/src/lobby
 VPATH += $$BASE_DIR/src/config
 VPATH += $$BASE_DIR/ai
 VPATH += $$BASE_DIR/ai/tarotlib
+VPATH += $$BASE_DIR/console
 
-VPATH += $$BASE_DIR/tcds
-
-# ------------------------------------------------------------------------------
-# Where to find header files
-# ------------------------------------------------------------------------------
 INCLUDEPATH += $$BASE_DIR/src
-INCLUDEPATH += $$BASE_DIR/src/library
 INCLUDEPATH += $$BASE_DIR/src/jsengine
 INCLUDEPATH += $$BASE_DIR/src/json
-INCLUDEPATH += $$BASE_DIR/src/network
 INCLUDEPATH += $$BASE_DIR/src/zip
-INCLUDEPATH += $$BASE_DIR/src/lobby
 INCLUDEPATH += $$BASE_DIR/src/config
+INCLUDEPATH += $$BASE_DIR/console
 
-INCLUDEPATH += $$BASE_DIR/tcds
+
+# ------------------------------------------------------------------------------
+# ICL Library
+# ------------------------------------------------------------------------------
+VPATH += $$BASE_DIR/src/icl/src/security
+VPATH += $$BASE_DIR/src/icl/src/io
+VPATH += $$BASE_DIR/src/icl/src/network
+VPATH += $$BASE_DIR/src/icl/src/util
+
+INCLUDEPATH += $$BASE_DIR/src/icl/src/security
+INCLUDEPATH += $$BASE_DIR/src/icl/src/io
+INCLUDEPATH += $$BASE_DIR/src/icl/src/network
+INCLUDEPATH += $$BASE_DIR/src/icl/src/util
+
 
 # ------------------------------------------------------------------------------
 # Compiler definitions
@@ -159,19 +163,10 @@ SOURCES += duktape.c \
     JsonValue.cpp
 
 # ------------------------------------------------------------------------------
-# Database files
-# ------------------------------------------------------------------------------
-HEADERS +=  DataBase.h \
-            sqlite3.h \
-            sqlite3ext.h
-
-SOURCES +=  DataBase.cpp \
-            sqlite3.c
-
-# ------------------------------------------------------------------------------
 # TarotClub core files
 # ------------------------------------------------------------------------------
-HEADERS += ServerConfig.h TournamentConfig.h \
+HEADERS += ServerConfig.h \
+    TournamentConfig.h \
     DealFile.h \
     Deck.h \
     Card.h \
@@ -179,20 +174,21 @@ HEADERS += ServerConfig.h TournamentConfig.h \
     Client.h \
     Bot.h \
     Common.h \
-    TarotEngine.h \
+    Engine.h \
     Deal.h \
     Identity.h \
     Score.h \
     Protocol.h \
-    Controller.h \
+    PlayingTable.h \
     System.h \
     Users.h \
     Lobby.h \
     NetClient.h \
     BotManager.h \
-    LobbyServer.h
+    Server.h
 
-SOURCES += ServerConfig.cpp TournamentConfig.cpp \
+SOURCES += ServerConfig.cpp \
+    TournamentConfig.cpp \
     DealFile.cpp \
     Deck.cpp \
     Card.cpp \
@@ -200,26 +196,22 @@ SOURCES += ServerConfig.cpp TournamentConfig.cpp \
     Client.cpp \
     Bot.cpp \
     Common.cpp \
-    TarotEngine.cpp \
+    Engine.cpp \
     Deal.cpp \
     Protocol.cpp \
-    Controller.cpp \
+    PlayingTable.cpp \
     Score.cpp \
     System.cpp \
     Users.cpp \
     Lobby.cpp \
     NetClient.cpp \
     BotManager.cpp \
-    LobbyServer.cpp
+    Server.cpp
 
 # ------------------------------------------------------------------------------
-# Server files
+# Console files
 # ------------------------------------------------------------------------------
-SOURCES +=  main.cpp \
-            Http.cpp \
-            CouchDb.cpp \
-            Console.cpp \
-            Server.cpp
+SOURCES +=  main.cpp
 
 HEADERS += Version.h
 
