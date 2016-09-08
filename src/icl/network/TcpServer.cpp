@@ -347,7 +347,7 @@ void TcpServer::IncommingData(Conn &conn)
 {
     TcpSocket socket(conn);
     int rc;
-    ByteArray data;
+    std::string data;
 
     // printf("  Descriptor %d is readable\n", in_sock);
     /*************************************************/
@@ -417,7 +417,7 @@ void TcpServer::UpdateClients()
                 {
                     mEventHandler.ClientClosed(conn);
                 }
-                conn.wsPayload.Clear();
+                conn.wsPayload.clear();
                 conn.state = Conn::cStateClosed;
 
                 haveDeleted = true;
@@ -453,14 +453,14 @@ void TcpServer::UpdateMaxSocket()
 	}
 }
 /*****************************************************************************/
-void TcpServer::ManageWsData(Conn &conn, const ByteArray &data)
+void TcpServer::ManageWsData(Conn &conn, std::string &data)
 {
     if (conn.IsClosed())
     {
         // Process the handshake, upgrade into our own protocol
         WebSocketRequest ws;
 
-        ws.Parse(data.ToSring());
+        ws.Parse(data);
         if (ws.IsValid())
         {
             // Trick here: send handshake using raw tcp, not with websocket framing
@@ -468,7 +468,7 @@ void TcpServer::ManageWsData(Conn &conn, const ByteArray &data)
             peer.isWebSocket = false;
             TcpSocket::Send(ws.Upgrade("tarotclub"), peer);
             conn.state = Conn::cStateConnected;
-            conn.wsPayload.Clear();
+            conn.wsPayload.clear();
             mEventHandler.NewConnection(conn);
         }
     }
@@ -499,14 +499,12 @@ void TcpServer::ManageWsData(Conn &conn, const ByteArray &data)
 |                     Payload Data continued ...                |
 +---------------------------------------------------------------+
 */
-void TcpServer::DeliverWsData(Conn &conn, const ByteArray &data)
+void TcpServer::DeliverWsData(Conn &conn, std::string &buf)
 {
-    ByteArray copy = data;
     // Having buf unsigned char * is important, as it is used below in arithmetic
-    unsigned char *buf = copy.Data();
     size_t i, len, mask_len = 0, header_len = 0, data_len = 0;
 
-    std::uint32_t buf_len = data.Size();
+    std::uint32_t buf_len = buf.size();
 
     /* Extracted from the RFC 6455 Chapter 5-2
      *
@@ -546,11 +544,12 @@ void TcpServer::DeliverWsData(Conn &conn, const ByteArray &data)
 
     // frame_len = header_len + data_len;
     // Apply mask if necessary
+    char *mask_ptr = (&buf[0] + header_len) - mask_len; // pointer to the mask located in the header
     if (mask_len > 0)
     {
         for (i = 0; i < data_len; i++)
         {
-            buf[i + header_len] ^= (buf + header_len - mask_len)[i % 4];
+            buf[i + header_len] ^= mask_ptr[i % 4];
         }
     }
 
@@ -570,11 +569,11 @@ void TcpServer::DeliverWsData(Conn &conn, const ByteArray &data)
       */
     if(opcode == TcpSocket::WEBSOCKET_OPCODE_PING)
     {
-        TcpSocket::Send(TcpSocket::BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_PONG, ByteArray()), conn);
+        TcpSocket::Send(TcpSocket::BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_PONG, std::string()), conn);
     }
     else if (opcode == TcpSocket::WEBSOCKET_OPCODE_CONNECTION_CLOSE)
     {
-        conn.wsPayload.Clear();
+        conn.wsPayload.clear();
         conn.state = Conn::cStateClosed;
     }
     else
@@ -582,12 +581,12 @@ void TcpServer::DeliverWsData(Conn &conn, const ByteArray &data)
         if ((opcode == TcpSocket::WEBSOCKET_OPCODE_TEXT) ||
             (opcode == TcpSocket::WEBSOCKET_OPCODE_BINARY))
         {
-            conn.wsPayload.Clear();
-            conn.wsPayload += copy.SubArray(header_len, data_len);
+            conn.wsPayload.clear();
+            conn.wsPayload += buf.substr(header_len, data_len);
         }
         else if(opcode == TcpSocket::WEBSOCKET_OPCODE_CONTINUATION)
         {
-            conn.wsPayload += copy.SubArray(header_len, data_len);
+            conn.wsPayload += buf.substr(header_len, data_len);
         }
 
         if (FIN)
