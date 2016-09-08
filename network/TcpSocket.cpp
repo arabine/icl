@@ -152,7 +152,7 @@ int TcpSocket::AnalyzeSocketError(const char* context)
     return AnalyzeSocketError(mPeer, context);
 }
 /*****************************************************************************/
-bool TcpSocket::Send(const ByteArray &input, const Peer &peer)
+bool TcpSocket::Send(const std::string &input, const Peer &peer)
 {
     bool ret = false;
 
@@ -168,11 +168,10 @@ bool TcpSocket::Send(const ByteArray &input, const Peer &peer)
     return ret;
 }
 /*****************************************************************************/
-ByteArray TcpSocket::BuildWsFrame(std::uint8_t opcode, const ByteArray &data)
+std::string TcpSocket::BuildWsFrame(std::uint8_t opcode, const std::string &data)
 {
-    ByteArray packet;
-    ByteStreamWriter writer(packet);
-    std::uint32_t data_len = data.Size();
+    std::stringstream  writer;
+    std::uint32_t data_len = data.size();
 
     // We do not use fragmentation when sending data, so raise the FIN flag
     writer << static_cast<std::uint8_t>(0x80U + (opcode & 0x0FU));
@@ -193,20 +192,19 @@ ByteArray TcpSocket::BuildWsFrame(std::uint8_t opcode, const ByteArray &data)
     {
         // 64-bit length field
         writer << static_cast<std::uint8_t>(127);
-        writer << static_cast<std::uint32_t>(0U); // hi part always zero (ByteArray is 32bits max!
+        writer << static_cast<std::uint32_t>(0U); // hi part always zero (std::string is 32bits max!
         writer << static_cast<std::uint32_t>(data_len);
     }
 
     // Finally, append our data
-    packet += data;
-    return packet;
+    return writer.str() + data;
 }
 /*****************************************************************************/
-bool TcpSocket::SendToSocket(const ByteArray &input, std::int32_t socket)
+bool TcpSocket::SendToSocket(const std::string &input, std::int32_t socket)
 {
     bool ret = true;
-    size_t size = input.Size();
-    const char *buf = input.Data(); // bytes are linear in the string memory, so no problem to get the pointer
+    size_t size = input.size();
+    const char *buf = input.c_str(); // bytes are linear in the string memory, so no problem to get the pointer
 
     while( size > 0 )
     {
@@ -460,7 +458,7 @@ bool TcpSocket::Connect(const std::string &host, const int port)
     return ret;
 }
 /*****************************************************************************/
-bool TcpSocket::Send(const ByteArray &input) const
+bool TcpSocket::Send(const std::string &input) const
 {
     return Send(input, mPeer);
 }
@@ -525,23 +523,22 @@ bool TcpSocket::HostNameToIpAddress(const std::string &address, sockaddr_in &ipv
     return status;
 }
 /*****************************************************************************/
-std::int32_t TcpSocket::Recv(ByteArray &output)
+std::int32_t TcpSocket::Recv(std::string &output)
 {
     int result = 0; // changed from int to ssize_t
-    output.Alloc(MAXRECV); // book maximum space
+    char buffer[MAXRECV]; // book maximum space
     // Most likely, we will read a packet, or if the message
     // is very short, we will receive the entire message in
     // a short packet. But it might be a long one.
-    result = ::recv(mPeer.socket, reinterpret_cast<char *>(output.Data()), MAXRECV, 0);
+    result = ::recv(mPeer.socket, &buffer[0], MAXRECV, 0);
 
     if (result > 0)
     {
-        // Resize to real size
-        output.Alloc(static_cast<std::uint32_t>(result));
+        output.assign(buffer, result);
     }
     else if (result < 0)
     {
-        output.Alloc(0U); // resize to no size because of the error
+        output.resize(0U); // resize to no size because of the error
         result = AnalyzeSocketError("recv()");
     }
 
