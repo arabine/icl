@@ -54,6 +54,13 @@ public:
     static std::string GetFileName(const std::string &path);
     static std::string GetDirectoryPath(const std::string &path);
     static std::int64_t FileSize(const std::string &fileName);
+    static inline bool EndsWith(std::string const & value, std::string const & ending)
+    {
+        if (ending.size() > value.size()) return false;
+        return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
+    }
+    // Case insensitive version
+    bool Compare(const std::string &a, const std::string &b);
 };
 
 #endif // UTIL_H
