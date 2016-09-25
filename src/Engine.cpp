@@ -248,34 +248,6 @@ void Engine::StopGame()
     mSequence = STOPPED;
 }
 /*****************************************************************************/
-/**
- * @brief Engine::AddPlayer
- *
- * Adds a player around the table with the specified UUID. If the table is
- * full, the returned place is NOWHERE.
- *
- * @param uuid
- * @return
- */
-Place Engine::AddPlayer()
-{
-    Place p = Place::NOWHERE;
-
-    if (mSequence == WAIT_FOR_PLAYERS)
-    {
-        // Look for free space
-        for (std::uint32_t i = 0U; i < mNbPlayers; i++)
-        {
-            if (mPlayers[i].IsFree() == true)
-            {
-                p = i;
-                break;
-            }
-        }
-    }
-    return p;
-}
-/*****************************************************************************/
 Deck Engine::GetDeck(Place p)
 {
     Deck deck;

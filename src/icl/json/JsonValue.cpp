@@ -120,7 +120,13 @@ void JsonObject::Clear()
 /*****************************************************************************/
 JsonObject::JsonObject(const JsonObject &obj)
 {
-    mObject = obj;
+    *this = obj;
+}
+/*****************************************************************************/
+JsonObject &JsonObject::operator = (JsonObject const &rhs)
+{
+    mObject = rhs.mObject;
+    return *this;
 }
 /*****************************************************************************/
 std::string JsonObject::ToString(std::uint32_t level) const
@@ -192,7 +198,7 @@ bool JsonObject::HasValue(const std::string &key)
 JsonValue JsonObject::GetValue(const std::string &key) const
 {
     JsonValue value;
-    for (std::map<std::string, JsonValue>::iterator it = mObject.begin(); it != mObject.end(); ++it)
+    for (std::map<std::string, JsonValue>::const_iterator it = mObject.begin(); it != mObject.end(); ++it)
     {
         if (it->first == key)
         {

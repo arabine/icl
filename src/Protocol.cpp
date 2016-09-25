@@ -24,6 +24,7 @@
  */
 
 #include <iomanip>
+#include <sstream>
 #include "Protocol.h"
 #include "Log.h"
 #include "Util.h"

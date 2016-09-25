@@ -81,7 +81,7 @@ private:
 
         void Clear()
         {
-            uuid = 0U;
+            uuid = Protocol::INVALID_UID;
             ack = false;
         }
 

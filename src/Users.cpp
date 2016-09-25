@@ -23,6 +23,7 @@
  *=============================================================================
  */
 
+#include <sstream>
 #include "Users.h"
 #include "Log.h"
 #include "Protocol.h"

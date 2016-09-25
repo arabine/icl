@@ -76,7 +76,6 @@ public:
     Tarot::Distribution NewDeal(const Tarot::Distribution &shuffle);
     Place StartDeal();
     void EndOfDeal(JsonObject &json);
-    Place AddPlayer();
     void BidSequence();
     void DiscardSequence();
     void GameSequence();

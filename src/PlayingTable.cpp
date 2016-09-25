@@ -29,6 +29,7 @@
 #include "PlayingTable.h"
 #include "NetHelper.h"
 #include "System.h"
+#include "Protocol.h"
 
 // Ask steps translation into integer
 struct Ack
@@ -176,18 +177,29 @@ Place PlayingTable::AddPlayer(std::uint32_t uuid, std::uint8_t &nbPlayers)
     Place assigned;
     nbPlayers = mEngine.GetNbPlayers();
 
-    // Check if player is not already connected
-    if (GetPlayerPlace(uuid) == Place::NOWHERE)
+    if (mEngine.GetSequence() == Engine::WAIT_FOR_PLAYERS)
     {
-        // Look for free Place and assign the uuid to this player
-        assigned = mEngine.AddPlayer();
-        if (assigned.Value() != Place::NOWHERE)
+        // Check if player is not already connected
+        if (GetPlayerPlace(uuid) == Place::NOWHERE)
         {
-            mPlayers[assigned.Value()].uuid = uuid;
-            // If it is the first player, then it is an admin
-            if (mAdmin == Protocol::INVALID_UID)
+            // Look for free Place and assign the uuid to this player
+            for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
             {
-                mAdmin = uuid;
+                if (mPlayers[i].uuid == Protocol::INVALID_UID)
+                {
+                    assigned = i;
+                    break;
+                }
+            }
+
+            if (assigned.Value() != Place::NOWHERE)
+            {
+                mPlayers[assigned.Value()].uuid = uuid;
+                // If it is the first player, then it is an admin
+                if (mAdmin == Protocol::INVALID_UID)
+                {
+                    mAdmin = uuid;
+                }
             }
         }
     }

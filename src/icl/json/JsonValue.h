@@ -50,6 +50,8 @@ public:
     void AddValue(const std::string &name, const JsonValue &value);
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
 
+    JsonObject &operator = (JsonObject const &rhs);
+
 private:
     std::map<std::string, JsonValue> mObject;
 };

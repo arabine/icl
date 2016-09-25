@@ -37,7 +37,6 @@ public:
 
     // Helpers
     bool CanPlayCard(const Card &card, Deck &trick);
-    bool IsFree();
     bool TestHandle(const Deck &handle);
     bool TestDiscard(const Deck &discard, const Deck &dog, std::uint8_t numberOfPlayers);
 

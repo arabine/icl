@@ -44,35 +44,26 @@ MOC_DIR         = $$DESTDIR/moc
 # ------------------------------------------------------------------------------
 # The search path to find supplied files
 # ------------------------------------------------------------------------------
-VPATH += $$TAROTCLUB_DIR/src
-VPATH += $$TAROTCLUB_DIR/src/library
-VPATH += $$TAROTCLUB_DIR/src/jsengine
-VPATH += $$TAROTCLUB_DIR/src/json
-VPATH += $$TAROTCLUB_DIR/src/database
-VPATH += $$TAROTCLUB_DIR/src/gfxlib
-VPATH += $$TAROTCLUB_DIR/src/network
-VPATH += $$TAROTCLUB_DIR/src/zip
-VPATH += $$TAROTCLUB_DIR/lib
-VPATH += $$TAROTCLUB_DIR/ai
-VPATH += $$TAROTCLUB_DIR/ai/tarotlib
+VPATH += $$BASE_DIR/src
+VPATH += $$BASE_DIR/src/config
+VPATH += $$BASE_DIR/ai
+VPATH += $$BASE_DIR/ai/tarotlib
+
+INCLUDEPATH += $$BASE_DIR/src
+INCLUDEPATH += $$BASE_DIR/src/config
+
+INCLUDEPATH += $$BASE_DIR/tests/src
+INCLUDEPATH += $$BASE_DIR/src
 
 VPATH += $$BASE_DIR/tests/src
 VPATH += $$BASE_DIR/src
 
-# ------------------------------------------------------------------------------
-# Where to find header files
-# ------------------------------------------------------------------------------
-INCLUDEPATH += $$TAROTCLUB_DIR/src
-INCLUDEPATH += $$TAROTCLUB_DIR/src/library
-INCLUDEPATH += $$TAROTCLUB_DIR/src/database
-INCLUDEPATH += $$TAROTCLUB_DIR/src/gfxlib
-INCLUDEPATH += $$TAROTCLUB_DIR/src/jsengine
-INCLUDEPATH += $$TAROTCLUB_DIR/src/json
-INCLUDEPATH += $$TAROTCLUB_DIR/src/network
-INCLUDEPATH += $$TAROTCLUB_DIR/src/zip
+ICL_DIR = $$BASE_DIR/src/icl
+include($$ICL_DIR/icl.pri)
 
-INCLUDEPATH += $$BASE_DIR/tests/src
-INCLUDEPATH += $$BASE_DIR/src
+# ------------------------------------------------------------------------------
+# COMPILER CONFIG
+# ------------------------------------------------------------------------------
 
 QT       += testlib xml
 QT       -= gui
@@ -106,74 +97,6 @@ CONFIG(debug, debug|release) {
 }
 
 # ------------------------------------------------------------------------------
-# Library files
-# ------------------------------------------------------------------------------
-HEADERS += Log.h \
-    Observer.h \
-    Util.h \
-    ThreadQueue.h \
-    ByteStreamReader.h \
-    ByteStreamWriter.h \
-    ByteArray.h \
-    TcpSocket.h \
-    TcpServer.h \
-    TcpClient.h \
-    TcpServerBase.h \
-    UniqueId.h \
-    Base64.h \
-    Sha1.h \
-    WebSocket.h \
-    Value.h \
-    Protocol.h \
-    Zip.h
-
-SOURCES += Log.cpp \
-    Util.cpp \
-    ByteArray.cpp \
-    ByteStreamReader.cpp \
-    ByteStreamWriter.cpp \
-    TcpSocket.cpp \
-    TcpServer.cpp \
-    TcpClient.cpp \
-    TcpServerBase.cpp \
-    UniqueId.cpp \
-    Base64.cpp \
-    Sha1.cpp \
-    WebSocket.cpp \
-    Value.cpp \
-    Protocol.cpp \
-    Zip.cpp
-
-# ------------------------------------------------------------------------------
-# Dedicated server specific files
-# ------------------------------------------------------------------------------
-HEADERS += sqlite3.h \
-    DataBase.h \
-    Http.h \
-    CouchDb.h
-
-SOURCES += sqlite3.c \
-    DataBase.cpp \
-    Http.cpp \
-    CouchDb.cpp
-
-# ------------------------------------------------------------------------------
-# JSEngine and JSON files
-# ------------------------------------------------------------------------------
-HEADERS += duktape.h \
-    JsonWriter.h \
-    JsonReader.h \
-    JSEngine.h \
-    IScriptEngine.h \
-    JsonValue.h
-
-SOURCES += duktape.c \
-    JsonWriter.cpp \
-    JsonReader.cpp \
-    JSEngine.cpp \
-    JsonValue.cpp
-
-# ------------------------------------------------------------------------------
 # TarotClub core files
 # ------------------------------------------------------------------------------
 HEADERS += Deck.h \
@@ -184,7 +107,13 @@ HEADERS += Deck.h \
     Common.h \
     System.h \
     Deal.h \
-    Score.h
+    Score.h \
+    Engine.h \
+    DealFile.h \
+    Lobby.h \
+    PlayingTable.h \
+    Users.h \
+    Protocol.h
 
 SOURCES += Deck.cpp \
     Card.cpp \
@@ -194,7 +123,13 @@ SOURCES += Deck.cpp \
     Common.cpp \
     System.cpp \
     Deal.cpp \
-    Score.cpp
+    Engine.cpp \
+    DealFile.cpp \
+    Score.cpp \
+    Lobby.cpp \
+    PlayingTable.cpp \
+    Users.cpp \
+    Protocol.cpp
 
 # ------------------------------------------------------------------------------
 # Unit test files

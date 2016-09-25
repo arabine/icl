@@ -25,7 +25,6 @@ private Q_SLOTS:
     void TestConfig();
     void TestCommon();
     void TestUniqueId();
-    void TestWorkThread();
 
 };
 

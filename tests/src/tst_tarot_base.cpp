@@ -31,7 +31,7 @@ void TarotBase::TestCardClass()
     {
         Card c = (*it);
 
-        std::cout << c.GetName() << " ";
+        std::cout << c.ToString() << " ";
         if (c.GetValue() == 14U && c.GetSuit() != Card::TRUMPS)
         {
             std::cout << "\n";
@@ -187,7 +187,7 @@ void TarotBase::TestDeckClass()
     if (c.IsValid())
     {
         expected_string = "20-T";
-        QCOMPARE(c.GetName(), expected_string);
+        QCOMPARE(c.ToString(), expected_string);
     }
     else
     {
@@ -224,7 +224,7 @@ void TarotBase::TestDeckClass()
     if (c.IsValid())
     {
         expected_string = "04-D";
-        QCOMPARE(c.GetName(), expected_string);
+        QCOMPARE(c.ToString(), expected_string);
     }
     else
     {
@@ -382,123 +382,5 @@ void TarotBase::TestUniqueId()
 
 }
 
-class MyJob : public Protocol::IWorkItem
-{
-public:
-    MyJob(const std::string &name)
-        : mName(name)
-    {
 
-    }
-
-    virtual ~MyJob()
-    {
-        std::cout << "Deleted item " << mName << std::endl;
-    }
-
-    virtual bool DoAction(std::uint8_t cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid, const ByteArray &data)
-    {
-        (void) cmd;
-        (void) src_uuid;
-        (void) dest_uuid;
-        (void) data;
-        std::cout << "Work item action" << std::endl;
-        return true;
-    }
-private:
-    std::string mName;
-};
-
-
-struct D {
-    void operator()(Protocol::IWorkItem* p) const {
-        std::cout << "Call delete for Foo object...\n";
-        (void)p;
-     //   delete p;
-    }
-};
-
-
-class WorkLobby
-{
-public:
-    WorkLobby()
-        : mJob("Lobby")
-        , mWorkItem(&mJob, D())
-    {
-
-    }
-
-    void Execute()
-    {
-        Protocol::GetInstance().Execute(mWorkItem);
-    }
-
-private:
-    MyJob mJob;
-    std::shared_ptr<Protocol::IWorkItem> mWorkItem;
-};
-
-class WorkClient
-{
-public:
-    WorkClient()
-        : mWorkItem(new MyJob("Client"))
-    {
-
-    }
-
-    virtual ~WorkClient()
-    {
-        std::cout << "Deleted work client" << std::endl;
-    }
-
-    void Execute()
-    {
-        Protocol::GetInstance().Execute(std::shared_ptr<Protocol::IWorkItem>(mWorkItem));
-    }
-
-private:
-    std::shared_ptr<MyJob> mWorkItem;
-};
-
-
-/**
- * @brief Test the safe deletion of a work item whatever is the WorkThread situation
- * Eg: work item in the queue, work item in usage in the thread loop.
- */
-void TarotBase::TestWorkThread()
-{
-    std::cout << "Queue size: " << (int)Protocol::GetInstance().QueueSize() << std::endl;
-
-
-    WorkLobby lobby;
-
-    lobby.Execute();
-    lobby.Execute();
-    lobby.Execute();
-    lobby.Execute();
-
-    WorkClient *item = new WorkClient();
-    item->Execute();
-    item->Execute();
-    item->Execute();
-    item->Execute();
-    item->Execute();
-    item->Execute();
-    item->Execute();
-    item->Execute();
-    item->Execute();
-    item->Execute();
-    item->Execute();
-    item->Execute();
-
-    std::cout << "Queue size: " << (int)Protocol::GetInstance().QueueSize() << std::endl;
-
-    delete item;
-
-    Protocol::GetInstance().Initialize();
-
-    Protocol::GetInstance().Stop();
-}
 
