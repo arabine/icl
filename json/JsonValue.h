@@ -40,9 +40,12 @@ class JsonValue;
 class JsonObject
 {
 public:
-    std::string ToString(std::uint32_t level);
+    JsonObject() {}
+    JsonObject(const JsonObject &obj);
+
+    std::string ToString(std::uint32_t level) const;
     bool HasValue(const std::string &key);
-    JsonValue GetValue(const std::string &key);
+    JsonValue GetValue(const std::string &key) const;
     void Clear();
     void AddValue(const std::string &name, const JsonValue &value);
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
@@ -55,7 +58,7 @@ private:
 class JsonArray
 {
 public:
-    std::string ToString(std::uint32_t level);
+    std::string ToString(std::uint32_t level) const;
     void Clear();
     // JsonArray
     JsonValue GetEntry(std::uint32_t index);
@@ -101,12 +104,12 @@ public:
     JsonValue(const JsonArray &array);
 
     // Implemented virtual methods from IJsonNode
-    Tag GetTag()
+    Tag GetTag() const
     {
         return mTag;
     }
 
-    std::string ToString(std::uint32_t level);
+    std::string ToString(std::uint32_t level) const;
     void Clear();
 
     JsonValue &operator = (JsonValue const &rhs);
@@ -123,10 +126,10 @@ public:
     JsonObject &GetObject() { return mObject; }
     JsonArray &GetArray() { return mArray; }
 
-    std::int32_t    GetInteger()    { return mIntegerValue; }
-    double          GetDouble()     { return mDoubleValue; }
-    bool            GetBool()       { return mBoolValue; }
-    std::string     GetString()     { return mStringValue; }
+    std::int32_t    GetInteger() const   { return mIntegerValue; }
+    double          GetDouble() const    { return mDoubleValue; }
+    bool            GetBool() const      { return mBoolValue; }
+    std::string     GetString() const    { return mStringValue; }
 
     bool GetValue(const std::string &nodePath, std::string &value) const;
     bool GetValue(const std::string &nodePath, std::uint32_t &value) const;
@@ -140,6 +143,11 @@ public:
         mTag = NULL_VAL;
     }
 
+    /**
+     * @brief Recursively try to find a value using the key path separated by ':' character
+     * @param keyPath
+     * @return
+     */
     JsonValue FindValue(const std::string &keyPath) const;
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
 
