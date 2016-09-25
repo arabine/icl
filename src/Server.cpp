@@ -34,18 +34,24 @@
 
 /*****************************************************************************/
 Server::Server()
-    : mLobbyServer(mLobby)
+    : mServer(mLobby)
     , mStopRequested(false)
-    , mGamePort(0U)
+    , mGamePort(ServerConfig::DEFAULT_GAME_TCP_PORT)
 {
 
 }
 /*****************************************************************************/
-void Server::Start(const ServerOptions &options, const TournamentOptions &tournamentOpt)
+void Server::Start(const ServerOptions &opt, const TournamentOptions &tournamentOpt)
 {
+    (void) tournamentOpt;
+
     // Init lobby
-    mLobbyServer.Initialize(options);
-    mLobbyServer.RegisterListener(*this);
+    mLobby.Initialize(opt.name, opt.tables);
+    mLobby.Register(this);
+
+    // Initialize all the tables, starting with the TCP port indicated
+    mGamePort = opt.game_tcp_port;
+    mTcpServer.Start(opt.lobby_max_conn, opt.localHostOnly, opt.game_tcp_port, 4270); // FIXME: make the WS port configurable
 
     // Init server
     mGamePort = options.game_tcp_port;
@@ -55,141 +61,69 @@ void Server::Stop()
 {
     // Properly stop the threads
     mBotManager.Close();
-    mLobbyServer.Stop();
-    mLobbyServer.WaitForEnd();
-}
-
-
-// ----------------------------
-
-
-struct D {
-    void operator()(Protocol::IWorkItem* p) const
-    {
-        (void) p;
-        // No destructor for this single object.
-        // It will be naturally deleted while exiting from main
-    }
-};
-
-/*****************************************************************************/
-LobbyServer::LobbyServer(Lobby &lobby)
-    : mLobby(lobby)
-    , mWorkItem(std::shared_ptr<Protocol::IWorkItem>(&lobby, D()))
-    , mTcpPort(ServerConfig::DEFAULT_GAME_TCP_PORT)
-    , mTcpServer(*this)
-    , mInitialized(false)
-{
-
+    mServer.Stop();
+    mServer.WaitForEnd();
 }
 /*****************************************************************************/
-LobbyServer::~LobbyServer()
+void Server::NewConnection(const Peer &peer)
 {
-    Stop();
-}
-/*****************************************************************************/
-void LobbyServer::Initialize(const ServerOptions &opt)
-{
-    if (!mInitialized)
-    {
-        // Initialize the controller
-        mLobby.Initialize(opt.name, opt.tables, this);
-
-        // Initialize all the tables, starting with the TCP port indicated
-        mTcpPort = opt.game_tcp_port;
-        mTcpServer.Start(opt.lobby_max_conn, opt.localHostOnly, opt.game_tcp_port, 4270); // FIXME: make the WS port configurable
-        mInitialized = true;
-    }
-}
-/*****************************************************************************/
-void LobbyServer::WaitForEnd()
-{
-    mTcpServer.Join();
-}
-/*****************************************************************************/
-void LobbyServer::NewConnection(const Peer &peer)
-{
-    mMutex.lock();
-    std::uint32_t uuid = mLobby.AddUser();
+    std::uint32_t uuid = mLobby.AddUser(mTcpServer.GetPeerName(peer.socket));
     mPeers[uuid] = peer;
-    mMutex.unlock();
-
-    std::stringstream ss;
-    ss << "New connection: socket=" << peer.socket
-       << ", IP=" << mTcpServer.GetPeerName(peer.socket)
-       << ", UUID=" << uuid;
-    TLogNetwork(ss.str());
-
-    TcpSocket::Send(Protocol::LobbyRequestLogin(uuid).ToSring(), peer);
-
-    Event event(Event::cIncPlayer);
-    mSubject.Notify(event);
 }
 /*****************************************************************************/
 
 /**
- * @brief LobbyServer::ReadData
+ * @brief Server::ReadData
  *
- * This callback is executed within the Tcp context. To miximize bandwidth,
- * we immediately manage the packet analysis in a worker thread.
- *
- * @param socket
- * @param data
+ * This callback is executed within the Tcp context. Here we are receiving data
+ * from peers.
  */
-void LobbyServer::ReadData(const Peer &peer, const ByteArray &data)
+void Server::ReadData(const Peer &peer, const std::string &data)
 {
-    if (IsValid(Protocol::GetSourceUuid(data), peer))
+    Protocol proto;
+
+    if (proto.Parse(data))
     {
-        mWorkItem.data = data;
-        Protocol::GetInstance().Execute(mWorkItem); // Actually decode the packet
-    }
-    else
-    {
-        TLogNetwork("Invalid packet received");
+        // If it is a valid player (already connected, send the packet to the lobby
+        if (IsValid(proto.GetSourceUuid(), peer))
+        {
+            mLobby.Decode(proto.GetSourceUuid(), proto.GetDestUuid(), proto.GetArg());
+        }
+        else
+        {
+            TLogNetwork("Invalid packet received");
+        }
     }
 }
 /*****************************************************************************/
-void LobbyServer::ClientClosed(const Peer &peer)
+void Server::ClientClosed(const Peer &peer)
 {
     std::uint32_t uuid = GetUuid(peer);
 
     mLobby.RemoveUser(uuid);
-
-    Event event(Event::cDecPlayer);
-    mSubject.Notify(event);
 }
 /*****************************************************************************/
-void LobbyServer::ServerTerminated(TcpServer::IEvent::CloseType type)
+void Server::ServerTerminated(TcpServer::IEvent::CloseType type)
 {
     (void) type;
     TLogError("Server terminated (internal error)");
 }
 /*****************************************************************************/
-void LobbyServer::Send(const ByteArray &data, std::list<std::uint32_t> peers)
+void Server::Send(const std::string &data, std::uint32_t src_uuid, std::uint32_t dest_uuid, const std::vector<std::uint32_t> &peers)
 {
     // Send the data to a(all) peer(s)
-    for (std::list<std::uint32_t>::iterator iter = peers.begin(); iter != peers.end(); ++iter)
+    for (std::uint32_t i = 0U; i < peers.size(); i++)
     {
-        std::uint32_t uuid = (*iter);
-        mMutex.lock();
+        std::uint32_t uuid = peers[i];
         if (mPeers.count(uuid) > 0)
         {
-            TcpSocket::Send(data.ToSring(), mPeers[uuid]);
+            TcpSocket::Send(Protocol::Build(0U, src_uuid, dest_uuid, "tarot", data), mPeers.at(uuid));
         }
-        mMutex.unlock();
         std::this_thread::sleep_for(std::chrono::milliseconds(20U));
-    }
-
-    if (peers.size() > 0U)
-    {
-        // Send data to listeners
-        Event event(Event::cDataSent);
-        event.mBlock = data;
-        mSubject.Notify(event);
     }
 }
 /*****************************************************************************/
-void LobbyServer::Stop()
+void Server::Stop()
 {
     mInitialized = false;
     CloseClients();
@@ -197,25 +131,16 @@ void LobbyServer::Stop()
     mLobby.RemoveAllUsers();
 }
 /*****************************************************************************/
-void LobbyServer::CloseClients()
+void Server::CloseClients()
 {
-    mMutex.lock();
-
     for (std::map<std::uint32_t, Peer>::iterator iter = mPeers.begin(); iter != mPeers.end(); ++iter)
     {
         TcpSocket::Close(iter->second);
     }
-    mMutex.unlock();
 }
 /*****************************************************************************/
-void LobbyServer::RegisterListener(Observer<Event> &i_event)
+bool Server::IsValid(std::uint32_t uuid, const Peer &peer)
 {
-    mSubject.Attach(i_event);
-}
-/*****************************************************************************/
-bool LobbyServer::IsValid(std::uint32_t uuid, const Peer &peer)
-{
-    mMutex.lock();
     bool valid = false;
 
     if (mPeers.count(uuid) > 0U)
@@ -225,13 +150,11 @@ bool LobbyServer::IsValid(std::uint32_t uuid, const Peer &peer)
             valid = true;
         }
     }
-    mMutex.unlock();
     return valid;
 }
 /*****************************************************************************/
-std::uint32_t LobbyServer::GetUuid(const Peer &peer)
+std::uint32_t Server::GetUuid(const Peer &peer)
 {
-    mMutex.lock();
     std::uint32_t uuid = Protocol::INVALID_UID;
     for (std::map<std::uint32_t, Peer>::iterator iter = mPeers.begin(); iter != mPeers.end(); ++iter)
     {
@@ -240,7 +163,6 @@ std::uint32_t LobbyServer::GetUuid(const Peer &peer)
             uuid = iter->first;
         }
     }
-    mMutex.unlock();
     return uuid;
 }
 

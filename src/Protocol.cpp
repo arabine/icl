@@ -23,11 +23,11 @@
  *=============================================================================
  */
 
+#include <iomanip>
 #include "Protocol.h"
 #include "Log.h"
-#include "ByteStreamWriter.h"
+#include "Util.h"
 
-const std::uint8_t  Protocol::VERSION       = 2U;
 
 // Specific static UUID
 const std::uint32_t Protocol::INVALID_UID       = 0U;
@@ -40,33 +40,27 @@ const std::uint32_t Protocol::MAXIMUM_TABLES    = 50U;
 
 const std::uint32_t Protocol::NO_TABLE          = 0U;
 
-// Variables to parse the packet
-static const std::uint16_t HEADER_SIZE          = 12U;
-
-// Offsets (in bytes) from the start of one packet
-static const std::uint32_t VERSION_OFFSET   = 2U;
-static const std::uint32_t SRC_UUID_OFFSET  = 3U;
-static const std::uint32_t DEST_UUID_OFFSET = 7U;
-static const std::uint32_t COMMAND_OFFSET   = 11U;
-
 
 /**
  * \page protocol Protocol format
  * The aim of the protocol is to be simple and printable (all ASCII).
  * Room is reserved for future improvements such as encryption facilities
  *
- *     :OO:XXXX:YYYY:S<command>:NNNN<data><cr><lf>
+ *     :OO:SSSS:DDDD:L<type>:LLLL<argument><cr><lf>
  *
  * OO protocol option byte, in HEX (ex: B4)
- * XXXX is always a 4 digits unsigned integer in HEX that indicates the source UUID (max: FFFF)
- * YYYY same format, indicates the destination UUID (max: FFFF)
- * S: une byte, size of the command, followed by the ASCII command ((max: F, 255 bytes)
- * NNNN (optional): the size of the data, followed by the data bytes<data>, typically in JSON format that allow complex structures
+ * SSSS is always a 4 digits unsigned integer in HEX that indicates the source UUID (max: FFFF)
+ * DDDD same format, indicates the destination UUID (max: FFFF)
+ * L: une byte, length of the type, followed by the ASCII type of argument ((max: F, 255 bytes)
+ * LLLL: the length of the argument (can be zero), followed by the payload bytes <argument>, typically in JSON format that allow complex structures
  * <cr><lf> packet ending, also known as "\r\n"
  */
 
 /*****************************************************************************/
 Protocol::Protocol()
+    : mSrcUuid(0U)
+    , mDstUuid(0U)
+    , mOption(0U)
 {
 
 
@@ -77,230 +71,103 @@ Protocol::~Protocol()
 
 }
 /*****************************************************************************/
-void Protocol::BuildHeader(ByteArray &packet, Command cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid)
-{
-    ByteStreamWriter out(packet);
-
-    // Build the header, size will be completed later
-    out << (std::uint16_t)(0U)  // actually, the size of the packet, including this field
-        << (std::uint8_t)Protocol::VERSION  // Version of the protocol
-        << src_uuid     // Packet source uuid
-        << dest_uuid    // packet destination uuid
-        << (std::uint8_t)cmd; // command
-}
-/*****************************************************************************/
-void Protocol::UpdateHeader(ByteArray &packet)
-{
-    ByteStreamWriter out(packet);
-
-    out.Seek(0U); // Get back to the header area
-
-    // Update the header size field
-    out << (std::uint16_t)packet.Size();
-}
-/*****************************************************************************/
-/**
- * @brief Protocol::BuildCommand
- *
- * Build a command header without any data
- *
- * @param cmd
- * @param uuid
- */
-ByteArray Protocol::BuildCommand(Command cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid)
-{
-    ByteArray packet;
-    BuildHeader(packet, cmd, src_uuid, dest_uuid);
-    UpdateHeader(packet);
-    return packet;
-}
-/*****************************************************************************/
-static Protocol mProtocol;
-Protocol &Protocol::GetInstance()
-{
-    return mProtocol;
-}
-/*****************************************************************************/
-std::uint32_t Protocol::GetSourceUuid(const ByteArray &packet)
-{
-    return packet.GetUint32(SRC_UUID_OFFSET);
-}
-/*****************************************************************************/
-std::uint32_t Protocol::GetDestUuid(const ByteArray &packet)
-{
-    return packet.GetUint32(DEST_UUID_OFFSET);
-}
-/*****************************************************************************/
-std::uint8_t Protocol::GetCommand(const ByteArray &packet)
-{
-    return packet.Get(COMMAND_OFFSET);
-}
-/*****************************************************************************/
-void Protocol::Initialize()
-{
-    if (!mInitialized)
-    {
-        mInitialized = true;
-        mThread = std::thread(Protocol::EntryPoint, this);
-    }
-}
-/*****************************************************************************/
-void Protocol::Stop()
-{
-    if (mInitialized)
-    {
-        mMutex.lock();
-        while (!mQueue.Empty()); // Empty the queue
-        mQueue.Push(IWorkItem::Data(true));
-        mThread.join();
-        mMutex.unlock();
-        mInitialized = false;
-    }
-}
-/*****************************************************************************/
-void Protocol::Execute(const IWorkItem::Data &item)
-{
-    mMutex.lock();
-    mQueue.Push(item);
-    mMutex.unlock();
-}
-/*****************************************************************************/
-std::uint32_t Protocol::QueueSize()
-{
-    std::uint32_t size;
-    mMutex.lock();
-    size = mQueue.Size();
-    mMutex.unlock();
-
-    return size;
-}
-/*****************************************************************************/
-void Protocol::EntryPoint(void *pthis)
-{
-    Protocol *pt = static_cast<Protocol *>(pthis);
-    pt->Run();
-}
-/*****************************************************************************/
-/**
- * @brief Controller::Run
- *
- * This is the main shared work item thread; It manages the network (or not) packets
- * sent by client, the lobby or an admin. All the packets are serialized to ensure
- * that they are treated in a queue, one at a time.
- *
- */
-void Protocol::Run()
-{
-   // (void) pthis;
-    IWorkItem::Data request;
-
-    while (!request.exit)
-    {
-        mQueue.WaitAndPop(request);
-
-        if (!request.exit)
-        {
-            if (request.item)
-            {
-#ifdef PROTOCOL_DEBUG
-                std::cout << "Count: " << (int)request.item.use_count() << std::endl;
-#endif
-                request.exit = DataManagement(request.item.get(), request.data);
-            }
-        }
-    }
-
-#ifdef PROTOCOL_DEBUG
-    std::cout << "Exiting Protocol::Run() thread." << std::endl;
-#endif
-}
-/*****************************************************************************/
-/**
- * @return true to ask to exit the upper thread loop
- */
-bool Protocol::DataManagement(IWorkItem *item, const ByteArray &data)
+bool Protocol::ParseUint32(const std::string &data, std::uint32_t &value)
 {
     bool ret = false;
-    std::vector<Protocol::PacketInfo> packets = Protocol::DecodePacket(data);
-
-    // Execute all packets
-    for (std::uint16_t i = 0U; i < packets.size(); i++)
+    if (data.size() == 4)
     {
-        Protocol::PacketInfo inf = packets[i];
-
-        ByteArray subArray = data.SubArray(inf.offset, inf.size);
-        std::uint32_t src_uuid = subArray.GetUint32(SRC_UUID_OFFSET);
-        std::uint32_t dest_uuid = subArray.GetUint32(DEST_UUID_OFFSET);
-        std::uint8_t cmd = subArray.Get(COMMAND_OFFSET);
-        subArray.Erase(0U, HEADER_SIZE);
-        if (!item->DoAction(cmd, src_uuid, dest_uuid, subArray))
-        {
-            ret = true;
-        }
+        value = std::strtoul(data.c_str(), NULL, 16);
     }
     return ret;
 }
 /*****************************************************************************/
-std::vector<Protocol::PacketInfo> Protocol::DecodePacket(const ByteArray &data)
+bool Protocol::Parse(const std::string &data)
 {
-    std::vector<PacketInfo> packets;
-    std::uint16_t offset = 0U;
-    std::uint16_t totalSize = 0U;
+    bool ret = false;
 
-    if (data.Size() >= HEADER_SIZE)
+    std::vector<std::string> frame = Util::Split(data, ":");
+
+    if (frame.size() >= 5U)
     {
-        bool found = true;
-        // Search for valid packets in the data stream
-        while (found)
+        ret = ParseUint32(frame.at(0), mOption);
+        ret = ret && ParseUint32(frame.at(1), mSrcUuid);
+        ret = ret && ParseUint32(frame.at(2), mDstUuid);
+
+        std::uint32_t typeSize;
+        const std::string &type = frame.at(3);
+        if (type.size() >= 2U)
         {
-            // First half word is the data size
-            std::uint16_t blockSize = data.GetUint16(offset);
+            ret = ret && ParseUint32(type.substr(0U, 1U), typeSize);
+            mType = type.substr(1U, type.size() - 1U);
+        }
+        else
+        {
+            ret = false;
+        }
 
-            if ((blockSize <= data.Size()) &&
-                    blockSize >= HEADER_SIZE)
+        std::uint32_t payloadSize;
+        const std::string &payload = frame.at(4);
+        if (payload.size() >= 5U)
+        {
+            ret = ret && ParseUint32(payload.substr(0U, 4U), payloadSize);
+            mArgument = payload.substr(1U, payload.size() - 1U);
+
+            if (Util::EndsWith(mArgument, "\r\n"))
             {
-                // Get the protocol version
-                std::uint8_t version = data.Get(offset + VERSION_OFFSET);
-                if (version == Protocol::VERSION)
-                {
-                    // Valid packet found
-                    PacketInfo inf;
-                    inf.offset = offset;
-                    inf.size = blockSize;
-                    packets.push_back(inf);
-
-                    totalSize += blockSize;
-                    // Is there another packet available ?
-                    if (totalSize >= data.Size())
-                    {
-                        found = false;
-                    }
-                    else
-                    {
-                        // Jump to next packet
-                        offset += blockSize;
-                    }
-                }
-                else
-                {
-                    // Drop the rest of the packet
-                    found = false;
-                    TLogNetwork("Bad protocol version.");
-                }
+                // Sanity check
+                ret = ret && (mArgument.size() == payloadSize);
             }
             else
             {
-                found = false;
-                TLogNetwork("Sub-packet too small.");
+                ret = false;
             }
         }
+        else
+        {
+            ret = false;
+        }
     }
-    else
-    {
-        TLogNetwork("Received packet too small.");
-    }
-    return packets;
+
+    return ret;
 }
+
+/*****************************************************************************/
+std::uint32_t Protocol::GetSourceUuid()
+{
+    return mSrcUuid;
+}
+/*****************************************************************************/
+std::uint32_t Protocol::GetDestUuid()
+{
+    return mDstUuid;
+}
+/*****************************************************************************/
+std::string Protocol::GetType()
+{
+    return mType;
+}
+/*****************************************************************************/
+std::string Protocol::GetArg()
+{
+    return mArgument;
+}
+/*****************************************************************************/
+std::string Protocol::Build(std::uint32_t option, std::uint32_t src, std::uint32_t dst, const std::string &type, const std::string &arg)
+{
+    std::stringstream stream;
+
+    stream << ":" << std::setfill ('0') << std::setw(2) << std::hex << option;
+    stream << ":" << std::setfill ('0') << std::setw(4) << std::hex << src;
+    stream << ":" << std::setfill ('0') << std::setw(4) << std::hex << dst;
+    stream << ":" << std::setfill ('0') << std::setw(1) << std::hex << type.size() << type;
+    stream << ":" << std::setfill ('0') << std::setw(4) << std::hex << arg.size() << arg;
+
+    return stream.str();
+}
+
+
+#if 0
+
 /*****************************************************************************/
 ByteArray Protocol::ClientSyncNewGame(std::uint32_t client_uuid, std::uint32_t tableId)
 {
@@ -804,6 +671,8 @@ ByteArray Protocol::AdminGameFull(bool full, std::uint32_t uuid, std::uint32_t t
 
     return packet;
 }
+
+#endif
 
 
 //=============================================================================

@@ -201,20 +201,10 @@ SOURCES += Deck.cpp \
 # ------------------------------------------------------------------------------
 
 HEADERS +=  tst_tarot_base.h \
-            tst_tarot_rules.h \
-            tst_utilities.h \
-            tst_json.h \
-            tst_hash.h \
-            tst_webstuff.h \
-            tst_database.h
+            tst_tarot_rules.h
 
 SOURCES +=  main.cpp \
-            tst_utilities.cpp \
             tst_tarot_base.cpp \
             tst_tarot_rules.cpp \
-            tst_json.cpp \
-            tst_hash.cpp \
-            tst_webstuff.cpp \
-            tst_database.cpp
 
 # End of project file

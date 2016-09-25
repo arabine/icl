@@ -28,28 +28,33 @@
 #include <vector>
 #include "Protocol.h"
 #include "Engine.h"
+#include "JsonValue.h"
 #include "Observer.h"
+
 
 /*****************************************************************************/
 class PlayingTable
 {
 
 public:
-    /**
-     * @brief Interface to send serialized data
-     *
-     */
-    class IData
+    struct Reply
     {
-    public:
-        virtual void SendData(const ByteArray &block) = 0;
-    };
+        std::uint32_t dest;
+        JsonObject data;
 
-    PlayingTable(IData &handler);
+        Reply(std::uint32_t d, const JsonObject &obj)
+            : dest(d)
+            , data(obj)
+        {
+
+        }
+    };  
+
+    PlayingTable();
     virtual ~PlayingTable () { /* nothing to do */ }
 
     void Initialize();
-    bool ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid, const ByteArray &data);
+    void ExecuteRequest(const std::string &cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid, const JsonValue &json, std::vector<Reply> &out);
 
     std::string GetName() { return mName; }
     void SetName(const std::string &name) { mName = name; }
@@ -64,8 +69,38 @@ public:
     bool RemovePlayer(std::uint32_t kicked_player);
 
 private:
-    IData     &mDataHandler;
+    struct Challenger
+    {
+        std::uint32_t uuid;
+        bool ack;
+
+        Challenger()
+        {
+            Clear();
+        }
+
+        void Clear()
+        {
+            uuid = 0U;
+            ack = false;
+        }
+
+        bool IsFree()
+        {
+            if (uuid == 0U)
+            {
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+    };
+
     Engine mEngine;
+    Challenger mPlayers[5]; ///< Players around the table, sorted by Place value
     bool mFull;
     std::uint32_t mAdmin;   ///< Admin player (first player connected)
     std::string mName;      ///< Name of this table
@@ -74,13 +109,18 @@ private:
     Tarot::Game mGame;      ///< Game mode
     bool mAdminMode;
 
-    void NewGame();
-    void NewDeal();
-    void StartDeal();
-    void BidSequence();
-    void GameSequence();
-    void Send(const ByteArray &block);
-    void EndOfDeal();
+    void NewGame(std::vector<Reply> &out);
+    void NewDeal(std::vector<Reply> &out);
+    void StartDeal(std::vector<Reply> &out);
+    void BidSequence(std::vector<Reply> &out);
+    void GameSequence(std::vector<Reply> &out);
+    void Send(const std::string &block);
+    void EndOfDeal(std::vector<Reply> &out);
+    bool Sync(Engine::Sequence sequence, std::uint32_t uuid);
+    Place GetPlayerPlace(std::uint32_t uuid);
+    void ResetAck();
+    bool AckFromAllPlayers();
+    std::uint32_t GetPlayerUuid(Place p);
 };
 
 #endif // PLAYING_TABLE_H

@@ -319,9 +319,8 @@ void Deal::AnalyzeGame(Points &points, std::uint8_t numberOfPlayers)
 /**
  * @brief Generate a file with all played cards of the deal
  */
-std::string Deal::GenerateEndDealLog(std::uint8_t numberOfPlayers)
+void Deal::GenerateEndDealLog(std::uint8_t numberOfPlayers, JsonObject &json)
 {
-    JsonObject json;
     json.AddValue("version", DEAL_RESULT_FILE_VERSION);
 
     // ========================== Game information ==========================
@@ -346,8 +345,6 @@ std::string Deal::GenerateEndDealLog(std::uint8_t numberOfPlayers)
         tricks.AddValue(mTricks[i].ToString());
     }
     json.AddValue("tricks", tricks);
-
-    return json.ToString(0U);
 }
 /*****************************************************************************/
 bool Deal::LoadGameDealLog(const std::string &fileName)

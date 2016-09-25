@@ -41,23 +41,22 @@
 class Server : private TcpServer::IEvent, private Lobby::IPacketNotifier
 {
 public:
-
     Server();
 
-    void Start(const ServerOptions &options, const TournamentOptions &tournamentOpt);
+    void Start(const ServerOptions &opt, const TournamentOptions &tournamentOpt);
+    void Register(Lobby::IPacketNotifier *notifier) { mLobby.Register(notifier); }
     void Stop();
 
 private:
 
     // From TcpServer interface
     virtual void NewConnection(const Peer &peer);
-    virtual void ReadData(const Peer &peer, const ByteArray &data);
+    virtual void ReadData(const Peer &peer, const std::string &data);
     virtual void ClientClosed(const Peer &peer);
     virtual void ServerTerminated(CloseType type);
 
     // From Lobby::IPacketNotifier
-    virtual void Send(const ByteArray &data, std::list<std::uint32_t> peers);
-
+    virtual void Send(const std::string &data, uint32_t src_uuid, uint32_t dest_uuid, const std::vector<uint32_t> &peers);
 
     // A TarotClub server contains:
     // 1. A lobby, to manage chat between players and playing tables

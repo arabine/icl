@@ -46,7 +46,7 @@ git subtree pull --prefix src/icl https://github.com/belegar/icl master --squash
 
 
 Now we can use the subtree push command like the following:
-git subtree push --prefix=.vim/bundle/tpope-vim-surround/ durdn-vim-surround master
+git subtree push --prefix src/icl https://github.com/belegar/icl master
 
 
 

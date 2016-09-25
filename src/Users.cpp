@@ -44,111 +44,84 @@ Users::Users()
  */
 std::uint32_t Users::GetPlayerTable(std::uint32_t uuid)
 {
-   std::lock_guard<std::mutex> lock(mMutex);
    std::uint32_t tableId = Protocol::NO_TABLE;
 
-   if ((mUsers.find(uuid) != mUsers.end()))
+   for (std::uint32_t i = 0; i < mUsers.size(); i++)
    {
-        tableId = mUsers[uuid].tableId;
+       if (mUsers[i].uuid == uuid)
+       {
+            tableId = mUsers[i].tableId;
+            break;
+       }
    }
-
    return tableId;
 }
 /*****************************************************************************/
-// Fixme: change the API, return a bool
-Identity Users::GetIdentity(std::uint32_t uuid)
+bool Users::GetEntry(std::uint32_t uuid, Entry &entry)
 {
-    std::lock_guard<std::mutex> lock(mMutex);
-    Identity ident;
-    if (mUsers.find(uuid) != mUsers.end())
+    bool ret = false;
+    for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        ident = mUsers[uuid].identity;
+        if (mUsers[i].uuid == uuid)
+        {
+             entry = mUsers[i];
+             ret = true;
+             break;
+        }
     }
-    return ident;
+    return ret;
 }
 /*****************************************************************************/
 void Users::Clear()
 {
-    mMutex.lock();
     mUsers.clear();
     mIdManager.Clear();
-    mMutex.unlock();
 }
 /*****************************************************************************/
 void Users::SetPlayingTable(std::uint32_t uuid, std::uint32_t tableId, Place place)
 {
-    std::lock_guard<std::mutex> lock(mMutex);
-
-    if (mUsers.find(uuid) != mUsers.end())
+    for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        mUsers[uuid].tableId = tableId;
-        mUsers[uuid].place = place;
+        if (mUsers[i].uuid == uuid)
+        {
+             mUsers[i].tableId = tableId;
+             mUsers[i].place = place;
+             break;
+        }
     }
 }
 /*****************************************************************************/
-std::list<std::uint32_t> Users::GetUsersOfTable(std::uint32_t tableId)
+std::vector<std::uint32_t> Users::GetTablePlayers(std::uint32_t tableId)
 {
-    std::lock_guard<std::mutex> lock(mMutex);
-    std::list<std::uint32_t> theList;
-    for (std::map<std::uint32_t, Entry>::iterator iter = mUsers.begin(); iter != mUsers.end(); ++iter)
+    std::vector<std::uint32_t> theList;
+    for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        if (iter->second.tableId == tableId)
+        if ((mUsers[i].tableId == tableId) || (tableId == Protocol::LOBBY_UID))
         {
-            theList.push_back(iter->first);
+            theList.push_back(mUsers[i].uuid);
+            break;
         }
     }
     return theList;
 }
 /*****************************************************************************/
-std::map<Place, std::uint32_t> Users::GetTablePlayers(std::uint32_t tableId)
+std::vector<Users::Entry> Users::GetLobbyUsers()
 {
-    std::lock_guard<std::mutex> lock(mMutex);
-
-    std::map<Place, std::uint32_t> theList;
-    for (std::map<std::uint32_t, Entry>::iterator iter = mUsers.begin(); iter != mUsers.end(); ++iter)
-    {
-        if (iter->second.tableId == tableId)
-        {
-            theList[iter->second.place] = iter->first;
-        }
-    }
-    return theList;
-}
-/*****************************************************************************/
-std::map<std::uint32_t, Identity> Users::GetLobbyUsersIdentity()
-{
-    std::lock_guard<std::mutex> lock(mMutex);
-    std::map<std::uint32_t, Identity> theList;
-    for (std::map<std::uint32_t, Entry>::iterator iter = mUsers.begin(); iter != mUsers.end(); ++iter)
-    {
-        // Do not include users in login process
-        if (iter->second.connected)
-        {
-            theList[iter->first] = iter->second.identity;
-        }
-    }
-    return theList;
-}
-/*****************************************************************************/
-std::list<std::uint32_t> Users::GetLobbyUsers()
-{
-    std::lock_guard<std::mutex> lock(mMutex);
-    std::list<std::uint32_t> theList;
-    for (std::map<std::uint32_t, Entry>::iterator iter = mUsers.begin(); iter != mUsers.end(); ++iter)
-    {
-        // Do not include users in login process
-        if (iter->second.connected)
-        {
-            theList.push_back(iter->first);
-        }
-    }
-    return theList;
+    return mUsers;
 }
 /*****************************************************************************/
 bool Users::IsHere(std::uint32_t uuid)
 {
-    std::lock_guard<std::mutex> lock(mMutex);
-    return mUsers.find(uuid) != mUsers.end();
+    bool isHere = false;
+    for (std::uint32_t i = 0; i < mUsers.size(); i++)
+    {
+        if (mUsers[i].uuid == uuid)
+        {
+             isHere = true;
+             break;
+        }
+    }
+    return isHere;
 }
 /*****************************************************************************/
 /**
@@ -160,45 +133,48 @@ bool Users::IsHere(std::uint32_t uuid)
  */
 std::uint32_t Users::AddUser()
 {
-    mMutex.lock();
     std::uint32_t uuid = mIdManager.TakeId();
-    // Add the user to the main users list
-    mUsers[uuid].tableId = Protocol::NO_TABLE;
-    mUsers[uuid].connected = false;
 
-    mMutex.unlock();
+
+    Entry entry;
+    entry.tableId = Protocol::NO_TABLE;
+    entry.connected = false;
+    entry.uuid = uuid;
+    mUsers.push_back(entry);
+
     return uuid;
 }
 /*****************************************************************************/
 bool Users::AccessGranted(std::uint32_t uuid, const Identity &ident)
 {
-    std::lock_guard<std::mutex> lock(mMutex);
     bool ret = false;
-    if (mUsers.find(uuid) != mUsers.end())
-    {
-        mUsers[uuid].connected = true;
-        mUsers[uuid].identity = ident;
 
-        // We change its name if equal to an already connected player
-        for (std::map<std::uint32_t, Entry>::iterator iter = mUsers.begin(); iter != mUsers.end(); ++iter)
+    for (std::uint32_t i = 0; i < mUsers.size(); i++)
+    {
+        if (mUsers[i].uuid == uuid)
         {
-            if (iter->first != uuid)
+            mUsers[i].connected = true;
+            mUsers[i].identity = ident;
+
+            // We change its name if equal to an already connected player
+            for (std::uint32_t j = 0; j < mUsers.size(); j++)
             {
-                if (iter->second.identity.nickname == ident.nickname)
+                if (mUsers[j].uuid != uuid)
                 {
-                    // Append the uuid to the name to make it unique within the server
-                    std::stringstream ss;
-                    ss << ident.nickname << uuid;
-                    mUsers[uuid].identity.nickname =  ss.str();
+                    if (mUsers[j].identity.nickname == ident.nickname)
+                    {
+                        // Append the uuid to the name to make it unique within the server
+                        std::stringstream ss;
+                        ss << ident.nickname << uuid;
+                        mUsers[i].identity.nickname =  ss.str();
+                        break;
+                    }
                 }
             }
-        }
 
-        ret = true;
-    }
-    else
-    {
-        TLogError("User must be present");
+            ret = true;
+            break;
+        }
     }
 
     return ret;
@@ -206,17 +182,14 @@ bool Users::AccessGranted(std::uint32_t uuid, const Identity &ident)
 /*****************************************************************************/
 void Users::RemoveUser(std::uint32_t uuid)
 {
-    std::lock_guard<std::mutex> lock(mMutex);
-
-    // Remove it if he belongs to the staging list
-    if (mUsers.find(uuid) != mUsers.end())
+    for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        mUsers.erase(uuid);
-        mIdManager.ReleaseId(uuid);
-    }
-    else
-    {
-        TLogError("Bad UUID");
+        if (mUsers[i].uuid == uuid)
+        {
+            mUsers.erase(mUsers.begin() + i);
+            mIdManager.ReleaseId(uuid);
+            break;
+        }
     }
 }
 

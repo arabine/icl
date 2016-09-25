@@ -37,7 +37,7 @@ const std::uint8_t INVALID         = 0xFFU;
 static const std::string suits = "SHDCT";
 
 /*****************************************************************************/
-std::string Card::GetName() const
+std::string Card::ToString() const
 {
     std::stringstream name;
 

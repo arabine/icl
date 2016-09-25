@@ -32,7 +32,6 @@
 #include <cstring>
 #include <iostream>
 #include <sstream>
-#include "ByteStreamWriter.h"
 
 // Larger values will read larger chunks of data.
 static const std::int32_t MAXRECV = 2048;

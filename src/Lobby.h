@@ -29,29 +29,30 @@
 #include "Protocol.h"
 #include "PlayingTable.h"
 #include "Users.h"
-#include "Bot.h"
-#include "Users.h"
+#include "Observer.h"
 
 /*****************************************************************************/
-class Lobby : public Protocol::IWorkItem, private PlayingTable::IData
+class Lobby
 {
 
 public:
     class IPacketNotifier
     {
     public:
-        virtual void Send(const ByteArray &data, std::list<std::uint32_t> peers) = 0;
+        virtual void Send(const std::string &data, std::uint32_t src_uuid, std::uint32_t dest_uuid, std::vector<std::uint32_t> peers) = 0;
     };
 
     Lobby();
     ~Lobby();
 
-    void Initialize(const std::string &name, const std::vector<std::string> &tables, IPacketNotifier *notifier);
+    void Initialize(const std::string &name, const std::vector<std::string> &tables);
+    void Register(IPacketNotifier * notifier);
     std::string GetName() { return mName; }
+    bool Decode(uint32_t src_uuid, uint32_t dest_uuid, std::string &arg);
 
     // Users management
     std::uint32_t GetNumberOfPlayers();
-    std::uint32_t AddUser();
+    std::uint32_t AddUser(const std::string &ip);
     void RemoveUser(std::uint32_t uuid);
     void RemoveAllUsers();
 
@@ -60,7 +61,7 @@ public:
     bool DestroyTable(std::uint32_t id);
 
 private:
-    IPacketNotifier *mPacketNotifier;
+    std::vector<IPacketNotifier *> mNotifiers;
     bool mInitialized;
     std::vector<PlayingTable *> mTables;
     UniqueId    mTableIds;
@@ -69,7 +70,8 @@ private:
 
     std::string GetTableName(const std::uint32_t tableId);
     void RemovePlayerFromTable(std::uint32_t uuid, std::uint32_t tableId);
-    void SendData(const ByteArray &block);
+    void SendData(const JsonValue &data, uint32_t src_uuid, uint32_t dest_uuid);
+    void SendPlayerList(const std::vector<uint32_t> &players, const std::string &event);
 };
 
 #endif // LOBBY_H

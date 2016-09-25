@@ -31,8 +31,7 @@
 // Game includes
 #include "Card.h"
 #include "Common.h"
-#include "ByteStreamReader.h"
-#include "ByteStreamWriter.h"
+
 
 /*****************************************************************************/
 class Deck
@@ -195,21 +194,6 @@ public:
     // Setters
     void SetOwner(Team o);
     std::uint8_t SetCards(const std::string &cards);
-
-    friend ByteStreamWriter &operator<<(ByteStreamWriter &out, const Deck &deck)
-    {
-        std::string cards = deck.ToString();
-        out << cards;
-        return out;
-    }
-
-    friend ByteStreamReader &operator>>(ByteStreamReader &s, Deck &deck)
-    {
-        std::string cards;
-        s >> cards;
-        deck.SetCards(cards);
-        return s;
-    }
 
     Deck &operator = (const Deck &d)
     {

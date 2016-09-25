@@ -51,25 +51,11 @@ public:
      */
     void RemoveDuplicates(const Deck &cards);
 
-    // Getters
-    std::uint32_t GetUuid() const;
-    bool HasAck()
-    {
-        return mAck;
-    }
-
-    // Setters
-    void SetUuid(std::uint32_t value);
-    void SetAck(bool ack = true)
-    {
-        mAck = ack;
-    }
-
     Deck AutoDiscard(const Deck &dog, std::uint8_t nbPlayers);
 
 private:
     // player's cards in hand
-    struct PlayerStats
+    struct Stats
     {
         bool hasSuit;           // true if the player has the requested color
         bool hasTrump;          // true if the player has some trumps
@@ -77,7 +63,7 @@ private:
         bool previousTrump;     // true if there is previous trump played
         int  maxPreviousTrump;  // maximum value of the previous trump played
 
-        PlayerStats()
+        Stats()
         {
             hasSuit = false;
             hasTrump = false;
@@ -87,11 +73,7 @@ private:
         }
     };
 
-    std::uint32_t mUuid;    //!< User's unique identifier
-    bool mAck;
-
-
-    bool TestPlayTrump(const Card &card, const PlayerStats &stats);
+    bool TestPlayTrump(const Card &card, const Stats &stats);
 };
 
 #endif // PLAYER_H

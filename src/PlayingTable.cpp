@@ -27,19 +27,119 @@
 #include <string>
 #include "Log.h"
 #include "PlayingTable.h"
-#include "ByteStreamReader.h"
+#include "NetHelper.h"
 #include "System.h"
 
+// Ask steps translation into integer
+struct Ack
+{
+    std::string step; // Textual value
+    Engine::Sequence sequence; // Engine sequence
+};
+
+static const Ack gAckList[] = {
+    {"JoinTable", Engine::WAIT_FOR_PLAYERS},
+    {"Ready", Engine::WAIT_FOR_READY },
+    {"Cards", Engine::WAIT_FOR_CARDS },
+    {"Bid", Engine::WAIT_FOR_SHOW_BID },
+    {"AllPassed", Engine::WAIT_FOR_ALL_PASSED },
+    {"Dog", Engine::WAIT_FOR_SHOW_DOG },
+    {"Start", Engine::WAIT_FOR_START_DEAL },
+    {"Handle", Engine::WAIT_FOR_SHOW_HANDLE },
+    {"Card", Engine::WAIT_FOR_SHOW_CARD },
+    {"Trick", Engine::WAIT_FOR_END_OF_TRICK }
+};
+
+static const std::uint32_t gAckListSize = sizeof(gAckList) / sizeof(gAckList[0]);
+
+Engine::Sequence FindSequence(const std::string &step)
+{
+    Engine::Sequence seq = Engine::BAD_STEP;
+    for (std::uint32_t i = 0U; i < gAckListSize; i++)
+    {
+        if (gAckList[i].step == step)
+        {
+            seq = gAckList[i].sequence;
+            break;
+        }
+    }
+    return seq;
+}
+
+
 /*****************************************************************************/
-PlayingTable::PlayingTable(IData &handler)
-    : mDataHandler(handler)
-    , mFull(false)
+PlayingTable::PlayingTable()
+    : mFull(false)
     , mAdmin(Protocol::INVALID_UID)
     , mName("Default")
     , mId(1U)
     , mAdminMode(false)
 {
 
+}
+/*****************************************************************************/
+bool PlayingTable::AckFromAllPlayers()
+{
+    bool ack = false;
+    std::uint8_t counter = 0U;
+
+    for (std::uint8_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+    {
+        if (mPlayers[i].ack)
+        {
+            counter++;
+        }
+    }
+
+    if (counter == mEngine.GetNbPlayers())
+    {
+        ack = true;
+        ResetAck();
+    }
+
+    return ack;
+}
+/*****************************************************************************/
+void PlayingTable::ResetAck()
+{
+    for (std::uint8_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+    {
+        mPlayers[i].ack = false;
+    }
+}
+/*****************************************************************************/
+Place PlayingTable::GetPlayerPlace(std::uint32_t uuid)
+{
+    Place p = Place::NOWHERE;
+
+    for (std::uint8_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+    {
+        if (mPlayers[i].uuid == uuid)
+        {
+            p = i;
+        }
+    }
+    return p;
+}
+/*****************************************************************************/
+std::uint32_t PlayingTable::GetPlayerUuid(Place p)
+{
+    return mPlayers[p.Value()].uuid;
+}
+/*****************************************************************************/
+bool PlayingTable::Sync(Engine::Sequence sequence, std::uint32_t uuid)
+{
+    for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+    {
+        if (mPlayers[i].uuid == uuid)
+        {
+            if (mEngine.GetSequence() == sequence)
+            {
+                mPlayers[i].ack = true;
+            }
+        }
+    }
+    return AckFromAllPlayers();
 }
 /*****************************************************************************/
 void PlayingTable::Initialize()
@@ -60,6 +160,13 @@ void PlayingTable::SetAdminMode(bool enable)
 void PlayingTable::CreateTable(std::uint8_t nbPlayers)
 {
     mEngine.CreateTable(nbPlayers);
+
+    // close all the clients
+    for (std::uint32_t i = 0U; i < 5U; i++)
+    {
+        mPlayers[i].Clear();
+    }
+
     mFull = false;
     mAdmin = Protocol::INVALID_UID;
 }
@@ -70,22 +177,18 @@ Place PlayingTable::AddPlayer(std::uint32_t uuid, std::uint8_t &nbPlayers)
     nbPlayers = mEngine.GetNbPlayers();
 
     // Check if player is not already connected
-    if (mEngine.GetPlayerPlace(uuid) == Place::NOWHERE)
+    if (GetPlayerPlace(uuid) == Place::NOWHERE)
     {
         // Look for free Place and assign the uuid to this player
-        assigned = mEngine.AddPlayer(uuid);
+        assigned = mEngine.AddPlayer();
         if (assigned.Value() != Place::NOWHERE)
         {
+            mPlayers[assigned.Value()].uuid = uuid;
             // If it is the first player, then it is an admin
             if (mAdmin == Protocol::INVALID_UID)
             {
                 mAdmin = uuid;
             }
-        }
-        else
-        {
-            // Server is full, send an error message
-            Send(Protocol::TableFullMessage(uuid, mId));
         }
     }
     return assigned;
@@ -96,10 +199,10 @@ bool PlayingTable::RemovePlayer(std::uint32_t kicked_player)
     bool removeAllPlayers = false;
 
     // Check if the uuid exists
-    Place place = mEngine.GetPlayerPlace(kicked_player);
+    Place place = GetPlayerPlace(kicked_player);
     if (place != Place::NOWHERE)
     {
-        // If we are in a game, finish it and kick all players
+        // If we are waiting for players, continue to wait
         if (mEngine.GetSequence() == Engine::WAIT_FOR_PLAYERS)
         {
             // Update the admin
@@ -108,23 +211,29 @@ bool PlayingTable::RemovePlayer(std::uint32_t kicked_player)
                 std::uint32_t newAdmin = Protocol::INVALID_UID;
                 for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
                 {
-                    Player *player = mEngine.GetPlayer(Place(i));
-                    if (player != NULL)
+                    // Choose another admin
+                    std::uint32_t uuid = GetPlayerUuid(Place(i));
+                    if (uuid != kicked_player)
                     {
-                        // Choose another admin
-                        if (player->GetUuid() != kicked_player)
-                        {
-                            newAdmin = player->GetUuid();
-                            break;
-                        }
+                        newAdmin = uuid;
+                        break;
                     }
                 }
                 mAdmin = newAdmin;
             }
-            mEngine.RemovePlayer(kicked_player);
+
+            // Actually remove it
+            for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
+            {
+                if (mPlayers[i].uuid == kicked_player)
+                {
+                    mPlayers[i].Clear();
+                }
+            }
         }
         else
         {
+            // If we are in a game, finish it and kick all players
             removeAllPlayers = true;
             mEngine.CreateTable(mEngine.GetNbPlayers()); // recreate the table (== reset it)
         }
@@ -133,90 +242,103 @@ bool PlayingTable::RemovePlayer(std::uint32_t kicked_player)
     return removeAllPlayers;
 }
 /*****************************************************************************/
-bool PlayingTable::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid, const std::string &arg)
+void PlayingTable::ExecuteRequest(const std::string &cmd, std::uint32_t src_uuid, std::uint32_t dest_uuid, const JsonValue &json, std::vector<Reply> &out)
 {
     (void) dest_uuid;
-    bool ret = true;
-    ByteStreamReader in(arg);
 
-    std::stringstream dbg;
-    dbg << "Server PlayingTable command received: 0x" << std::hex << (int)cmd;
-    TLogNetwork(dbg.str());
-
-    switch (cmd)
-    {
-    case Protocol::CLIENT_ERROR:
+    if (cmd == "Error")
     {
         TLogError("Client has sent an error code");
-        break;
     }
-
-    case Protocol::CLIENT_SYNC_JOIN_TABLE:
+    else if (cmd == "Ack")
     {
-        mFull = mEngine.Sync(Engine::WAIT_FOR_PLAYERS, src_uuid);
-        if (mFull)
+        // Check if the uuid exists
+        if (GetPlayerPlace(src_uuid) != Place::NOWHERE)
         {
-            if (mAdminMode)
+            std::string step = json.FindValue("step").GetString();
+            Engine::Sequence seq = FindSequence(step);
+
+            // Returns true if all the players have send their sync signal
+            if (Sync(seq, src_uuid))
             {
-                // Warn table admin that the game is full, so it can start
-                Send(Protocol::AdminGameFull(true, mAdmin, mId));
-            }
-            else
-            {
-                // Automatic start of the game
-                NewGame();
+                switch (seq) {
+                case Engine::WAIT_FOR_PLAYERS:
+                {
+                    if (!mAdminMode)
+                    {
+                        // Automatic start of the game. Otherwise the Admin is in charge of starting manually the game
+                        NewGame(out);
+                    }
+                    break;
+                }
+                case Engine::WAIT_FOR_READY:
+                case Engine::WAIT_FOR_ALL_PASSED:
+                {
+                    NewDeal(out);
+                    break;
+                }
+                case Engine::WAIT_FOR_CARDS:
+                case Engine::WAIT_FOR_SHOW_BID:
+                {
+                    BidSequence(out);
+                    break;
+                }
+                case Engine::WAIT_FOR_SHOW_DOG:
+                {
+                    // When all the players have seen the dog, ask to the taker to build a discard
+                    mEngine.DiscardSequence();
+                    JsonObject obj;
+
+                    obj.AddValue("cmd", "BuildDiscard");
+                    out.push_back(Reply(GetPlayerUuid(mEngine.GetBid().taker), obj));
+                    break;
+                }
+                case Engine::WAIT_FOR_START_DEAL:
+                case Engine::WAIT_FOR_SHOW_HANDLE:
+                case Engine::WAIT_FOR_SHOW_CARD:
+                case Engine::WAIT_FOR_END_OF_TRICK:
+                {
+                    GameSequence(out);
+                    break;
+                }
+                case Engine::WAIT_FOR_END_OF_DEAL:
+                {
+                    EndOfDeal(out);
+                    break;
+                }
+                default:
+                    break;
+                }
             }
         }
-        break;
     }
-
-    case Protocol::ADMIN_NEW_GAME:
+    else if (cmd == "RequestNewGame")
     {
         if (src_uuid == mAdmin)
         {
-            in >> mGame;
-            NewGame();
-        }
-        break;
-    }
+            mGame.Set(json.FindValue("mode").GetString());
+            mGame.deals.clear();
+            JsonArray deals = json.FindValue("deals").GetArray();
 
-    case Protocol::CLIENT_SYNC_NEW_GAME:
-    {
-        // Check if the uuid exists
-        if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
-        {
-            if (mEngine.Sync(Engine::WAIT_FOR_READY, src_uuid))
+            for (std::uint32_t i = 0U; i < deals.Size(); i++)
             {
-                NewDeal();
+                JsonObject obj = deals.GetEntry(i).GetObject();
+
+                Tarot::Distribution dist;
+                helper::FromJson(dist, obj);
+                mGame.deals.push_back(dist);
             }
+
+            NewGame(out);
         }
-        break;
     }
-
-    case Protocol::CLIENT_SYNC_NEW_DEAL:
+    else if (cmd == "Bid")
     {
-        // Check if the uuid exists
-        if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
-        {
-            if (mEngine.Sync(Engine::WAIT_FOR_CARDS, src_uuid))
-            {
-                // All the players have received their cards, launch the bid sequence
-                BidSequence();
-            }
-        }
-        break;
-    }
-
-    case Protocol::CLIENT_BID:
-    {
-        std::uint8_t c;
-        std::uint8_t slam;
-
-        in >> c;
-        in >> slam;
+        Contract c(json.FindValue("contract").GetString());
+        bool slam = json.FindValue("slam").GetBool();
 
         // Check if the uuid exists
-        Place p = mEngine.GetPlayerPlace(src_uuid);
+        Place p = GetPlayerPlace(src_uuid);
         if (p != Place::NOWHERE)
         {
             // Check if this is the right player
@@ -225,9 +347,17 @@ bool PlayingTable::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std:
                 // Check if we are in the good sequence
                 if (mEngine.GetSequence() == Engine::WAIT_FOR_BID)
                 {
-                    Contract cont = mEngine.SetBid((Contract)c, (slam == 1U ? true : false), p);
+                    Contract cont = mEngine.SetBid((Contract)c, slam, p);
+
                     // Broadcast player's bid, and wait for all acknowlegements
-                    Send(Protocol::TableShowBid(cont, (slam == 1U ? true : false), p, mId));
+                    JsonObject obj;
+
+                    obj.AddValue("cmd", "ShowBid");
+                    obj.AddValue("place", p.ToString());
+                    obj.AddValue("contract", cont.ToString());
+                    obj.AddValue("slam", slam);
+
+                    out.push_back(Reply(mId, obj));
                 }
                 else
                 {
@@ -243,271 +373,141 @@ bool PlayingTable::ExecuteRequest(std::uint8_t cmd, std::uint32_t src_uuid, std:
         {
             TLogError("Cannot get player place from UUID");
         }
-        break;
     }
-
-    case Protocol::CLIENT_SYNC_SHOW_BID:
+    else if (cmd == "Discard")
     {
-        // Check if the uuid exists
-        if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
-        {
-            if (mEngine.Sync(Engine::WAIT_FOR_SHOW_BID, src_uuid))
-            {
-                // Continue/finish the bid sequence
-                BidSequence();
-            }
-        }
-        break;
-    }
+        Deck discard(json.FindValue("discard").GetString());
 
-    case Protocol::CLIENT_SYNC_ALL_PASSED:
-    {
-        // Check if the uuid exists
-        if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
+        // Check sequence
+        if (mEngine.GetSequence() == Engine::WAIT_FOR_DISCARD)
         {
-            if (mEngine.Sync(Engine::WAIT_FOR_ALL_PASSED, src_uuid))
+            // Check if right player
+            if (mEngine.GetBid().taker == GetPlayerPlace(src_uuid))
             {
-                NewDeal();
-            }
-        }
-        break;
-    }
-
-    case Protocol::CLIENT_SYNC_SHOW_DOG:
-    {
-        // Check if the uuid exists
-        if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
-        {
-            if (mEngine.Sync(Engine::WAIT_FOR_SHOW_DOG, src_uuid))
-            {
-                // When all the players have seen the dog, ask to the taker to build a discard
-                Player *player = mEngine.GetPlayer(mEngine.GetBid().taker);
-                if (player != NULL)
+                if (mEngine.SetDiscard(discard))
                 {
-                    mEngine.DiscardSequence();
-                    std::uint32_t id = player->GetUuid();
-                    Send(Protocol::TableAskForDiscard(id, mId));
+                    // Then start the deal
+                    StartDeal(out);
                 }
                 else
                 {
-                    TLogError("Cannot get player pointer!");
+                    TLogError("Not a valid discard" + discard.ToString());
                 }
             }
         }
-        break;
     }
-
-    case Protocol::CLIENT_DISCARD:
+    else if (cmd == "Handle")
     {
-        Deck discard;
-        in >> discard;
+        Deck handle(json.FindValue("handle").GetString());
 
-        // Check if the uuid exists
-        Place p = mEngine.GetPlayerPlace(src_uuid);
-        if (p != Place::NOWHERE)
+        // Check sequence
+        if (mEngine.GetSequence() == Engine::WAIT_FOR_HANDLE)
         {
-            // Check sequence
-            if (mEngine.GetSequence() == Engine::WAIT_FOR_DISCARD)
+            // Check if right player
+            Place p =  GetPlayerPlace(src_uuid);
+            if (mEngine.GetCurrentPlayer() == p)
             {
-                // Check if right player
-                if (mEngine.GetBid().taker == p)
+                if (mEngine.SetHandle(handle, p))
                 {
-                    if (mEngine.SetDiscard(discard))
-                    {
-                        // Then start the deal
-                        StartDeal();
-                    }
-                    else
-                    {
-                        TLogError("Not a valid discard" + discard.ToString());
-                    }
+                    // Handle is valid, show it to all players
+                    JsonObject obj;
+
+                    obj.AddValue("cmd", "ShowHandle");
+                    obj.AddValue("place", p.ToString());
+                    obj.AddValue("handle", handle.ToString());
+
+                    out.push_back(Reply(mId, obj));
                 }
-            }
-        }
-        break;
-    }
-
-    case Protocol::CLIENT_SYNC_START:
-    {
-        // Check if the uuid exists
-        if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
-        {
-            if (mEngine.Sync(Engine::WAIT_FOR_START_DEAL, src_uuid))
-            {
-                GameSequence();
-            }
-        }
-        break;
-    }
-
-    case Protocol::CLIENT_HANDLE:
-    {
-        Deck handle;
-        in >> handle;
-
-        Place p = mEngine.GetPlayerPlace(src_uuid);
-
-        // Check if the uuid exists
-        if (p.Value() != Place::NOWHERE)
-        {
-            // Check sequence
-            if (mEngine.GetSequence() == Engine::WAIT_FOR_HANDLE)
-            {
-                // Check if right player
-                if (mEngine.GetCurrentPlayer() == p)
+                else
                 {
-                    if (mEngine.SetHandle(handle, p))
-                    {
-                        // Handle is valid, show it to all players
-                        Send(Protocol::TableShowHandle(handle, p, mId));
-                    }
-                    else
-                    {
-                        // Invalid or no handle, continue game (player has to play a card)
-                        GameSequence();
-                    }
+                    // Invalid or no handle, continue game (player has to play a card)
+                    GameSequence(out);
                 }
             }
         }
-        else
-        {
-            TLogError("Cannot get player place from UUID");
-        }
-        break;
     }
-
-    case Protocol::CLIENT_SYNC_HANDLE:
+    else if (cmd == "Card")
     {
-        // Check if the uuid exists
-        if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
-        {
-            if (mEngine.Sync(Engine::WAIT_FOR_SHOW_HANDLE, src_uuid))
-            {
-                GameSequence();
-            }
-        }
-        break;
-    }
-
-    case Protocol::CLIENT_CARD:
-    {
-        std::string cardName;
-
-        in >> cardName;
-        Card c(cardName);
+        Card c(json.FindValue("card").GetString());
 
         // Check if the card name exists
         if (c.IsValid())
         {
-            Place p = mEngine.GetPlayerPlace(src_uuid);
-
-            // Check if the uuid exists
-            if (p.Value() != Place::NOWHERE)
+            // Check sequence
+            if (mEngine.GetSequence() == Engine::WAIT_FOR_PLAYED_CARD)
             {
-                // Check sequence
-                if (mEngine.GetSequence() == Engine::WAIT_FOR_PLAYED_CARD)
+                Place p =  GetPlayerPlace(src_uuid);
+                // Check if right player
+                if (mEngine.GetCurrentPlayer() == p)
                 {
-                    // Check if right player
-                    if (mEngine.GetCurrentPlayer() == p)
+                    if (mEngine.SetCard(c, p))
                     {
-                        if (mEngine.SetCard(c, p))
-                        {
-                            // Broadcast played card, and wait for all acknowlegements
-                            Send(Protocol::TableShowCard(c, p, mId));
-                        }
-                    }
-                    else
-                    {
-                        TLogError("Wrong player");
+                        // Broadcast played card, and wait for all acknowlegements
+                        JsonObject obj;
+
+                        obj.AddValue("cmd", "ShowCard");
+                        obj.AddValue("place", p.ToString());
+                        obj.AddValue("card", c.ToString());
+
+                        out.push_back(Reply(mId, obj));
                     }
                 }
                 else
                 {
-                    TLogError("Bad sequence");
+                    TLogError("Wrong player");
                 }
             }
             else
             {
-                TLogError("Cannot get player place from UUID");
+                TLogError("Bad sequence");
             }
         }
         else
         {
             TLogError("Bad card name!");
         }
-        break;
     }
-
-    case Protocol::CLIENT_SYNC_SHOW_CARD:
+    else
     {
-        // Check if the uuid exists
-        if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
-        {
-            if (mEngine.Sync(Engine::WAIT_FOR_SHOW_CARD, src_uuid))
-            {
-                GameSequence();
-            }
-        }
-        break;
-    }
-
-    case Protocol::CLIENT_SYNC_TRICK:
-    {
-        // Check if the uuid exists
-        if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
-        {
-            if (mEngine.Sync(Engine::WAIT_FOR_END_OF_TRICK, src_uuid))
-            {
-                GameSequence();
-            }
-        }
-        break;
-    }
-
-    case Protocol::CLIENT_SYNC_END_OF_DEAL:
-    {
-        // Check if the uuid exists
-        if (mEngine.GetPlayerPlace(src_uuid) != Place::NOWHERE)
-        {
-            if (mEngine.Sync(Engine::WAIT_FOR_END_OF_DEAL, src_uuid))
-            {
-                EndOfDeal();
-            }
-        }
-        break;
-    }
-
-    default:
         TLogError("Unknown packet received");
-        break;
     }
-
-    return ret;
 }
 /*****************************************************************************/
-void PlayingTable::EndOfDeal()
+void PlayingTable::EndOfDeal(std::vector<Reply> &out)
 {
     bool continueGame = mScore.AddPoints(mEngine.GetCurrentGamePoints(), mEngine.GetBid(), mEngine.GetNbPlayers());
 
     if (continueGame)
     {
-        NewDeal();
+        NewDeal(out);
     }
     else
     {
         mEngine.StopGame();
-        Send(Protocol::TableEndOfGame(mScore.GetWinner(), mId));
+        JsonObject obj;
+
+        obj.AddValue("cmd", "EndOfGame");
+        obj.AddValue("winner", mScore.GetWinner().ToString());
+
+        out.push_back(Reply(mId, obj));
     }
 }
 /*****************************************************************************/
-void PlayingTable::NewGame()
+void PlayingTable::NewGame(std::vector<Reply> &out)
 {
+    JsonObject obj;
     mScore.NewGame(mGame.deals.size());
     mEngine.NewGame();
-    Send(Protocol::TableNewGame(mGame, mId));
+    ResetAck();
+
+    // Inform players about the game type
+    obj.AddValue("cmd", "NewGame");
+    obj.AddValue("mode", mGame.Get());
+
+    out.push_back(Reply(mId, obj));
 }
 /*****************************************************************************/
-void PlayingTable::NewDeal()
+void PlayingTable::NewDeal(std::vector<Reply> &out)
 {
     if (mScore.GetCurrentCounter() < mGame.deals.size())
     {
@@ -515,15 +515,14 @@ void PlayingTable::NewDeal()
         // Send the cards to all the players
         for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
         {
-            Player *player = mEngine.GetPlayer(Place(i));
-            if (player != NULL)
-            {
-                Send(Protocol::TableNewDeal(player, mId));
-            }
-            else
-            {
-                TLogError("Cannot get player deck");
-            }
+            JsonObject obj;
+            Place place(i);
+
+            Deck deck = mEngine.GetDeck(place);
+            obj.AddValue("cmd", "NewDeal");
+            obj.AddValue("cards", deck.ToString());
+
+            out.push_back(Reply(GetPlayerUuid(place), obj));
         }
     }
     else
@@ -532,13 +531,24 @@ void PlayingTable::NewDeal()
     }
 }
 /*****************************************************************************/
-void PlayingTable::StartDeal()
+void PlayingTable::StartDeal(std::vector<Reply> &out)
 {
     Place first = mEngine.StartDeal();
-    Send(Protocol::TableStartDeal(first, mEngine.GetBid(), mGame.deals[mScore.GetCurrentCounter()], mId));
+    Tarot::Bid bid = mEngine.GetBid();
+    JsonObject obj;
+
+    obj.AddValue("cmd", "StartDeal");
+    obj.AddValue("first_player", first.ToString());
+    obj.AddValue("taker", bid.taker.ToString());
+    obj.AddValue("contract", bid.contract.ToString());
+    obj.AddValue("slam", bid.slam);
+
+    helper::ToJson(mGame.deals[mScore.GetCurrentCounter()], obj);
+
+    out.push_back(Reply(mId, obj));
 }
 /*****************************************************************************/
-void PlayingTable::BidSequence()
+void PlayingTable::BidSequence(std::vector<Reply> &out)
 {
     // Launch/continue the bid sequence
     mEngine.BidSequence();
@@ -546,36 +556,68 @@ void PlayingTable::BidSequence()
     Engine::Sequence seq = mEngine.GetSequence();
     switch (seq)
     {
-        case Engine::WAIT_FOR_BID:
-            Send(Protocol::TableBidRequest(mEngine.GetBid().contract, mEngine.GetCurrentPlayer(), mId));
-            break;
+    case Engine::WAIT_FOR_BID:
+    {
+        JsonObject obj;
 
-        case Engine::WAIT_FOR_ALL_PASSED:
-            Send(Protocol::TableAllPassed(mId));
-            break;
+        obj.AddValue("cmd", "RequestBid");
+        obj.AddValue("place", mEngine.GetCurrentPlayer().ToString());
+        obj.AddValue("contract", mEngine.GetBid().contract.ToString());
+        out.push_back(Reply(mId, obj));
+        break;
+    }
 
-        case Engine::WAIT_FOR_START_DEAL:
-            StartDeal();
-            break;
+    case Engine::WAIT_FOR_ALL_PASSED:
+    {
+        JsonObject obj;
 
-        case Engine::WAIT_FOR_SHOW_DOG:
-            Send(Protocol::TableShowDog(mEngine.GetDog(), mId));
-            break;
+        obj.AddValue("cmd", "AllPassed");
+        out.push_back(Reply(mId, obj));
+        break;
+    }
+    case Engine::WAIT_FOR_START_DEAL:
+    {
+        StartDeal(out);
+        break;
+    }
 
-        default:
-            TLogError("Bad game sequence for bid");
-            break;
+    case Engine::WAIT_FOR_SHOW_DOG:
+    {
+        JsonObject obj;
+
+        obj.AddValue("cmd", "ShowDog");
+        obj.AddValue("dog", mEngine.GetDog().ToString());
+        out.push_back(Reply(mId, obj));
+        break;
+    }
+
+    default:
+        TLogError("Bad game sequence for bid");
+        break;
     }
 }
 /*****************************************************************************/
-void PlayingTable::GameSequence()
+void PlayingTable::GameSequence(std::vector<Reply> &out)
 {
     mEngine.GameSequence();
 
     if (mEngine.IsLastTrick())
     {
-        std::string json = mEngine.EndOfDeal();
-        Send(Protocol::TableEndOfDeal(mEngine.GetCurrentGamePoints(), json, mId));
+        JsonObject result;
+        JsonObject obj;
+        Points points = mEngine.GetCurrentGamePoints();
+
+        mEngine.EndOfDeal(result);
+
+        obj.AddValue("cmd", "EndOfDeal");
+        obj.AddValue("result", result);
+        obj.AddValue("points", points.pointsAttack);
+        obj.AddValue("oudlers", points.oudlers);
+        obj.AddValue("little_bonus", points.littleEndianOwner.Value());
+        obj.AddValue("handle_bonus", points.handlePoints);
+        obj.AddValue("slam_bonus", points.slamDone);
+
+        out.push_back(Reply(mId, obj));
     }
     else
     {
@@ -585,45 +627,39 @@ void PlayingTable::GameSequence()
 
         switch (seq)
         {
-            case Engine::WAIT_FOR_END_OF_TRICK:
-                Send(Protocol::TableEndOfTrick(p, mId));
-                break;
+        case Engine::WAIT_FOR_END_OF_TRICK:
+        {
+            JsonObject obj;
 
-            case Engine::WAIT_FOR_PLAYED_CARD:
-                Send(Protocol::TablePlayCard(p, mId));
-                break;
-
-            case Engine::WAIT_FOR_HANDLE:
-            {
-                Player *player = mEngine.GetPlayer(p);
-                if (player != NULL)
-                {
-                    Send(Protocol::TableAskForHandle(player->GetUuid(), mId));
-                }
-                else
-                {
-                    TLogError("Big problem here...");
-                }
-            }
+            obj.AddValue("cmd", "EndOfTrick");
+            obj.AddValue("place", p.ToString());
+            out.push_back(Reply(mId, obj));
             break;
+        }
+        case Engine::WAIT_FOR_PLAYED_CARD:
+        {
+            JsonObject obj;
 
-            default:
-                TLogError("Bad sequence, game engine state problem");
-                break;
+            obj.AddValue("cmd", "PlayCard");
+            obj.AddValue("place", p.ToString());
+            out.push_back(Reply(mId, obj));
+            break;
+        }
+        case Engine::WAIT_FOR_HANDLE:
+        {
+            JsonObject obj;
+
+            obj.AddValue("cmd", "AskForHandle");
+            out.push_back(Reply(GetPlayerUuid(p), obj));
+        }
+        break;
+
+        default:
+            TLogError("Bad sequence, game engine state problem");
+            break;
         }
     }
 }
-/*****************************************************************************/
-void PlayingTable::Send(const ByteArray &block)
-{
-    std::uint8_t cmd = Protocol::GetCommand(block);
-    std::stringstream dbg;
-    dbg << "Server PlayingTable sending packet: 0x" << std::hex << (int)cmd;
-    TLogNetwork(dbg.str());
-
-    mDataHandler.SendData(block);
-}
-
 
 //=============================================================================
 // End of file Server.cpp

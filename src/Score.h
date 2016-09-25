@@ -28,8 +28,6 @@
 #include <string>
 #include <map>
 #include "Common.h"
-#include "ByteStreamReader.h"
-#include "ByteStreamWriter.h"
 #include "TournamentConfig.h"
 
 /*****************************************************************************/
@@ -48,26 +46,6 @@ struct Points
     std::int32_t GetSlamPoints(const Tarot::Bid &bid) const;
     std::int32_t GetLittleEndianPoints() const;
     std::int32_t GetPoints(const Team team, const Tarot::Bid &bid) const;
-
-    friend ByteStreamWriter &operator<<(ByteStreamWriter &out, const Points &points)
-    {
-        out << points.pointsAttack
-            << points.oudlers
-            << points.handlePoints
-            << points.slamDone
-            << points.littleEndianOwner;
-        return out;
-    }
-
-    friend ByteStreamReader &operator>>(ByteStreamReader &in, Points &points)
-    {
-        in >> points.pointsAttack;
-        in >> points.oudlers;
-        in >> points.handlePoints;
-        in >> points.slamDone;
-        in >> points.littleEndianOwner;
-        return in;
-    }
 };
 /*****************************************************************************/
 class Score

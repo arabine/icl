@@ -25,6 +25,7 @@
 
 #include <chrono>
 #include <random>
+#include <sstream>
 
 #include "Engine.h"
 #include "DealFile.h"
@@ -61,7 +62,6 @@ Engine::~Engine()
 void Engine::Initialize()
 {
     mSequence = STOPPED;
-    ResetAck();
 }
 /*****************************************************************************/
 void Engine::CreateTable(std::uint8_t nbPlayers)
@@ -72,16 +72,10 @@ void Engine::CreateTable(std::uint8_t nbPlayers)
     // 1. Initialize internal states
     mBid.Initialize();
 
-    for (std::uint32_t i = 0U; i < 5U; i++)
-    {
-        mPlayers[i].SetUuid(0U); // close all the clients
-    }
-
     // Choose the dealer
     mDealer = DealFile::RandomPlace(mNbPlayers);
 
     // Wait for ready
-    ResetAck();
     mSequence = WAIT_FOR_PLAYERS;
 }
 /*****************************************************************************/
@@ -108,7 +102,6 @@ Tarot::Distribution Engine::NewDeal(const Tarot::Distribution &shuffle)
     CreateDeal(shReturned);
 
     // 4. Prepare the wait for ack
-    ResetAck();
     mSequence = WAIT_FOR_CARDS;
 
     return shReturned;
@@ -166,7 +159,6 @@ bool Engine::SetDiscard(const Deck &discard)
         TLogInfo(ss.str());
 
         mDeal.SetDiscard(discard, Team::ATTACK);
-        ResetAck();
         mSequence = WAIT_FOR_START_DEAL;
     }
     return valid;
@@ -195,7 +187,6 @@ bool Engine::SetHandle(const Deck &handle, Place p)
             team = Team::DEFENSE;
         }
 
-        ResetAck();
         mSequence = WAIT_FOR_SHOW_HANDLE;
         mDeal.SetHandle(handle, team);
     }
@@ -212,20 +203,19 @@ bool Engine::SetCard(const Card &c, Place p)
         mPlayers[p.Value()].Remove(c);
 
         std::stringstream ss;
-        ss << "Player " << p.ToString() << " played " << c.GetName() << " Engine player deck is: " << mPlayers[p.Value()].ToString();
+        ss << "Player " << p.ToString() << " played " << c.ToString() << " Engine player deck is: " << mPlayers[p.Value()].ToString();
         TLogInfo(ss.str());
 
         // ------- PREPARE NEXT ONE
         mPosition++; // done for this player
         mCurrentPlayer = mCurrentPlayer.Next(mNbPlayers); // next player!
-        ResetAck();
         mSequence = WAIT_FOR_SHOW_CARD;
         ret = true;
     }
     else
     {
         std::stringstream ss;
-        ss << "The player " << p.ToString() << " cannot play the card: " << c.GetName()
+        ss << "The player " << p.ToString() << " cannot play the card: " << c.ToString()
            << " on turn " << (int)mTrickCounter + 1 << " Engine deck is: " << mPlayers[p.Value()].ToString();
 
         TLogError(ss.str());
@@ -249,38 +239,8 @@ Contract Engine::SetBid(Contract c, bool slam, Place p)
     // ------- PREPARE NEXT ONE
     mPosition++; // done for this player
     mCurrentPlayer = mCurrentPlayer.Next(mNbPlayers); // next player!
-    ResetAck();
     mSequence = WAIT_FOR_SHOW_BID;
     return c;
-}
-/*****************************************************************************/
-bool Engine::AckFromAllPlayers()
-{
-    bool ack = false;
-    std::uint8_t counter = 0U;
-
-    for (std::uint8_t i = 0U; i < mNbPlayers; i++)
-    {
-        if (mPlayers[i].HasAck())
-        {
-            counter++;
-        }
-    }
-
-    if (counter == mNbPlayers)
-    {
-        ack = true;
-    }
-
-    return ack;
-}
-/*****************************************************************************/
-void Engine::ResetAck()
-{
-    for (std::uint8_t i = 0U; i < mNbPlayers; i++)
-    {
-        mPlayers[i].SetAck(false);
-    }
 }
 /*****************************************************************************/
 void Engine::StopGame()
@@ -297,7 +257,7 @@ void Engine::StopGame()
  * @param uuid
  * @return
  */
-Place Engine::AddPlayer(std::uint32_t uuid)
+Place Engine::AddPlayer()
 {
     Place p = Place::NOWHERE;
 
@@ -309,7 +269,6 @@ Place Engine::AddPlayer(std::uint32_t uuid)
             if (mPlayers[i].IsFree() == true)
             {
                 p = i;
-                mPlayers[i].SetUuid(uuid);
                 break;
             }
         }
@@ -317,74 +276,21 @@ Place Engine::AddPlayer(std::uint32_t uuid)
     return p;
 }
 /*****************************************************************************/
-void Engine::RemovePlayer(std::uint32_t uuid)
+Deck Engine::GetDeck(Place p)
 {
-    for (std::uint32_t i = 0U; i < mNbPlayers; i++)
-    {
-        if (mPlayers[i].GetUuid() == uuid)
-        {
-            mPlayers[i].SetUuid(0U);
-        }
-    }
-}
-/*****************************************************************************/
-Player *Engine::GetPlayer(Place p)
-{
-    Player *player = NULL;
+    Deck deck;
 
     if (p < Place::NOWHERE)
     {
-        player = &mPlayers[p.Value()];
+        deck = mPlayers[p.Value()];
     }
 
-    return player;
-}
-/*****************************************************************************/
-Player *Engine::GetPlayer(std::uint32_t uuid)
-{
-    Player *player = NULL;
-    for (std::uint8_t i = 0U; i < mNbPlayers; i++)
-    {
-        if (mPlayers[i].GetUuid() == uuid)
-        {
-            player = &mPlayers[i];
-            break;
-        }
-    }
-    return player;
-}
-/*****************************************************************************/
-Place Engine::GetPlayerPlace(std::uint32_t uuid)
-{
-    Place p = Place::NOWHERE;
-
-    for (std::uint8_t i = 0U; i < mNbPlayers; i++)
-    {
-        if (mPlayers[i].GetUuid() == uuid)
-        {
-            p = i;
-        }
-    }
-    return p;
+    return deck;
 }
 /*****************************************************************************/
 Points Engine::GetCurrentGamePoints()
 {
     return mCurrentPoints;
-}
-/*****************************************************************************/
-bool Engine::Sync(Sequence sequence, std::uint32_t uuid)
-{
-    Player *player = GetPlayer(uuid);
-
-    if (player != NULL)
-    {
-        if (mSequence == sequence)
-        {
-            player->SetAck();
-        }
-    }
-    return AckFromAllPlayers();
 }
 /*****************************************************************************/
 /**
@@ -401,7 +307,6 @@ void Engine::GameSequence()
         // The current trick winner will begin the next trick
         mCurrentPlayer = mDeal.SetTrick(currentTrick, mTrickCounter);
         currentTrick.Clear();
-        ResetAck();
         mSequence = WAIT_FOR_END_OF_TRICK;
     }
     // Special case of first round: players can declare a handle
@@ -418,21 +323,17 @@ void Engine::GameSequence()
         message << "Turn: " << (std::uint32_t)mTrickCounter << " player: " << mCurrentPlayer.ToString();
         TLogInfo(message.str());
 
-        ResetAck();
         mSequence = WAIT_FOR_PLAYED_CARD;
     }
 }
 /*****************************************************************************/
-std::string Engine::EndOfDeal()
+void Engine::EndOfDeal(JsonObject &json)
 {
     mCurrentPoints.Clear();
     mDeal.AnalyzeGame(mCurrentPoints, mNbPlayers);
-    std::string result = mDeal.GenerateEndDealLog(mNbPlayers);
+    mDeal.GenerateEndDealLog(mNbPlayers, json);
 
-    ResetAck();
     mSequence = WAIT_FOR_END_OF_DEAL;
-
-    return result;
 }
 /*****************************************************************************/
 
@@ -448,7 +349,6 @@ void Engine::BidSequence()
         if (mBid.contract == Contract::PASS)
         {
             // All the players have passed, deal again new cards
-            ResetAck();
             mSequence = WAIT_FOR_ALL_PASSED;
         }
         else
@@ -467,20 +367,17 @@ void Engine::BidSequence()
                 }
 
                 // We do not display the dog and start the deal immediatly
-                ResetAck();
                 mSequence = WAIT_FOR_START_DEAL;
             }
             else
             {
                 // Show the dog to all the players
-                ResetAck();
                 mSequence = WAIT_FOR_SHOW_DOG;
             }
         }
     }
     else
     {
-        ResetAck();
         mSequence = WAIT_FOR_BID;
     }
 }

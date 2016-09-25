@@ -359,7 +359,7 @@ void Bot::PlayCard()
 
         if (c.IsValid())
         {
-            message << " Randomly chosen card is: " << c.GetName();
+            message << " Randomly chosen card is: " << c.ToString();
             TLogInfo(message.str());
         }
         else
@@ -371,7 +371,7 @@ void Bot::PlayCard()
     mClient->mPlayer.Remove(c);
     if (c.IsValid())
     {
-        mNet.SendPacket(Protocol::ClientCard(c.GetName(), mClient->mPlayer.GetUuid(), mClient->mTableId));
+        mNet.SendPacket(Protocol::ClientCard(c.ToString(), mClient->mPlayer.GetUuid(), mClient->mTableId));
     }
     else
     {

@@ -75,7 +75,7 @@ public:
     std::uint8_t    GetSuit() const;
     float           GetPoints();
     std::uint8_t    GetValue() const;
-    std::string     GetName() const;
+    std::string     ToString() const;
 
 private:
     std::uint8_t mSuit;      //!< Trumps, Hearts, Spades, Diamonds or Clubs

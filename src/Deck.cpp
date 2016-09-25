@@ -207,7 +207,7 @@ std::string Deck::ToString() const
         {
             list += ";";
         }
-        list += (*it).GetName();
+        list += (*it).ToString();
     }
     return list;
 }
@@ -233,7 +233,7 @@ Card Deck::GetCard(const std::string &i_name)
     Card card;
     for (Deck::ConstIterator i = Begin(); i != End(); ++i)
     {
-        if ((*i).GetName() == i_name)
+        if ((*i).ToString() == i_name)
         {
             card = (*i);
         }

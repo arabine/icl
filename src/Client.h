@@ -38,7 +38,7 @@
 #include "Score.h"
 
 /*****************************************************************************/
-struct Client : public Protocol::IWorkItem
+struct Client
 {
 
 public:

@@ -46,6 +46,7 @@ class Engine
 public:
     enum Sequence
     {
+        BAD_STEP,
         STOPPED,
         WAIT_FOR_PLAYERS,
         WAIT_FOR_READY,
@@ -74,19 +75,14 @@ public:
     void NewGame();
     Tarot::Distribution NewDeal(const Tarot::Distribution &shuffle);
     Place StartDeal();
-    std::string EndOfDeal();
-
-    Place AddPlayer(std::uint32_t uuid);
-    void RemovePlayer(std::uint32_t uuid);
+    void EndOfDeal(JsonObject &json);
+    Place AddPlayer();
     void BidSequence();
     void DiscardSequence();
     void GameSequence();
-    bool Sync(Sequence sequence, std::uint32_t uuid);
 
     // Getters
-    Player *GetPlayer(Place p);
-    Player *GetPlayer(std::uint32_t uuid);
-    Place GetPlayerPlace(std::uint32_t uuid);
+    Deck GetDeck(Place p);
     Place GetCurrentPlayer()
     {
         return mCurrentPlayer;
@@ -125,7 +121,6 @@ public:
 private:
     Player  mPlayers[5];     // [3..5] deck of players with their UUID, index = Place
     Deck    currentTrick;   // store the current trick cards played
-
     Deal    mDeal;
     Points  mCurrentPoints;
 
@@ -140,8 +135,6 @@ private:
     unsigned        mSeed;
     bool            mHandleAsked[5U];
 
-    bool AckFromAllPlayers();
-    void ResetAck();
     void CreateDeal(Tarot::Distribution &shuffle);
     bool IsEndOfTrick();
 };

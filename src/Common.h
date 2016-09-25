@@ -29,8 +29,6 @@
 #include <string>
 #include <cstdint>
 #include <vector>
-#include "ByteStreamReader.h"
-#include "ByteStreamWriter.h"
 #include "Util.h"
 
 
@@ -60,18 +58,6 @@ public:
     inline bool operator != (const Team &rhs) const
     {
         return (this->mTeam != rhs.mTeam);
-    }
-
-    friend ByteStreamWriter &operator<<(ByteStreamWriter &out, const Team &t)
-    {
-        out << t.mTeam;
-        return out;
-    }
-
-    friend ByteStreamReader &operator>>(ByteStreamReader &s, Team &t)
-    {
-        s >> t.mTeam;
-        return s;
     }
 
 private:
@@ -142,18 +128,6 @@ public:
         return (this->mPlace > rhs.mPlace);
     }
 
-    friend ByteStreamWriter &operator<<(ByteStreamWriter &out, const Place &p)
-    {
-        out << p.mPlace;
-        return out;
-    }
-
-    friend ByteStreamReader &operator>>(ByteStreamReader &s, Place &p)
-    {
-        s >> p.mPlace;
-        return s;
-    }
-
 private:
     std::uint8_t mPlace;
     static std::vector<std::string> mStrings;
@@ -214,18 +188,6 @@ public:
     inline bool operator >= (const Contract &rhs) const
     {
         return (this->mContract >= rhs.mContract);
-    }
-
-    friend ByteStreamWriter &operator<<(ByteStreamWriter &out, const Contract &c)
-    {
-        out << c.mContract;
-        return out;
-    }
-
-    friend ByteStreamReader &operator>>(ByteStreamReader &s, Contract &c)
-    {
-        s >> c.mContract;
-        return s;
     }
 
 private:
@@ -293,9 +255,45 @@ public:
         static const std::uint8_t NUMBERED_DEAL = 1U;
         static const std::uint8_t CUSTOM_DEAL   = 2U;
 
+        static const std::string cRandomTxt;
+        static const std::string cNumberedTxt;
+        static const std::string cCustomTxt;
+
         std::uint8_t    mType;
         std::string     mFile;
         std::uint32_t   mSeed;
+
+        void TypeFromString(const std::string &type)
+        {
+            if (type == cRandomTxt)
+            {
+                mType = RANDOM_DEAL;
+            }
+            else if (type == cNumberedTxt)
+            {
+                mType = NUMBERED_DEAL;
+            }
+            else
+            {
+                mType = CUSTOM_DEAL;
+            }
+        }
+
+        std::string TypeToString() const
+        {
+            if (mType == RANDOM_DEAL)
+            {
+                return cRandomTxt;
+            }
+            else if (mType == NUMBERED_DEAL)
+            {
+                return cNumberedTxt;
+            }
+            else
+            {
+                return cCustomTxt;
+            }
+        }
 
         Distribution()
         {
@@ -317,21 +315,6 @@ public:
             mSeed = 0U;
         }
 
-        friend ByteStreamWriter &operator<<(ByteStreamWriter &out, const Distribution &sh)
-        {
-            out << sh.mType
-                << sh.mFile
-                << sh.mSeed;
-            return out;
-        }
-
-        friend ByteStreamReader &operator>>(ByteStreamReader &in, Distribution &sh)
-        {
-            in >> sh.mType;
-            in >> sh.mFile;
-            in >> sh.mSeed;
-            return in;
-        }
     };
 
     struct Game
@@ -340,41 +323,49 @@ public:
         static const std::uint8_t cSimpleTournament = 2U; ///< Play N consecutive random deals with final score
         static const std::uint8_t cCustom           = 3U;
 
+        static const std::string cQuickDealTxt;
+        static const std::string cSimpleTournamentTxt;
+        static const std::string cCustomTxt;
+
         std::uint8_t mode;  ///< Current game mode
         std::vector<Tarot::Distribution> deals;
+
+        void Set(const std::string &modeTxt)
+        {
+            if (modeTxt == cCustomTxt)
+            {
+                mode = cCustom;
+            }
+            else if (modeTxt == cSimpleTournamentTxt)
+            {
+                mode = cSimpleTournament;
+            }
+            else
+            {
+                mode = cQuickDeal;
+            }
+        }
+
+        std::string Get() const
+        {
+            if (mode == cCustom)
+            {
+                return cCustomTxt;
+            }
+            else if (mode == cSimpleTournament)
+            {
+                return cSimpleTournamentTxt;
+            }
+            else
+            {
+                return cQuickDealTxt;
+            }
+        }
 
         Game()
         {
             mode = cQuickDeal;
             deals.push_back(Tarot::Distribution());
-        }
-
-        friend ByteStreamWriter &operator<<(ByteStreamWriter &out, const Game &game)
-        {
-            out << game.mode;
-            out << (std::uint8_t)game.deals.size();
-
-            for (std::uint32_t i = 0U; i < game.deals.size(); i++)
-            {
-                out << game.deals[i];
-            }
-            return out;
-        }
-
-        friend ByteStreamReader &operator>>(ByteStreamReader &in, Game &game)
-        {
-            std::uint8_t size;
-            in >> game.mode;
-            in >> size;
-
-            game.deals.clear();
-            for (std::uint8_t i = 0U; i < size; i++)
-            {
-                Distribution sh;
-                in >> sh;
-                game.deals.push_back(sh);
-            }
-            return in;
         }
     };
 

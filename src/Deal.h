@@ -50,7 +50,7 @@ public:
     void NewDeal();
     void StartDeal(Place firstPlayer, const Tarot::Bid &bid);
     void AnalyzeGame(Points &points, std::uint8_t numberOfPlayers);
-    std::string GenerateEndDealLog(std::uint8_t numberOfPlayers);
+    void GenerateEndDealLog(std::uint8_t numberOfPlayers, JsonObject &json);
     bool LoadGameDealLog(const std::string &fileName);
     bool LoadGameDeal(const std::string &buffer);
     bool DecodeJsonDeal(const JsonValue &json);

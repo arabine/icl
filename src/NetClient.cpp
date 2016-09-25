@@ -55,7 +55,7 @@ void NetClient::Initialize()
 /*****************************************************************************/
 void NetClient::SendPacket(const ByteArray &packet)
 {
-    std::uint8_t cmd = Protocol::GetCommand(packet);
+    std::uint8_t cmd = Protocol::GetArg(packet);
     std::stringstream dbg;
     dbg << "Client sending packet: 0x" << std::hex << (int)cmd;
     TLogNetwork(dbg.str());

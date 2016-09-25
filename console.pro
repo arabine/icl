@@ -42,35 +42,18 @@ MOC_DIR         = $$DESTDIR/moc
 # Console project: the search path for QtCreator & Make
 # ------------------------------------------------------------------------------
 VPATH += $$BASE_DIR/src
-VPATH += $$BASE_DIR/src/jsengine
-VPATH += $$BASE_DIR/src/json
-VPATH += $$BASE_DIR/src/zip
 VPATH += $$BASE_DIR/src/config
 VPATH += $$BASE_DIR/ai
 VPATH += $$BASE_DIR/ai/tarotlib
 VPATH += $$BASE_DIR/console
 
 INCLUDEPATH += $$BASE_DIR/src
-INCLUDEPATH += $$BASE_DIR/src/jsengine
-INCLUDEPATH += $$BASE_DIR/src/json
-INCLUDEPATH += $$BASE_DIR/src/zip
 INCLUDEPATH += $$BASE_DIR/src/config
 INCLUDEPATH += $$BASE_DIR/console
 
 
-# ------------------------------------------------------------------------------
-# ICL Library
-# ------------------------------------------------------------------------------
-VPATH += $$BASE_DIR/src/icl/src/security
-VPATH += $$BASE_DIR/src/icl/src/io
-VPATH += $$BASE_DIR/src/icl/src/network
-VPATH += $$BASE_DIR/src/icl/src/util
-
-INCLUDEPATH += $$BASE_DIR/src/icl/src/security
-INCLUDEPATH += $$BASE_DIR/src/icl/src/io
-INCLUDEPATH += $$BASE_DIR/src/icl/src/network
-INCLUDEPATH += $$BASE_DIR/src/icl/src/util
-
+ICL_DIR = $$BASE_DIR/src/icl
+include($$ICL_DIR/icl.pri)
 
 # ------------------------------------------------------------------------------
 # Compiler definitions
@@ -108,61 +91,6 @@ debug {
 }
 
 # ------------------------------------------------------------------------------
-# Library files
-# ------------------------------------------------------------------------------
-HEADERS += Log.h \
-    Observer.h \
-    Util.h \
-    ThreadQueue.h \
-    ByteStreamReader.h \
-    ByteStreamWriter.h \
-    ByteArray.h \
-    TcpSocket.h \
-    TcpServer.h \
-    TcpClient.h \
-    WebSocket.h \
-    UniqueId.h \
-    Value.h \
-    GetOptions.h \
-    Base64.h \
-    Sha1.h \
-    Zip.h \
-    TcpServerBase.h
-
-SOURCES += Log.cpp \
-    Util.cpp \
-    ByteArray.cpp \
-    ByteStreamReader.cpp \
-    ByteStreamWriter.cpp \
-    TcpSocket.cpp \
-    TcpServer.cpp \
-    TcpClient.cpp \
-    WebSocket.cpp \
-    UniqueId.cpp \
-    Value.cpp \
-    Base64.cpp \
-    Sha1.cpp \
-    Zip.cpp \
-    TcpServerBase.cpp
-
-# ------------------------------------------------------------------------------
-# JSEngine and JSON files
-# ------------------------------------------------------------------------------
-
-HEADERS += duktape.h \
-    JsonWriter.h \
-    JsonReader.h \
-    JSEngine.h \
-    IScriptEngine.h \
-    JsonValue.h
-
-SOURCES += duktape.c \
-    JsonWriter.cpp \
-    JsonReader.cpp \
-    JSEngine.cpp \
-    JsonValue.cpp
-
-# ------------------------------------------------------------------------------
 # TarotClub core files
 # ------------------------------------------------------------------------------
 HEADERS += ServerConfig.h \
@@ -185,6 +113,7 @@ HEADERS += ServerConfig.h \
     Lobby.h \
     NetClient.h \
     BotManager.h \
+    NetHelper.h \
     Server.h
 
 SOURCES += ServerConfig.cpp \
@@ -212,8 +141,6 @@ SOURCES += ServerConfig.cpp \
 # Console files
 # ------------------------------------------------------------------------------
 SOURCES +=  main.cpp
-
-HEADERS += Version.h
 
 
 # End of project file

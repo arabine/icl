@@ -63,6 +63,14 @@ const std::uint8_t Contract::GUARD_AGAINST = 4;
 
 std::vector<std::string> Contract::mStrings = Contract::Initialize();
 /*****************************************************************************/
+const std::string Tarot::Game::cQuickDealTxt          = "QuickDeal";
+const std::string Tarot::Game::cSimpleTournamentTxt   = "SimpleTournament";
+const std::string Tarot::Game::cCustomTxt             = "Custom";
+/*****************************************************************************/
+const std::string Tarot::Distribution::cRandomTxt      = "Random";
+const std::string Tarot::Distribution::cNumberedTxt    = "Numbered";
+const std::string Tarot::Distribution::cCustomTxt      = "Custom";
+/*****************************************************************************/
 Place::Place()
     : mPlace(NOWHERE)
 {

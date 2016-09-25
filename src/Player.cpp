@@ -28,20 +28,8 @@
 
 /*****************************************************************************/
 Player::Player()
-    : mUuid(Protocol::INVALID_UID)
-    , mAck(false)
 {
 
-}
-/*****************************************************************************/
-std::uint32_t Player::GetUuid() const
-{
-    return mUuid;
-}
-/*****************************************************************************/
-void Player::SetUuid(std::uint32_t value)
-{
-    mUuid = value;
 }
 /*****************************************************************************/
 Deck Player::AutoDiscard(const Deck &dog, std::uint8_t nbPlayers)
@@ -86,7 +74,7 @@ bool Player::CanPlayCard(const Card &card, Deck &trick)
 {
     std::uint8_t   suit; // required suit
     bool ret = false;
-    PlayerStats stats;
+    Stats stats;
 
     // Check if the player has the card in hand
     if (!HasCard(card))
@@ -195,7 +183,7 @@ bool Player::CanPlayCard(const Card &card, Deck &trick)
  * @param maxPreviousTrump
  * @return
  */
-bool Player::TestPlayTrump(const Card &card, const PlayerStats &stats)
+bool Player::TestPlayTrump(const Card &card, const Stats &stats)
 {
     bool ret = false;
 
@@ -344,18 +332,6 @@ void Player::RemoveDuplicates(const Deck &cards)
         {
             Remove(c);
         }
-    }
-}
-/*****************************************************************************/
-bool Player::IsFree()
-{
-    if (mUuid == 0U)
-    {
-        return true;
-    }
-    else
-    {
-        return false;
     }
 }
 

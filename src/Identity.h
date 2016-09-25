@@ -29,8 +29,6 @@
 
 #include <string>
 #include <cstdint>
-#include "ByteStreamReader.h"
-#include "ByteStreamWriter.h"
 
 /*****************************************************************************/
 struct Identity
@@ -53,26 +51,29 @@ public:
 
     }
 
-    // operator overload to easily serialize parameters
-    friend ByteStreamWriter &operator<<(ByteStreamWriter &out, const Identity &ident)
+    std::string GenderToString()
     {
-        out << ident.nickname
-            << ident.avatar
-            << ident.gender
-            << ident.username;
-        return out;
+        std::string txt = "Unknown";
+        switch(gender)
+        {
+        case cGenderInvalid:
+            txt = "Invalid";
+            break;
+        case cGenderMale:
+            txt = "Male";
+            break;
+        case cGenderFemale:
+            txt = "Female";
+            break;
+        case cGenderRobot:
+            txt = "Robot";
+            break;
+        case cGenderDummy:
+            txt = "Dummy";
+            break;
+        }
+        return txt;
     }
-
-    friend ByteStreamReader &operator>>(ByteStreamReader &in, Identity &ident)
-    {
-        in >> ident.nickname;
-        in >> ident.avatar;
-        in >> ident.gender;
-        in >> ident.username;
-
-        return in;
-    }
-
 };
 
 #endif // IDENTITY_H
