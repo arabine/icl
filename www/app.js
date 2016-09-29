@@ -4,6 +4,7 @@
 // LOADING OFFICIAL EXPRESS MIDDLEWARE
 // ============================================================================
 var express       = require('express');
+var https         = require('https');
 var nano          = require('nano')('http://localhost:5984');
 var hbs           = require('hbs');
 var bodyParser    = require("body-parser"); // for reading POSTed form data into `req.body`
@@ -15,6 +16,17 @@ var uuid          = require('node-uuid');
 var multer        = require('multer');
 var net           = require("net");
 var async         = require('async');
+var fs            = require('fs');
+
+
+// ============================================================================
+// HTTPS SSL CERTIFICATES
+// ============================================================================
+// 
+var options = {
+    key: fs.readFileSync('/opt/tarotclub.pem'),
+    cert: fs.readFileSync('/opt/tarotclub.cert')
+};
 
 // ============================================================================
 // CONSOLE AND LOG CONFIGURATION
@@ -244,7 +256,7 @@ usersDb.Create(function(createStatus) {
             if (createStatus) {
                 usersDb.UpgradeViews(function(upgradeStatus) {
                     if (upgradeStatus) {
-                        app.listen(8080);
+                        https.createServer(options, app).listen(443);
                         console.log('Server started on port 8080');
                     } else {
                         console.log('Failed to upgrade the views, server not started.');
