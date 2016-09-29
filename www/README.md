@@ -10,7 +10,7 @@ adduser systemd-sysv
 ## Install tools
 
 ```
-apt-get install nodejs npm build-essential mercurial iptables-persistent
+apt-get install nodejs npm build-essential git iptables-persistent
 ```
 
 Compile and install CouchDb 1.6.1 from the sources.
