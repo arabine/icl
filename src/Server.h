@@ -38,7 +38,7 @@
 #include <chrono>
 
 /*****************************************************************************/
-class Server : private TcpServer::IEvent, private Lobby::IPacketNotifier
+class Server : private TcpServer::IEvent
 {
 public:
     Server();
@@ -55,9 +55,6 @@ private:
     virtual void ClientClosed(const Peer &peer);
     virtual void ServerTerminated(CloseType type);
 
-    // From Lobby::IPacketNotifier
-    virtual void Send(const std::string &data, uint32_t src_uuid, uint32_t dest_uuid, const std::vector<uint32_t> &peers);
-
     // A TarotClub server contains:
     // 1. A lobby, to manage chat between players and playing tables
     Lobby mLobby;
@@ -67,7 +64,6 @@ private:
     int             mGamePort;
     TcpServer       mTcpServer;
     std::map<std::uint32_t, Peer> mPeers; // pair of uuid, Peer info
-
 
     void SendDataToPlayer(const ByteArray &data);
     std::uint32_t GetUuid(const Peer &peer);

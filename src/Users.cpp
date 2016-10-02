@@ -125,6 +125,45 @@ bool Users::IsHere(std::uint32_t uuid)
     return isHere;
 }
 /*****************************************************************************/
+bool Users::CheckNickName(std::uint32_t uuid, const std::string &nickname)
+{
+    // Check if not already used
+    bool already_used = false;
+    for (std::uint32_t i = 0U; i < mUsers.size(); i++)
+    {
+        if (mUsers[i].uuid != uuid)
+        {
+            if (mUsers[i].nickname == nickname)
+            {
+                already_used = true;
+                break;
+            }
+        }
+    }
+
+    return already_used;
+}
+/*****************************************************************************/
+bool Users::ChangeNickName(uint32_t uuid, const std::string &nickname)
+{
+    bool ret = false;
+
+    // Check if not already used before changing it
+    if (!CheckNickName(uuid, nickname))
+    {
+        for (std::uint32_t i = 0U; i < mUsers.size(); i++)
+        {
+            if (mUsers[i].uuid == uuid)
+            {
+                 mUsers[i].nickname = nickname;
+                 ret = true;
+                 break;
+            }
+        }
+    }
+    return ret;
+}
+/*****************************************************************************/
 /**
  * @brief Users::AddUser
  *
@@ -136,7 +175,6 @@ std::uint32_t Users::AddUser()
 {
     std::uint32_t uuid = mIdManager.TakeId();
 
-
     Entry entry;
     entry.tableId = Protocol::NO_TABLE;
     entry.connected = false;
@@ -146,35 +184,21 @@ std::uint32_t Users::AddUser()
     return uuid;
 }
 /*****************************************************************************/
-bool Users::AccessGranted(std::uint32_t uuid, const Identity &ident)
+bool Users::AccessGranted(std::uint32_t uuid, const std::string &nickname)
 {
     bool ret = false;
 
-    for (std::uint32_t i = 0; i < mUsers.size(); i++)
+    if (!CheckNickName(uuid, nickname))
     {
-        if (mUsers[i].uuid == uuid)
+        for (std::uint32_t i = 0U; i < mUsers.size(); i++)
         {
-            mUsers[i].connected = true;
-            mUsers[i].identity = ident;
-
-            // We change its name if equal to an already connected player
-            for (std::uint32_t j = 0; j < mUsers.size(); j++)
+            if (mUsers[i].uuid == uuid)
             {
-                if (mUsers[j].uuid != uuid)
-                {
-                    if (mUsers[j].identity.nickname == ident.nickname)
-                    {
-                        // Append the uuid to the name to make it unique within the server
-                        std::stringstream ss;
-                        ss << ident.nickname << uuid;
-                        mUsers[i].identity.nickname =  ss.str();
-                        break;
-                    }
-                }
+                mUsers[i].connected = true;
+                mUsers[i].nickname = nickname;
+                ret = true;
+                break;
             }
-
-            ret = true;
-            break;
         }
     }
 
@@ -183,7 +207,7 @@ bool Users::AccessGranted(std::uint32_t uuid, const Identity &ident)
 /*****************************************************************************/
 void Users::RemoveUser(std::uint32_t uuid)
 {
-    for (std::uint32_t i = 0; i < mUsers.size(); i++)
+    for (std::uint32_t i = 0U; i < mUsers.size(); i++)
     {
         if (mUsers[i].uuid == uuid)
         {

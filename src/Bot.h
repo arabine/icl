@@ -26,13 +26,12 @@
 #ifndef BOT_H
 #define BOT_H
 
-#include "Client.h"
-#include "NetClient.h"
+#include "NetHelper.h"
 #include "JSEngine.h"
 #include "Log.h"
 
 /*****************************************************************************/
-class Bot : public Client::IEvent, public NetClient::IEvent
+class Bot
 {
 
 public:
@@ -40,61 +39,21 @@ public:
     virtual ~Bot();
 
     void SetTimeBeforeSend(std::uint16_t t);
-    void SetIdentity(const Identity &ident);
+    void SetIdentity(const std::string &nickname, std::vector<helper::Reply> &out);
     void SetAiScript(const std::string &path);
-    void Initialize();
     void ConnectToHost(const std::string &hostName, std::uint16_t port);
-    void Close()
-    {
-        mNet.Close();
-    }
     void SetTableToJoin(std::uint32_t table) { mTableToJoin = table; }
-    std::uint32_t GetUuid() { return mClient->mPlayer.GetUuid(); }
-    bool IsConnected() { return mNet.IsConnected(); }
+    std::uint32_t GetUuid() { return mClient.mUuid; }
     void JoinTable(std::uint32_t tableId);
 
 private:
-    std::shared_ptr<Client> mClient;
-    NetClient mNet;
+    helper::BasicClient mClient;
     std::uint16_t  mTimeBeforeSend;
     JSEngine mBotEngine;
     std::uint32_t mTableToJoin;
     std::string mScriptPath;
 
     bool InitializeScriptContext();
-
-    // Client events
-    virtual void RequestLogin();
-    virtual void Error(std::uint32_t errorId);
-    virtual void EnteredLobby();
-    virtual void KickedFromLobby();
-    virtual void AdminGameFull();
-    virtual void TableQuitEvent(std::uint32_t tableId);
-    virtual void TableMessage(const std::string &message);
-    virtual void LobbyMessage(const std::string &message);
-    virtual void TableJoinEvent(std::uint32_t tableId);
-    virtual void TablePlayersList();
-    virtual void LobbyPlayersList();
-    virtual void NewDeal();
-    virtual void SelectPlayer(Place p);
-    virtual void RequestBid(Contract highestBid);
-    virtual void ShowBid(Place p, bool slam, Contract c);
-    virtual void AllPassed();
-    virtual void StartDeal();
-    virtual void ShowDog();
-    virtual void AskForHandle();
-    virtual void ShowHandle();
-    virtual void BuildDiscard();
-    virtual void NewGame();
-    virtual void PlayCard();
-    virtual void ShowCard(Place p, const std::string &name);
-    virtual void WaitTrick(Place winner);
-    virtual void EndOfDeal();
-    virtual void EndOfGame(Place winner);
-
-    // From NetClient::IEvent
-    virtual void NetSignal(std::uint32_t sig);
-
 };
 
 #endif // BOT_H

@@ -54,7 +54,6 @@ public:
     Protocol();
     ~Protocol();
 
-
     std::uint32_t GetSourceUuid();
     std::uint32_t GetDestUuid();
     std::string GetType();

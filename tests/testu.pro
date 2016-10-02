@@ -112,7 +112,9 @@ HEADERS += Deck.h \
     DealFile.h \
     Lobby.h \
     PlayingTable.h \
+    NetHelper.h \
     Users.h \
+    Bot.h \
     Protocol.h
 
 SOURCES += Deck.cpp \
@@ -128,7 +130,9 @@ SOURCES += Deck.cpp \
     Score.cpp \
     Lobby.cpp \
     PlayingTable.cpp \
+    NetHelper.cpp \
     Users.cpp \
+    Bot.cpp \
     Protocol.cpp
 
 # ------------------------------------------------------------------------------
@@ -136,10 +140,12 @@ SOURCES += Deck.cpp \
 # ------------------------------------------------------------------------------
 
 HEADERS +=  tst_tarot_base.h \
-            tst_tarot_rules.h
+            tst_tarot_rules.h \
+            tst_tarot_protocol.h
 
 SOURCES +=  main.cpp \
             tst_tarot_base.cpp \
             tst_tarot_rules.cpp \
+            tst_tarot_protocol.cpp
 
 # End of project file

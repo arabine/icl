@@ -2,28 +2,36 @@
 
 ## Transport layer and header
 
-TCP/IP on port 42
+TCP/IP on port 4269
 
-## Tarot sequence messages
+## Tarot Game Notation
+
+FIXME: describe the JSON deal format
+
+## Protocol
+
+### Login Server
+
+TarotClub server is using HTTPS for login and for important account actions (buy/sell/transfer items). When the client logins to the server over HTTPS the server generates a long (64-128 bytes) random session id that is stored in the database (RAM only DB such as XXX). Also generate a temporary one-time authentication token (long random value) for the client's TCP connection.
+
+The reason for using HTTPS is to help stop MITM attacks from stealing the users in game assets.
+
 
 ### Lobby connection
 
-1. Client perform a TCP connection to the game server
-2. Client receive a request for user login with several parameters
-    uuid: assigned uuid of the new client
+Client perform a TCP connection to the game server.
+
+Client receive a request for user login with several parameters. uuid: assigned uuid of the new client
 
 {
 	"cmd": "RequestLogin",
 	"uuid": 766
-	
-	// Room for future improvements: ask for password 
 } 
 
 3. Server receive connection parameters
 
 {
 	"cmd": "ReplyLogin",
-	"username": anthony.rabine@tarotclub.net,
 	"nickname": "Belegar"
 }
 
@@ -47,6 +55,15 @@ TCP/IP on port 42
 	]
 }
 
+### Change nickame
+
+Client can ask to the server to change the identity
+
+{
+	"cmd": "RequestChangeNickname",
+	"nickname": "Zouma"
+}
+
 ### Chat message
 
 All the stats messages are always sent to the lobby.
@@ -59,7 +76,7 @@ Target indicate the destination UUID of the message.
 	"target": 789
 }
 
-### Join a table
+### Join/Quit a table
 
 Client send a request to the lobby with the specified table number to join
 
@@ -75,7 +92,7 @@ If there is at least one free slot around the table, the server replies:
 	"table_id": 27,
 	"size": 4,
 	"players": [
-		{ "place": "South", uuid": 367, "avatar": "http://www.fsdfds.com", "gender": "male" },
+		{ "place": "South", uuid": 367 },
 	]
 }
 
@@ -95,6 +112,13 @@ in case of error, the following data is sent by the server:
 	"cmd": "Error",
 	"code": 7,
 	"reason": "Table is full"
+}
+
+Client can quit a table
+
+{
+	"cmd": "RequestQuitTable",
+	"table_id": 98987
 }
 
 ### Deal type

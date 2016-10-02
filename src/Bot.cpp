@@ -34,7 +34,6 @@
 /*****************************************************************************/
 Bot::Bot()
     : mClient(new Client(*this))
-    , mNet(std::shared_ptr<Protocol::IWorkItem>(mClient), *this)
     , mTimeBeforeSend(0U)
     , mTableToJoin(0U)
 {
@@ -43,7 +42,7 @@ Bot::Bot()
 /*****************************************************************************/
 Bot::~Bot()
 {
-    mNet.Close();
+
 }
 /*****************************************************************************/
 void Bot::TableMessage(const std::string &message)
@@ -419,15 +418,10 @@ void Bot::SetTimeBeforeSend(std::uint16_t t)
     mTimeBeforeSend = t;
 }
 /*****************************************************************************/
-void Bot::SetIdentity(const Identity &ident)
+void Bot::SetIdentity(const std::string &nickname, std::vector<helper::Reply> &out)
 {
-    mClient->mIdentity = ident;
-
-    if (mNet.IsConnected())
-    {
-        // Send the new client identity to the server
-        mNet.SendPacket(Protocol::ClientChangeIdentity(mClient->mPlayer.GetUuid(), ident));
-    }
+    mClient.mNickName = nickname;
+    mClient.BuildChangeNickname(out);
 }
 /*****************************************************************************/
 void Bot::SetAiScript(const std::string &path)
@@ -437,13 +431,7 @@ void Bot::SetAiScript(const std::string &path)
 /*****************************************************************************/
 void Bot::JoinTable(std::uint32_t tableId)
 {
-    mNet.SendPacket(Protocol::ClientJoinTable(mClient->mPlayer.GetUuid(), tableId));
-}
-/*****************************************************************************/
-void Bot::Initialize()
-{
-    mClient->Initialize();
-    mNet.Initialize();
+//    mNet.SendPacket(Protocol::ClientJoinTable(mClient->mPlayer.GetUuid(), tableId));
 }
 /*****************************************************************************/
 void Bot::ConnectToHost(const std::string &hostName, std::uint16_t port)

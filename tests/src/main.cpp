@@ -6,6 +6,7 @@
 
 #include "tst_tarot_base.h"
 #include "tst_tarot_rules.h"
+#include "tst_tarot_protocol.h"
 
 int main(int argc, char *argv[])
 {
@@ -35,6 +36,17 @@ int main(int argc, char *argv[])
     {
         testFailures++;
     }
+
+    TarotProtocol tst_protocol;
+    if (QTest::qExec(&tst_protocol, argc, argv) == 0)
+    {
+        testSuccesses++;
+    }
+    else
+    {
+        testFailures++;
+    }
+
 
     std::cout << std::endl << "=============================================";
     std::cout << std::endl << "Success : " << testSuccesses;

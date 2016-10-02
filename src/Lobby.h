@@ -36,24 +36,20 @@ class Lobby
 {
 
 public:
-    class IPacketNotifier
-    {
-    public:
-        virtual void Send(const std::string &data, std::uint32_t src_uuid, std::uint32_t dest_uuid, std::vector<std::uint32_t> peers) = 0;
-    };
+    static const std::uint32_t cErrorFull           = 0U;
+    static const std::uint32_t cErrorNickNameUsed   = 1U;
 
     Lobby();
     ~Lobby();
 
     void Initialize(const std::string &name, const std::vector<std::string> &tables);
-    void Register(IPacketNotifier * notifier);
     std::string GetName() { return mName; }
-    bool Decode(uint32_t src_uuid, uint32_t dest_uuid, std::string &arg);
+    bool Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg, std::vector<helper::Reply> &out);
 
     // Users management
     std::uint32_t GetNumberOfPlayers();
-    std::uint32_t AddUser(const std::string &ip);
-    void RemoveUser(std::uint32_t uuid);
+    std::uint32_t AddUser(std::vector<helper::Reply> &out);
+    void RemoveUser(std::uint32_t uuid, std::vector<helper::Reply> &out);
     void RemoveAllUsers();
 
     // Tables management
@@ -61,7 +57,6 @@ public:
     bool DestroyTable(std::uint32_t id);
 
 private:
-    std::vector<IPacketNotifier *> mNotifiers;
     bool mInitialized;
     std::vector<PlayingTable *> mTables;
     UniqueId    mTableIds;
@@ -69,9 +64,9 @@ private:
     std::string mName;
 
     std::string GetTableName(const std::uint32_t tableId);
-    void RemovePlayerFromTable(std::uint32_t uuid, std::uint32_t tableId);
-    void SendData(const JsonValue &data, uint32_t src_uuid, uint32_t dest_uuid);
-    void SendPlayerList(const std::vector<uint32_t> &players, const std::string &event);
+    void RemovePlayerFromTable(std::uint32_t uuid, std::uint32_t tableId, std::vector<helper::Reply> &out);
+    void SendPlayerList(const std::vector<uint32_t> &players, const std::string &event, std::vector<helper::Reply> &out);
+    void Error(std::uint32_t error, std::uint32_t dest_uuid, std::vector<helper::Reply> &out);
 };
 
 #endif // LOBBY_H

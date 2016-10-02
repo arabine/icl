@@ -109,8 +109,27 @@ void Server::ServerTerminated(TcpServer::IEvent::CloseType type)
     TLogError("Server terminated (internal error)");
 }
 /*****************************************************************************/
-void Server::Send(const std::string &data, std::uint32_t src_uuid, std::uint32_t dest_uuid, const std::vector<std::uint32_t> &peers)
+void Server::SendData(const JsonValue &data, std::uint32_t src_uuid, std::uint32_t dest_uuid)
 {
+    std::vector<std::uint32_t> peers; // list of users to send the data
+
+    if (mTableIds.IsTaken(dest_uuid))
+    {
+        // If the player is connected to a table, send data to the table players only
+        peers = mUsers.GetTablePlayers(dest_uuid);
+    }
+    else if (dest_uuid == Protocol::LOBBY_UID)
+    {
+        // Send data to all the connected users
+        peers = mUsers.GetTablePlayers(Protocol::LOBBY_UID);
+    }
+    else if (mUsers.IsHere(dest_uuid))
+    {
+        // Only send the data to one connected client
+        peers.push_back(dest_uuid);
+    }
+
+
     // Send the data to a(all) peer(s)
     for (std::uint32_t i = 0U; i < peers.size(); i++)
     {

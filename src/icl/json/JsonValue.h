@@ -49,6 +49,7 @@ public:
     void Clear();
     void AddValue(const std::string &name, const JsonValue &value);
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
+    std::uint32_t GetSize() { return mObject.size(); }
 
     JsonObject &operator = (JsonObject const &rhs);
 

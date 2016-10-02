@@ -42,19 +42,21 @@ public:
         std::uint32_t tableId;  // zero if not playing
         bool connected;         // true if the user is connected (not in login process)
         Place place;            // place around the table (if joined a table)
-        Identity identity;
+        std::string nickname;
     };
 
     Users();
 
     // Players management
     bool IsHere(std::uint32_t uuid);
+    bool ChangeNickName(std::uint32_t uuid, const std::string &nickname);
     std::uint32_t AddUser();
-    bool AccessGranted(std::uint32_t uuid, const Identity &ident);
+    bool AccessGranted(std::uint32_t uuid, const std::string &nickname);
     void RemoveUser(std::uint32_t uuid);
     std::uint32_t GetPlayerTable(std::uint32_t uuid);
     bool GetEntry(std::uint32_t uuid, Entry &entry);
     void Clear();
+    bool CheckNickName(uint32_t uuid, const std::string &nickname);
 
     void SetPlayingTable(std::uint32_t uuid, std::uint32_t tableId, Place place);
 
