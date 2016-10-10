@@ -190,6 +190,7 @@ public:
     Card GetCard(const std::string &i_name);
     std::string ToString() const;
     Team GetOwner();
+    Card Last();
 
     // Setters
     void SetOwner(Team o);

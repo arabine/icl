@@ -48,7 +48,8 @@ static const Ack gAckList[] = {
     {"Start", Engine::WAIT_FOR_START_DEAL },
     {"Handle", Engine::WAIT_FOR_SHOW_HANDLE },
     {"Card", Engine::WAIT_FOR_SHOW_CARD },
-    {"Trick", Engine::WAIT_FOR_END_OF_TRICK }
+    {"Trick", Engine::WAIT_FOR_END_OF_TRICK },
+    {"Deal", Engine::WAIT_FOR_END_OF_DEAL }
 };
 
 static const std::uint32_t gAckListSize = sizeof(gAckList) / sizeof(gAckList[0]);
@@ -495,6 +496,7 @@ void PlayingTable::EndOfDeal(std::vector<helper::Reply> &out)
     }
     else
     {
+        // No more deal, send a end of game
         mEngine.StopGame();
         JsonObject obj;
 
@@ -615,14 +617,14 @@ void PlayingTable::GameSequence(std::vector<helper::Reply> &out)
 
     if (mEngine.IsLastTrick())
     {
-        JsonObject result;
+        JsonObject deal;
         JsonObject obj;
         Points points = mEngine.GetCurrentGamePoints();
 
-        mEngine.EndOfDeal(result);
+        mEngine.EndOfDeal(deal);
 
         obj.AddValue("cmd", "EndOfDeal");
-        obj.AddValue("result", result);
+        obj.AddValue("deal", deal);
         obj.AddValue("points", points.pointsAttack);
         obj.AddValue("oudlers", points.oudlers);
         obj.AddValue("little_bonus", points.littleEndianOwner.Value());

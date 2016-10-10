@@ -38,22 +38,31 @@ public:
     Bot();
     virtual ~Bot();
 
+    bool Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg, std::vector<helper::Reply> &out);
+
     void SetTimeBeforeSend(std::uint16_t t);
     void SetIdentity(const std::string &nickname, std::vector<helper::Reply> &out);
     void SetAiScript(const std::string &path);
-    void ConnectToHost(const std::string &hostName, std::uint16_t port);
     void SetTableToJoin(std::uint32_t table) { mTableToJoin = table; }
     std::uint32_t GetUuid() { return mClient.mUuid; }
-    void JoinTable(std::uint32_t tableId);
 
 private:
     helper::BasicClient mClient;
+    helper::EmptyContext mCtx;  ///< The bot does not need some network informations
     std::uint16_t  mTimeBeforeSend;
     JSEngine mBotEngine;
     std::uint32_t mTableToJoin;
     std::string mScriptPath;
 
     bool InitializeScriptContext();
+    void StartDeal();
+    void RequestBid(std::vector<helper::Reply> &out);
+    void AskForHandle(std::vector<helper::Reply> &out);
+    void ShowHandle();
+    void BuildDiscard(std::vector<helper::Reply> &out);
+    void NewGame();
+    void ShowCard();
+    void PlayCard(std::vector<helper::Reply> &out);
 };
 
 #endif // BOT_H

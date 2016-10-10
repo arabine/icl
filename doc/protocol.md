@@ -50,10 +50,14 @@ Client receive a request for user login with several parameters. uuid: assigned 
 {
 	"cmd": "PlayersList", 
 	"players": [
-		{ "uuid": 37, "nickname": "Belegar", "table": 0, "event": "JoinTable" }
+		{ "uuid": 37, "nickname": "Belegar", "table": 0, "place": "South", "event": "Quit" }
 		{ }
 	]
 }
+
+Events are:
+  - Update: new player or updated some state (nickname, table ...)
+  - Quit: remove the player from the list (quit the lobby)
 
 ### Change nickame
 
@@ -90,10 +94,8 @@ If there is at least one free slot around the table, the server replies:
 {
 	"cmd": "ReplyJoinTable",
 	"table_id": 27,
-	"size": 4,
-	"players": [
-		{ "place": "South", uuid": 367 },
-	]
+	"place": "North",
+	"size": 4	// Max number of players
 }
 
 The server sends some indication regarding the players around the table. The client is in charge to retrieve its own place 
@@ -263,7 +265,6 @@ Server (table) --> Client (all)
 
 {
 	"cmd": "StartDeal",
-	"first_player": "South",
     "taker": "North",
     "contract": "Guard",
     "slam": false
@@ -300,7 +301,7 @@ In a case of an handle, it is shown to all players of the table:
 Server (table) --> Client (all)
 
 {
-	"cmd": "Handle",
+	"cmd": "ShowHandle",
 	"place": "South",
 	"handle": "T02S11...."
 }
@@ -318,7 +319,7 @@ Server (table) --> Client (all)
 
 {
 	"cmd": "PlayCard",
-	"dog": "T02S11...."
+	"place": "South",
 }
 
 Client (player) --> Server (table)
@@ -331,8 +332,8 @@ Client (player) --> Server (table)
 Server (table) --> Client (all)
 
 {
-	"cmd": "PlayCard",
-	"place": "North",
+	"cmd": "ShowCard",
+	"place": "South",
 	"card": "T02"
 }
 
@@ -365,7 +366,31 @@ Server (table) --> Client (all)
 
 {
 	"cmd": "EndOfDeal",
+	"deal": {
+	    // ... deal contents
+	}
+	"points", points.pointsAttack);
+	"oudlers", points.oudlers);
+	"little_bonus", points.littleEndianOwner.Value());
+	"handle_bonus", points.handlePoints);
+	"slam_bonus", points.slamDone);
 	
+}
+
+Client (all) --> Server (table)
+
+{
+	"cmd": "Ack",
+	"step": "Deal"
+}
+
+At the end of the game:
+
+Server (table) --> Client (all)
+
+{
+	"cmd": "EndOfGame",
+	"winner": "North"
 }
 
 
