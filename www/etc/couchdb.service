@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=simple
 User=root
-ExecStart=/usr/local/bin/couchdb -o /dev/stdout -e /dev/stderr
+ExecStart=/opt/couchdb/bin/couchdb -o /dev/stdout -e /dev/stderr
 Restart=always
 
 [Install]
