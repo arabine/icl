@@ -17,16 +17,23 @@ var multer        = require('multer');
 var net           = require("net");
 var async         = require('async');
 var fs            = require('fs');
+var os            = require('os');
 
+// ============================================================================
+// GLOBAL VARIABLES
+// ============================================================================
+var isWin = (os.platform() === 'win32');
 
 // ============================================================================
 // HTTPS SSL CERTIFICATES
 // ============================================================================
-// 
-var options = {
-    key: fs.readFileSync('/opt/tarotclub.pem'),
-    cert: fs.readFileSync('/opt/tarotclub.cert')
-};
+var options = {};
+if (!isWin) {
+    options = {
+        key: fs.readFileSync('/opt/tarotclub.pem'),
+        cert: fs.readFileSync('/opt/tarotclub.cert')
+    };
+}
 
 // ============================================================================
 // CONSOLE AND LOG CONFIGURATION
@@ -77,7 +84,7 @@ limiter({
   expire: 1000 * 60 * 60
 });
 
-app.use(multer(uploadConf));
+app.use(multer(uploadConf).single('ia-path'));
 
 
 // ============================================================================
@@ -256,13 +263,18 @@ usersDb.Create(function(createStatus) {
             if (createStatus) {
                 usersDb.UpgradeViews(function(upgradeStatus) {
                     if (upgradeStatus) {
-                        https.createServer(options, app).listen(443);
+                        if (isWin) {
+                            app.listen(8082);
+                        } else {
+                            https.createServer(options, app).listen(443);
+                        }
+                        
                         console.log('Server started on port 8080');
                     } else {
                         console.log('Failed to upgrade the views, server not started.');
                         process.exit();
                     }
-                });    
+                });
             } else {
                 console.log('Failed to check the views, server not started.');
                 process.exit();
