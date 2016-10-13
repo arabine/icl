@@ -6,3 +6,5 @@ build-*
 pkg/ubuntu/deb_temp
 cov-int
 *.autosave
+www/node_modules
+www/logs/app.log
