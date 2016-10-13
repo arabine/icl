@@ -5,6 +5,7 @@
 // ============================================================================
 var express       = require('express');
 var https         = require('https');
+var http	  = require('http');
 var nano          = require('nano')('http://localhost:5984');
 var hbs           = require('hbs');
 var bodyParser    = require("body-parser"); // for reading POSTed form data into `req.body`
@@ -30,7 +31,7 @@ var isWin = (os.platform() === 'win32');
 var options = {};
 if (!isWin) {
     options = {
-        key: fs.readFileSync('/opt/tarotclub.pem'),
+        key: fs.readFileSync('/opt/monserveur.key'),
         cert: fs.readFileSync('/opt/tarotclub.cert')
     };
 }
@@ -263,14 +264,23 @@ usersDb.Create(function(createStatus) {
             if (createStatus) {
                 usersDb.UpgradeViews(function(upgradeStatus) {
                     if (upgradeStatus) {
-                        var serverPort = 8082;
                         if (isWin) {
+                            var serverPort = 8082;
                             app.listen(serverPort);
+			    console.log('Server started on port ' + serverPort);	
                         } else {
-                            https.createServer(options, app).listen(443);
+
+			// Redirect from http port 80 to https
+			var http = require('http');
+			http.createServer(function (req, res) {
+				res.writeHead(301, { "Location": "https://" + req.headers['host'] + req.url });
+				res.end();
+			}).listen(80);			   
+
+
+                           https.createServer(options, app).listen(443);
                         }
                         
-                        console.log('Server started on port ' + serverPort);
                     } else {
                         console.log('Failed to upgrade the views, server not started.');
                         process.exit();
