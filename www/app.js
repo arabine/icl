@@ -263,13 +263,14 @@ usersDb.Create(function(createStatus) {
             if (createStatus) {
                 usersDb.UpgradeViews(function(upgradeStatus) {
                     if (upgradeStatus) {
+                        var serverPort = 8082;
                         if (isWin) {
-                            app.listen(8082);
+                            app.listen(serverPort);
                         } else {
                             https.createServer(options, app).listen(443);
                         }
                         
-                        console.log('Server started on port 8080');
+                        console.log('Server started on port ' + serverPort);
                     } else {
                         console.log('Failed to upgrade the views, server not started.');
                         process.exit();
