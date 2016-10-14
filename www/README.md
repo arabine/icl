@@ -17,17 +17,43 @@ Compile and install CouchDb 1.6.1 from the sources.
 
 ```
 apt-get install libmozjs185-dev erlang libicu-dev
+./configure --prefix=/opt/couchdb
+make && make install 
 ```
 
-# Deployement
+Download Node.js and extract it in /opt directory as 'tarot' user.
+
+wget https://nodejs.org/dist/v4.6.0/node-v4.6.0-linux-x64.tar.xz
+
+# Web server deployement
+
+The web server Node.js application and various scripts are located in the tarotclub/www sub-directory.
+The tarotclub/www/etc directory contains the systemd scripts.
+
+## Install Node.js dependencies
+
+Run 'npm install' at the directory root /opt/tarotclub/www
+
+## Run CouchDB as a systemd service
+
+Copy 'couchdb.service' (as root) to /etc/systemd/system/couchdb.service
+
+Enable it: # systemctl enable couchdb
+Start it: # systemctl start couchdb
+See status: # systemctl status couchdb
+See logs: # journalctl -u couchdb
+
+Service must be active : [info] [<0.31.0>] Apache CouchDB has started on http://127.0.0.1:5984/
 
 ## Run Web app as a systemd service
 
-Copy this file (as root) to /etc/systemd/system/node-sample.service
-Enable it: # systemctl enable node-sample
-Start it: # systemctl start node-sample
-See status: # systemctl status node-sample
-See logs: # journalctl -u node-sample
+Copy 'tarotclubweb.service' (as root) to /etc/systemd/system/tarotclubweb.service
+
+Enable it: # systemctl enable tarotclubweb
+Start it: # systemctl start tarotclubweb
+See status: # systemctl status tarotclubweb
+See logs: # journalctl -u tarotclubweb
+
 Try killing the node process by its pid and see if it starts back up!
 
 ## Redirect ports
