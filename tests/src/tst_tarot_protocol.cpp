@@ -14,14 +14,22 @@ TarotProtocol::TarotProtocol()
 }
 
 
-void Dump(const std::vector<helper::Reply> &reply)
+bool Dump(const std::vector<helper::Reply> &reply)
 {
+    bool endOfGame = false;
     for (std::uint32_t i = 0U; i < reply.size(); i++)
     {
         std::cout << "------------------------------------" << std::endl;
         std::cout << "Destination: " << (int)reply[i].dest  << std::endl;
-        std::cout << reply[i].data.ToString(0U)  << std::endl;
+        std::string data = reply[i].data.ToString(0U);
+        std::cout << data << std::endl;
+
+        if (data.find("EndOfGame") != std::string::npos)
+        {
+            endOfGame = true;
+        }
     }
+    return endOfGame;
 }
 
 
@@ -89,13 +97,18 @@ void TarotProtocol::TestBotsFullGame()
 
     Dump(lobby_data);
 
-    bool end_game = false;
-    while(!end_game)
+    // We run N games in a loop
+    int gameCounter = 0;
+    while(gameCounter < 10)
     {
         // For all bots
         for (int i = 0; i < 4; i++)
         {
             bots[i].reply.clear();
+
+            std::cout << "------------------------------------" << std::endl;
+            std::cout << "Bot " << bots[i].bot.GetPlace().ToString() << " cards: " << bots[i].bot.GetDeck() << std::endl;
+
             // Send data to that bot if any
             for (std::uint32_t j = 0U; j < lobby_data.size(); j++)
             {
@@ -106,6 +119,7 @@ void TarotProtocol::TestBotsFullGame()
                     bots[i].bot.Decode(Protocol::LOBBY_UID, lobby_data[j].dest, lobby_data[j].data.ToString(0U), bots[i].reply);
                 }
             }
+
             Dump(bots[i].reply);
         }
 
@@ -117,9 +131,11 @@ void TarotProtocol::TestBotsFullGame()
             for (std::uint32_t j = 0U; j < bots[i].reply.size(); j++)
             {
                 QCOMPARE(lobby.Decode(bots[i].uuid, bots[i].reply[j].dest, bots[i].reply[j].data.ToString(0U), lobby_data), true);
-
             }
         }
-        Dump(lobby_data);
+        if (Dump(lobby_data))
+        {
+            gameCounter++;
+        }
     }
 }

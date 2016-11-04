@@ -309,7 +309,7 @@ BasicClient::Event BasicClient::Decode(uint32_t src_uuid, uint32_t dest_uuid, co
     }
     else if (cmd == "ShowDog")
     {
-        mDog.SetCards(json.FindValue("cards").GetString());
+        mDog.SetCards(json.FindValue("dog").GetString());
         Sync(cmd, out);
 
         event = SHOW_DOG;
@@ -388,7 +388,7 @@ BasicClient::Event BasicClient::Decode(uint32_t src_uuid, uint32_t dest_uuid, co
 
         ctx.SetResult(deal);
 
-        Sync("Deal", out);
+        Sync(cmd, out);
         event = END_OF_DEAL;
     }
     else if (cmd == "EndOfGame")

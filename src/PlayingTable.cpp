@@ -49,7 +49,7 @@ static const Ack gAckList[] = {
     {"Handle", Engine::WAIT_FOR_SHOW_HANDLE },
     {"Card", Engine::WAIT_FOR_SHOW_CARD },
     {"EndOfTrick", Engine::WAIT_FOR_END_OF_TRICK },
-    {"Deal", Engine::WAIT_FOR_END_OF_DEAL }
+    {"EndOfDeal", Engine::WAIT_FOR_END_OF_DEAL }
 };
 
 static const std::uint32_t gAckListSize = sizeof(gAckList) / sizeof(gAckList[0]);
@@ -270,6 +270,11 @@ void PlayingTable::ExecuteRequest(const std::string &cmd, std::uint32_t src_uuid
         {
             std::string step = json.FindValue("step").GetString();
             Engine::Sequence seq = FindSequence(step);
+
+            if (seq == Engine::BAD_STEP)
+            {
+                TLogError("Bad acknowledge sequence");
+            }
 
             // Returns true if all the players have send their sync signal
             if (Sync(seq, src_uuid))
@@ -497,7 +502,7 @@ void PlayingTable::EndOfDeal(std::vector<helper::Reply> &out)
     else
     {
         // No more deal, send a end of game
-        mEngine.StopGame();
+        mEngine.NewGame();
         JsonObject obj;
 
         obj.AddValue("cmd", "EndOfGame");
@@ -523,25 +528,24 @@ void PlayingTable::NewGame(std::vector<helper::Reply> &out)
 /*****************************************************************************/
 void PlayingTable::NewDeal(std::vector<helper::Reply> &out)
 {
-    if (mScore.GetCurrentCounter() < mGame.deals.size())
+    if (mScore.GetCurrentCounter() >= mGame.deals.size())
     {
-        mEngine.NewDeal(mGame.deals[mScore.GetCurrentCounter()]);
-        // Send the cards to all the players
-        for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
-        {
-            JsonObject obj;
-            Place place(i);
-
-            Deck deck = mEngine.GetDeck(place);
-            obj.AddValue("cmd", "NewDeal");
-            obj.AddValue("cards", deck.ToString());
-
-            out.push_back(helper::Reply(GetPlayerUuid(place), obj));
-        }
+        // Consider a rollover, start a new game
+        mScore.NewGame(mGame.deals.size());
     }
-    else
+
+    mEngine.NewDeal(mGame.deals[mScore.GetCurrentCounter()]);
+    // Send the cards to all the players
+    for (std::uint32_t i = 0U; i < mEngine.GetNbPlayers(); i++)
     {
-        TLogError("Deals or game counter size problem");
+        JsonObject obj;
+        Place place(i);
+
+        Deck deck = mEngine.GetDeck(place);
+        obj.AddValue("cmd", "NewDeal");
+        obj.AddValue("cards", deck.ToString());
+
+        out.push_back(helper::Reply(GetPlayerUuid(place), obj));
     }
 }
 /*****************************************************************************/

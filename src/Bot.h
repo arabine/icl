@@ -42,6 +42,8 @@ public:
 
     std::uint32_t GetUuid() { return mClient.mUuid; }
     std::uint32_t GetCurrentTable() { return mClient.mTableId; }
+    std::string GetDeck() { return mClient.mDeck.ToString(); }
+    Place GetPlace() { return mClient.mPlace; }
 
     void SetTimeBeforeSend(std::uint16_t t);
     void ChangeNickname(const std::string &nickname, std::vector<helper::Reply> &out);

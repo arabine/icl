@@ -121,6 +121,11 @@ bool Bot::Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg, 
         mClient.Sync("EndOfTrick", out);
         break;
     }
+    case helper::BasicClient::END_OF_GAME:
+    {
+        mClient.Sync("Ready", out);
+        break;
+    }
     case helper::BasicClient::JSON_ERROR:
     case helper::BasicClient::BAD_EVENT:
     case helper::BasicClient::REQ_LOGIN:
@@ -132,7 +137,6 @@ bool Bot::Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg, 
     case helper::BasicClient::ALL_PASSED:
     case helper::BasicClient::SHOW_DOG:       
     case helper::BasicClient::END_OF_DEAL:
-    case helper::BasicClient::END_OF_GAME:
     case helper::BasicClient::SYNC:
     {
         // Nothing to do for that event

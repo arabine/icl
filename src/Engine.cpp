@@ -243,7 +243,7 @@ Contract Engine::SetBid(Contract c, bool slam, Place p)
     return c;
 }
 /*****************************************************************************/
-void Engine::StopGame()
+void Engine::Stop()
 {
     mSequence = STOPPED;
 }

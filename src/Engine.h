@@ -70,7 +70,7 @@ public:
 
     // Helpers
     void Initialize();
-    void StopGame();
+    void Stop();
     void CreateTable(std::uint8_t nbPlayers);
     void NewGame();
     Tarot::Distribution NewDeal(const Tarot::Distribution &shuffle);
