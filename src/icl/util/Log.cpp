@@ -35,6 +35,7 @@
 std::mutex Log::mMutex;
 Subject<std::string> Log::mSubject;
 std::string Log::mLogPath;
+bool Log::mEnableFileOutput = true;
 
 const std::uint8_t Log::Error   = 1U;
 const std::uint8_t Log::Info    = 2U;
@@ -44,6 +45,7 @@ const std::uint8_t Log::Server  = 16U;
 
 static std::map<std::uint8_t, std::string> LogInit();
 static std::map<std::uint8_t, std::string> eventString = LogInit();
+
 
 /*****************************************************************************/
 /**
@@ -84,7 +86,11 @@ void Log::AddEntry(uint8_t event, const std::string &file, const int line, const
        message;
 
     mSubject.Notify(ss.str(), event);    // send message to all the listeners
-    Save(ss.str());                     // save message to a file
+
+    if (mEnableFileOutput)
+    {
+        Save(ss.str());                     // save message to a file
+    }
 }
 /*****************************************************************************/
 void Log::Save(const std::string &line)

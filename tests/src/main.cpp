@@ -8,6 +8,25 @@
 #include "tst_tarot_rules.h"
 #include "tst_tarot_protocol.h"
 
+
+#include "Log.h"
+
+/*****************************************************************************/
+class Logger : public Observer<std::string>
+{
+public:
+    Logger()
+        : Observer(Log::Error)
+    {
+
+    }
+
+    void Update(const std::string &info)
+    {
+        std::cout << info << std::endl;
+    }
+};
+/*****************************************************************************/
 int main(int argc, char *argv[])
 {
     std::uint32_t testSuccesses = 0;
@@ -16,6 +35,9 @@ int main(int argc, char *argv[])
     QCoreApplication app(argc, argv);
     app.setAttribute(Qt::AA_Use96Dpi, true);
 
+    Logger logger;
+    Log::EnableLog(false);
+    Log::RegisterListener(logger);
 
     TarotBase tst_base;
     if (QTest::qExec(&tst_base, argc, argv) == 0)
