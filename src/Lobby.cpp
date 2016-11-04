@@ -30,9 +30,10 @@
 #include "JsonReader.h"
 #include "JsonWriter.h"
 
-Lobby::Lobby()
+Lobby::Lobby(bool adminMode)
     : mInitialized(false)
     , mTableIds(Protocol::TABLES_UID, Protocol::TABLES_UID + Protocol::MAXIMUM_TABLES)
+    , mAdminMode(adminMode)
 {
 
 }
@@ -76,7 +77,7 @@ uint32_t Lobby::AddUser(std::vector<helper::Reply> &out)
 void Lobby::RemoveUser(uint32_t uuid, std::vector<helper::Reply> &out)
 {
     std::uint32_t tableId = mUsers.GetPlayerTable(uuid);
-    if (tableId != 0U)
+    if (tableId != Protocol::LOBBY_UID)
     {
         // First, remove the player from the table
         RemovePlayerFromTable(uuid, tableId, out);
@@ -90,7 +91,7 @@ void Lobby::RemoveAllUsers()
     mUsers.Clear();
 }
 /*****************************************************************************/
-std::uint32_t Lobby::CreateTable(const std::string &tableName, bool adminMode, const Tarot::Game &game)
+std::uint32_t Lobby::CreateTable(const std::string &tableName, const Tarot::Game &game)
 {
     std::uint32_t id = mTableIds.TakeId();
 
@@ -100,7 +101,7 @@ std::uint32_t Lobby::CreateTable(const std::string &tableName, bool adminMode, c
         PlayingTable *table = new PlayingTable();
         table->SetId(id);
         table->SetName(tableName);
-        table->SetAdminMode(adminMode);
+        table->SetAdminMode(mAdminMode);
         table->SetupGame(game);
         table->Initialize();
         table->CreateTable(4U);
@@ -132,7 +133,7 @@ bool Lobby::DestroyTable(std::uint32_t id)
 /*****************************************************************************/
 void Lobby::Error(std::uint32_t error, std::uint32_t dest_uuid, std::vector<helper::Reply> &out)
 {
-    static const char* errors[] { "Server is full", "Nickname already used" };
+    static const char* errors[] { "Table is full", "Nickname already used" };
     JsonObject reply;
 
     reply.AddValue("cmd", "Error");
@@ -233,7 +234,7 @@ bool Lobby::Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg
             std::uint32_t tableId = json.FindValue("table_id").GetInteger();
 
             // A user can join a table if he is _NOT_ already around a table
-            if (mUsers.GetPlayerTable(src_uuid) == Protocol::NO_TABLE)
+            if (mUsers.GetPlayerTable(src_uuid) == Protocol::LOBBY_UID)
             {
                 Place assignedPlace;
                 std::uint8_t nbPlayers;
@@ -256,6 +257,7 @@ bool Lobby::Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg
 
                     reply.AddValue("cmd", "ReplyJoinTable");
                     reply.AddValue("table_id", tableId);
+                    reply.AddValue("place", assignedPlace.ToString());
                     reply.AddValue("size", nbPlayers);
 
                     JsonArray array;
@@ -275,7 +277,7 @@ bool Lobby::Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg
                     }
 
                     reply.AddValue("players", array);
-                    out.push_back(helper::Reply(tableId, reply));
+                    out.push_back(helper::Reply(src_uuid, reply));
                 }
                 else
                 {
@@ -381,9 +383,9 @@ void Lobby::SendPlayerList(const std::vector<std::uint32_t> &players, const std:
         std::string ev = "none";
 
         // search for specific event for that list of players
-        for (std::uint32_t i = 0U; i < players.size(); i++)
+        for (std::uint32_t j = 0U; j < players.size(); j++)
         {
-            if (players[i] == users[i].uuid)
+            if (players[j] == users[j].uuid)
             {
                 ev = event;
             }

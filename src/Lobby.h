@@ -39,7 +39,7 @@ public:
     static const std::uint32_t cErrorFull           = 0U;
     static const std::uint32_t cErrorNickNameUsed   = 1U;
 
-    Lobby();
+    Lobby(bool adminMode = false);
     ~Lobby();
 
     void Initialize(const std::string &name, const std::vector<std::string> &tables);
@@ -53,7 +53,7 @@ public:
     void RemoveAllUsers();
 
     // Tables management
-    std::uint32_t CreateTable(const std::string &tableName, bool adminMode = true, const Tarot::Game &game = Tarot::Game());
+    std::uint32_t CreateTable(const std::string &tableName, const Tarot::Game &game = Tarot::Game());
     bool DestroyTable(std::uint32_t id);
 
 private:
@@ -62,6 +62,7 @@ private:
     UniqueId    mTableIds;
     Users       mUsers;
     std::string mName;
+    bool mAdminMode;
 
     std::string GetTableName(const std::uint32_t tableId);
     void RemovePlayerFromTable(std::uint32_t uuid, std::uint32_t tableId, std::vector<helper::Reply> &out);

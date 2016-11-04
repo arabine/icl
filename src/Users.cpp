@@ -45,7 +45,7 @@ Users::Users()
  */
 std::uint32_t Users::GetPlayerTable(std::uint32_t uuid)
 {
-   std::uint32_t tableId = Protocol::NO_TABLE;
+   std::uint32_t tableId = Protocol::LOBBY_UID;
 
    for (std::uint32_t i = 0; i < mUsers.size(); i++)
    {
@@ -97,10 +97,9 @@ std::vector<std::uint32_t> Users::GetTablePlayers(std::uint32_t tableId)
     std::vector<std::uint32_t> theList;
     for (std::uint32_t i = 0; i < mUsers.size(); i++)
     {
-        if ((mUsers[i].tableId == tableId) || (tableId == Protocol::LOBBY_UID))
+        if (mUsers[i].tableId == tableId)
         {
             theList.push_back(mUsers[i].uuid);
-            break;
         }
     }
     return theList;
@@ -176,7 +175,7 @@ std::uint32_t Users::AddUser()
     std::uint32_t uuid = mIdManager.TakeId();
 
     Entry entry;
-    entry.tableId = Protocol::NO_TABLE;
+    entry.tableId = Protocol::LOBBY_UID; // Player logs on the lobby at connection
     entry.connected = false;
     entry.uuid = uuid;
     mUsers.push_back(entry);

@@ -39,8 +39,6 @@ const std::uint32_t Protocol::MAXIMUM_USERS     = 200U;
 const std::uint32_t Protocol::TABLES_UID        = 1000U;
 const std::uint32_t Protocol::MAXIMUM_TABLES    = 50U;
 
-const std::uint32_t Protocol::NO_TABLE          = 0U;
-
 
 /**
  * \page protocol Protocol format

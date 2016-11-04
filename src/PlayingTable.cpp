@@ -41,14 +41,14 @@ struct Ack
 static const Ack gAckList[] = {
     {"JoinTable", Engine::WAIT_FOR_PLAYERS},
     {"Ready", Engine::WAIT_FOR_READY },
-    {"Cards", Engine::WAIT_FOR_CARDS },
-    {"Bid", Engine::WAIT_FOR_SHOW_BID },
+    {"NewDeal", Engine::WAIT_FOR_CARDS },
+    {"ShowBid", Engine::WAIT_FOR_SHOW_BID },
     {"AllPassed", Engine::WAIT_FOR_ALL_PASSED },
-    {"Dog", Engine::WAIT_FOR_SHOW_DOG },
-    {"Start", Engine::WAIT_FOR_START_DEAL },
+    {"ShowDog", Engine::WAIT_FOR_SHOW_DOG },
+    {"StartDeal", Engine::WAIT_FOR_START_DEAL },
     {"Handle", Engine::WAIT_FOR_SHOW_HANDLE },
     {"Card", Engine::WAIT_FOR_SHOW_CARD },
-    {"Trick", Engine::WAIT_FOR_END_OF_TRICK },
+    {"EndOfTrick", Engine::WAIT_FOR_END_OF_TRICK },
     {"Deal", Engine::WAIT_FOR_END_OF_DEAL }
 };
 
@@ -345,7 +345,7 @@ void PlayingTable::ExecuteRequest(const std::string &cmd, std::uint32_t src_uuid
             NewGame(out);
         }
     }
-    else if (cmd == "Bid")
+    else if (cmd == "ReplyBid")
     {
         Contract c(json.FindValue("contract").GetString());
         bool slam = json.FindValue("slam").GetBool();

@@ -65,7 +65,7 @@ uint32_t BotManager::AddBot(std::uint32_t tableToJoin, const Identity &ident, st
     Bot *bot = new Bot();
 
     // Initialize the bot
-    bot->SetIdentity(ident);
+    bot->ChangeNickname(ident);
     bot->SetTimeBeforeSend(delay);
     bot->SetTableToJoin(tableToJoin);
     bot->SetAiScript(scriptFile);

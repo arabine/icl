@@ -4,6 +4,7 @@
 #include <QCoreApplication>
 #include <cstdint>
 #include <iostream>
+#include <Bot.h>
 
 #include "tst_tarot_protocol.h"
 #include "Lobby.h"
@@ -49,4 +50,76 @@ void TarotProtocol::TestPlayerJoinAndQuit()
     QCOMPARE(lobby.Decode(src, dest, json.ToString(0U), reply), true);
     Dump(reply);
     reply.clear();
+}
+
+void TarotProtocol::TestBotsFullGame()
+{
+    std::vector<std::string> tables;
+    tables.push_back("test");
+    Lobby lobby;
+
+    lobby.Initialize("test", tables);
+
+    std::vector<helper::Reply> lobby_data;
+
+    struct BotManager
+    {
+        std::vector<helper::Reply> reply;
+        Bot bot;
+        std::uint32_t uuid;
+    };
+
+    BotManager bots[4];
+    std::string names[4];
+    names[0] = "riri";
+    names[1] = "fifi";
+    names[2] = "loulou";
+    names[3] = "tata";
+
+    std::uint32_t tableId = Protocol::TABLES_UID;
+
+    // Initialize & Register the 4 bots on the lobby
+    for (int i = 0; i < 4; i++)
+    {
+        bots[i].uuid = lobby.AddUser(lobby_data);
+        bots[i].bot.SetUser(names[i], "");
+        bots[i].bot.SetAiScript(Util::ExecutablePath() + "/../../bin/aicontest/ai.zip");
+        bots[i].bot.SetTableToJoin(tableId);
+    }
+
+    Dump(lobby_data);
+
+    bool end_game = false;
+    while(!end_game)
+    {
+        // For all bots
+        for (int i = 0; i < 4; i++)
+        {
+            bots[i].reply.clear();
+            // Send data to that bot if any
+            for (std::uint32_t j = 0U; j < lobby_data.size(); j++)
+            {
+                if ((lobby_data[j].dest == bots[i].uuid) ||
+                    (lobby_data[j].dest == Protocol::LOBBY_UID) ||
+                    (lobby_data[j].dest == bots[i].bot.GetCurrentTable()))
+                {
+                    bots[i].bot.Decode(Protocol::LOBBY_UID, lobby_data[j].dest, lobby_data[j].data.ToString(0U), bots[i].reply);
+                }
+            }
+            Dump(bots[i].reply);
+        }
+
+        lobby_data.clear();
+        // For all bots
+        for (int i = 0; i < 4; i++)
+        {
+            // Send bot replies to the lobby (destination should be always the lobby or a table)
+            for (std::uint32_t j = 0U; j < bots[i].reply.size(); j++)
+            {
+                QCOMPARE(lobby.Decode(bots[i].uuid, bots[i].reply[j].dest, bots[i].reply[j].data.ToString(0U), lobby_data), true);
+
+            }
+        }
+        Dump(lobby_data);
+    }
 }

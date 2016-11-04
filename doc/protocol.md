@@ -93,6 +93,24 @@ If there is at least one free slot around the table, the server replies:
 
 {
 	"cmd": "ReplyJoinTable",
+	"players": [
+        {
+            "place": "South",
+            "uuid": 10
+        },
+        {
+            "place": "East",
+            "uuid": 11
+        },
+        {
+            "place": "North",
+            "uuid": 12
+        },
+        {
+            "place": "West",
+            "uuid": 13
+        }
+    ],
 	"table_id": 27,
 	"place": "North",
 	"size": 4	// Max number of players
@@ -191,7 +209,7 @@ Server (table) --> Client
 Client  --> Server (table)
 
 {
-	"cmd": "Bid",
+	"cmd": "ReplyBid",
 	"contract": "Pass",
 	"slam": false			// Set to true to announce a slam
 }

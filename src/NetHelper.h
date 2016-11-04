@@ -164,6 +164,7 @@ public:
     void SendHandle(const Deck &handle, std::vector<helper::Reply> &out);
     void SendDiscard(const Deck &discard, std::vector<helper::Reply> &out);
     void SendCard(Card c, std::vector<helper::Reply> &out);
+    void Sync(const std::string &step, std::vector<Reply> &out);
 
     Deck::Statistics   mStats;   // statistics on player's cards
     Tarot::Game mGame;
@@ -184,8 +185,6 @@ public:
 
     Event Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg, IContext &ctx, std::vector<helper::Reply> &out);
 
-private:
-    void Sync(const std::string &step, std::vector<Reply> &out);
 };
 
 

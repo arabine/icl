@@ -121,7 +121,7 @@ void BasicClient::BuildBid(Contract c, bool slam, std::vector<helper::Reply> &ou
 {
     JsonObject obj;
 
-    obj.AddValue("cmd", "Bid");
+    obj.AddValue("cmd", "ReplyBid");
     obj.AddValue("contract", c.ToString());
     obj.AddValue("slam", slam);
 
@@ -206,14 +206,14 @@ BasicClient::Event BasicClient::Decode(uint32_t src_uuid, uint32_t dest_uuid, co
     {
         ctx.Initialize();
 
-        mUuid = static_cast<std::uint32_t>(json.FindValue("cmd").GetInteger());
+        mUuid = static_cast<std::uint32_t>(json.FindValue("uuid").GetInteger());
 
         JsonObject obj;
 
         obj.AddValue("cmd", "ReplyLogin");
         obj.AddValue("nickname", mNickName);
 
-        out.push_back(helper::Reply(dest_uuid, obj));
+        out.push_back(helper::Reply(Protocol::LOBBY_UID, obj));
 
         event = REQ_LOGIN;
     }
@@ -240,7 +240,7 @@ BasicClient::Event BasicClient::Decode(uint32_t src_uuid, uint32_t dest_uuid, co
 
         event = MESSAGE;
     }
-    else if (cmd == "PlayersList")
+    else if (cmd == "PlayerList")
     {
         JsonArray players = json.FindValue("players").GetArray();
 
@@ -297,7 +297,7 @@ BasicClient::Event BasicClient::Decode(uint32_t src_uuid, uint32_t dest_uuid, co
         mBid.contract = Contract(json.FindValue("contract").GetString());
         mBid.slam = json.FindValue("slam").GetBool();
 
-        Sync("Bid", out);
+        Sync(cmd, out);
 
         event = SHOW_BID;
     }
@@ -310,7 +310,7 @@ BasicClient::Event BasicClient::Decode(uint32_t src_uuid, uint32_t dest_uuid, co
     else if (cmd == "ShowDog")
     {
         mDog.SetCards(json.FindValue("cards").GetString());
-        Sync("NewDeal", out);
+        Sync(cmd, out);
 
         event = SHOW_DOG;
     }
@@ -320,14 +320,14 @@ BasicClient::Event BasicClient::Decode(uint32_t src_uuid, uint32_t dest_uuid, co
     }
     else if (cmd == "StartDeal")
     {
-        mBid.taker = Place(json.FindValue("place").GetString());
+        mBid.taker = Place(json.FindValue("taker").GetString());
         mBid.contract = Contract(json.FindValue("contract").GetString());
         mBid.slam = json.FindValue("slam").GetBool();
 
         UpdateStatistics();
         mCurrentTrick.Clear();
 
-        Sync("Start", out);
+        Sync(cmd, out);
 
         event = START_DEAL;
     }
@@ -372,6 +372,7 @@ BasicClient::Event BasicClient::Decode(uint32_t src_uuid, uint32_t dest_uuid, co
     else if (cmd == "EndOfTrick")
     {
         mCurrentPlayer = Place(json.FindValue("place").GetString());
+        mCurrentTrick.Clear();
 
         event = END_OF_TRICK;
     }
@@ -397,7 +398,7 @@ BasicClient::Event BasicClient::Decode(uint32_t src_uuid, uint32_t dest_uuid, co
     }
     else
     {
-        TLogError("Command not supported.");
+        TLogError("Command not supported: " + cmd);
     }
 
     return event;

@@ -70,7 +70,11 @@ bool Bot::Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg, 
     }
     case helper::BasicClient::REQ_BID:
     {
-        RequestBid(out);
+        // Only reply a bid if it is our place to anwser
+        if (mClient.mBid.taker == mClient.mPlace)
+        {
+            RequestBid(out);
+        }
         break;
     }
     case helper::BasicClient::START_DEAL:
@@ -100,7 +104,21 @@ bool Bot::Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg, 
     }
     case helper::BasicClient::PLAY_CARD:
     {
-        PlayCard(out);
+        // Only reply a bid if it is our place to anwser
+        if (mClient.mCurrentPlayer == mClient.mPlace)
+        {
+            PlayCard(out);
+        }
+        break;
+    }
+    case helper::BasicClient::ASK_FOR_HANDLE:
+    {
+        AskForHandle(out);
+        break;
+    }
+    case helper::BasicClient::END_OF_TRICK:
+    {
+        mClient.Sync("EndOfTrick", out);
         break;
     }
     case helper::BasicClient::JSON_ERROR:
@@ -110,11 +128,9 @@ bool Bot::Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg, 
     case helper::BasicClient::PLAYER_LIST:
     case helper::BasicClient::QUIT_TABLE:
     case helper::BasicClient::SHOW_BID:
-        // FIXME: sendall the bids to the bot so he can remember them
+        // FIXME: send all the declared bids to the bot so he can use them (AI improvements)
     case helper::BasicClient::ALL_PASSED:
-    case helper::BasicClient::SHOW_DOG:
-    case helper::BasicClient::ASK_FOR_HANDLE:
-    case helper::BasicClient::END_OF_TRICK:
+    case helper::BasicClient::SHOW_DOG:       
     case helper::BasicClient::END_OF_DEAL:
     case helper::BasicClient::END_OF_GAME:
     case helper::BasicClient::SYNC:
@@ -407,7 +423,7 @@ void Bot::SetTimeBeforeSend(std::uint16_t t)
     mTimeBeforeSend = t;
 }
 /*****************************************************************************/
-void Bot::SetIdentity(const std::string &nickname, std::vector<helper::Reply> &out)
+void Bot::ChangeNickname(const std::string &nickname, std::vector<helper::Reply> &out)
 {
     mClient.mNickName = nickname;
     mClient.BuildChangeNickname(out);
@@ -416,6 +432,12 @@ void Bot::SetIdentity(const std::string &nickname, std::vector<helper::Reply> &o
 void Bot::SetAiScript(const std::string &path)
 {
     mScriptPath = path;
+}
+/*****************************************************************************/
+void Bot::SetUser(const std::string &nickname, const std::string &username)
+{
+    mClient.mUserName = username;
+    mClient.mNickName = nickname;
 }
 /*****************************************************************************/
 bool Bot::InitializeScriptContext()

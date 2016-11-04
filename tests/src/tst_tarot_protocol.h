@@ -16,6 +16,7 @@ public:
 
 private Q_SLOTS:
     void TestPlayerJoinAndQuit();
+    void TestBotsFullGame();
 
 private:
 

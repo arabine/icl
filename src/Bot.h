@@ -40,11 +40,15 @@ public:
 
     bool Decode(uint32_t src_uuid, uint32_t dest_uuid, const std::string &arg, std::vector<helper::Reply> &out);
 
+    std::uint32_t GetUuid() { return mClient.mUuid; }
+    std::uint32_t GetCurrentTable() { return mClient.mTableId; }
+
     void SetTimeBeforeSend(std::uint16_t t);
-    void SetIdentity(const std::string &nickname, std::vector<helper::Reply> &out);
+    void ChangeNickname(const std::string &nickname, std::vector<helper::Reply> &out);
     void SetAiScript(const std::string &path);
     void SetTableToJoin(std::uint32_t table) { mTableToJoin = table; }
-    std::uint32_t GetUuid() { return mClient.mUuid; }
+    void SetUuid(std::uint32_t uuid) { mClient.mUuid = uuid; }
+    void SetUser(const std::string &nickname, const std::string &username);
 
 private:
     helper::BasicClient mClient;
