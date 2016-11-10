@@ -70,7 +70,7 @@ public:
          * @param socket
          * @param data
          */
-        virtual void ReadData(const Peer &peer, const ByteArray &data) = 0;
+        virtual void ReadData(const Peer &peer, const std::string &data) = 0;
 
         /**
          * @brief ClientClosed
@@ -172,7 +172,7 @@ private:
         }
 
         std::uint8_t state;
-        ByteArray wsPayload;
+        std::string wsPayload;
     };
 
     TcpServerBase   mTcpServer;
@@ -194,8 +194,8 @@ private:
     void IncommingConnection(bool isWebSocket);
     void IncommingData(Conn &conn);
     void UpdateMaxSocket();
-    void ManageWsData(Conn &conn, const ByteArray &data);
-    void DeliverWsData(Conn &conn, const ByteArray &data);
+    void ManageWsData(Conn &conn, std::string &data);
+    void DeliverWsData(Conn &conn, std::string &buf);
     std::string WsOpcodeToString(std::uint8_t opcode);
     void UpdateClients();
 };

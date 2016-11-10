@@ -331,6 +331,22 @@ std::string Util::Join(const std::vector<std::string> &tokens, const std::string
     return ss.str();
 }
 /*****************************************************************************/
+static bool icompare_pred(unsigned char a, unsigned char b)
+{
+    return std::tolower(a) == std::tolower(b);
+}
+
+bool Util::Compare(std::string const& a, std::string const& b)
+{
+    if (a.length()==b.length()) {
+        return std::equal(b.begin(), b.end(),
+                           a.begin(), icompare_pred);
+    }
+    else {
+        return false;
+    }
+}
+/*****************************************************************************/
 /**
  * @brief Util::GetCurrentMemoryUsage
  *

@@ -63,7 +63,6 @@
 
 #include <cstdint>
 #include <string>
-#include "ByteArray.h"
 
 /*****************************************************************************/
 struct Peer
@@ -148,16 +147,16 @@ public:
     bool DataWaiting(uint32_t timeout);
     int AnalyzeSocketError(const char* context);
     int Accept() const;
-    std::int32_t Recv(ByteArray &output);
+    std::int32_t Recv(std::string &output);
     bool Connect(const std::string &host, const int port);
-    bool Send(const ByteArray &input) const;
+    bool Send(const std::string &input) const;
 
     // Static
     static bool Initialize();
     static int AnalyzeSocketError(const Peer &peer, const char* context);
-    static bool Send(const ByteArray &input, const Peer &peer);
+    static bool Send(const std::string &input, const Peer &peer);
     static void Close(Peer &peer);
-    static ByteArray BuildWsFrame(std::uint8_t opcode, const ByteArray &data);
+    static std::string BuildWsFrame(std::uint8_t opcode, const std::string &data);
 
 protected:
     std::string mHost;
@@ -167,7 +166,7 @@ protected:
     static bool mOneTimeInit;
 
 private:
-    static bool SendToSocket(const ByteArray &input, std::int32_t socket);
+    static bool SendToSocket(const std::string &input, std::int32_t socket);
 };
 
 #endif // TCPSOCKET_H
