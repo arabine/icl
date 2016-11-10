@@ -40,19 +40,21 @@ const std::uint32_t Protocol::TABLES_UID        = 1000U;
 const std::uint32_t Protocol::MAXIMUM_TABLES    = 50U;
 
 
+const std::string Protocol::cTypeData = "DATA";
+const std::uint32_t Protocol::cHeaderSize = 23U;
+
 /**
  * \page protocol Protocol format
  * The aim of the protocol is to be simple and printable (all ASCII).
  * Room is reserved for future improvements such as encryption facilities
  *
- *     :OO:SSSS:DDDD:L<type>:LLLL<argument><cr><lf>
+ *     OO:SSSS:DDDD:LLLL:TTTT:<argument>
  *
  * OO protocol option byte, in HEX (ex: B4)
  * SSSS is always a 4 digits unsigned integer in HEX that indicates the source UUID (max: FFFF)
  * DDDD same format, indicates the destination UUID (max: FFFF)
- * L: une byte, length of the type, followed by the ASCII type of argument ((max: F, 255 bytes)
  * LLLL: the length of the argument (can be zero), followed by the payload bytes <argument>, typically in JSON format that allow complex structures
- * <cr><lf> packet ending, also known as "\r\n"
+ * TTTT: Packet type in ASCII
  */
 
 /*****************************************************************************/
@@ -60,6 +62,7 @@ Protocol::Protocol()
     : mSrcUuid(0U)
     , mDstUuid(0U)
     , mOption(0U)
+    , mSize(0U)
 {
 
 
@@ -70,61 +73,70 @@ Protocol::~Protocol()
 
 }
 /*****************************************************************************/
-bool Protocol::ParseUint32(const std::string &data, std::uint32_t &value)
+bool Protocol::ParseUint32(const char* data, std::uint32_t size, std::uint32_t &value)
 {
     bool ret = false;
-    if (data.size() == 4)
+    char *ptr;
+    value = std::strtoul(data, &ptr, 16);
+    std::uint32_t comp_size = ptr - data;
+    if (size == comp_size)
     {
-        value = std::strtoul(data.c_str(), NULL, 16);
+        ret = true;
     }
     return ret;
 }
 /*****************************************************************************/
-bool Protocol::Parse(const std::string &data)
+bool Protocol::Parse(const std::vector<char> &data)
 {
     bool ret = false;
 
-    std::vector<std::string> frame = Util::Split(data, ":");
+    std::uint32_t cpt = 0U;
 
-    if (frame.size() >= 5U)
+    // Analyze the packet without buffer copy
+    if (data.size() >= cHeaderSize)
     {
-        ret = ParseUint32(frame.at(0), mOption);
-        ret = ret && ParseUint32(frame.at(1), mSrcUuid);
-        ret = ret && ParseUint32(frame.at(2), mDstUuid);
+        std::uint32_t start = 0U, end = 0U;
 
-        std::uint32_t typeSize;
-        const std::string &type = frame.at(3);
-        if (type.size() >= 2U)
+        while (end < data.size())
         {
-            ret = ret && ParseUint32(type.substr(0U, 1U), typeSize);
-            mType = type.substr(1U, type.size() - 1U);
-        }
-        else
-        {
-            ret = false;
-        }
-
-        std::uint32_t payloadSize;
-        const std::string &payload = frame.at(4);
-        if (payload.size() >= 5U)
-        {
-            ret = ret && ParseUint32(payload.substr(0U, 4U), payloadSize);
-            mArgument = payload.substr(1U, payload.size() - 1U);
-
-            if (Util::EndsWith(mArgument, "\r\n"))
+            if (data[end] == ':')
             {
-                // Sanity check
-                ret = ret && (mArgument.size() == payloadSize);
+                std::uint32_t size = end-start;
+                if ((cpt == 0U) && (size == 2U))
+                {
+                    ret = ParseUint32(&data[start], size, mOption);
+                }
+                else if ((cpt == 1U) && (size == 4U))
+                {
+                    ret = ret && ParseUint32(&data[start], size, mSrcUuid);
+                }
+                else if ((cpt == 2U) && (size == 4U))
+                {
+                    ret = ret && ParseUint32(&data[start], size, mDstUuid);
+                }
+                else if ((cpt == 3U) && (size == 4U))
+                {
+                    ret = ret && ParseUint32(&data[start], size, mSize);
+                }
+                else if ((cpt == 4U) && (size == 4U))
+                {
+                    mType.assign(&data[start], size);
+                }
+                else
+                {
+                    TLogError("Bad header");
+                    break;
+                }
+                cpt++;
+                start = end + 1U;
             }
-            else
-            {
-                ret = false;
-            }
+            end++;
         }
-        else
-        {
-            ret = false;
-        }
+    }
+
+    if (cpt != 5U)
+    {
+        ret = false;
     }
 
     return ret;
@@ -146,9 +158,19 @@ std::string Protocol::GetType()
     return mType;
 }
 /*****************************************************************************/
-std::string Protocol::GetArg()
+std::string Protocol::GetData()
 {
-    return mArgument;
+    return mData;
+}
+/*****************************************************************************/
+uint32_t Protocol::Append(const std::string &data)
+{
+    std::uint32_t free_size = GetFreeSize();
+    std::uint32_t copied = (data.size() <= free_size) ? data.size() : free_size;
+
+    mData += data.substr(0, copied);
+
+    return copied;
 }
 /*****************************************************************************/
 std::string Protocol::Build(std::uint32_t option, std::uint32_t src, std::uint32_t dst, const std::string &type, const std::string &arg)
@@ -158,7 +180,7 @@ std::string Protocol::Build(std::uint32_t option, std::uint32_t src, std::uint32
     stream << ":" << std::setfill ('0') << std::setw(2) << std::hex << option;
     stream << ":" << std::setfill ('0') << std::setw(4) << std::hex << src;
     stream << ":" << std::setfill ('0') << std::setw(4) << std::hex << dst;
-    stream << ":" << std::setfill ('0') << std::setw(1) << std::hex << type.size() << type;
+    stream << ":" << std::setfill ('0') << type;
     stream << ":" << std::setfill ('0') << std::setw(4) << std::hex << arg.size() << arg;
 
     return stream.str();

@@ -40,7 +40,6 @@ class Protocol
 {
 
 public:
-
     // Reserved UUIDs: [0..9]
     static const std::uint32_t  INVALID_UID;
     static const std::uint32_t  LOBBY_UID;      //!< The lobby itself
@@ -51,25 +50,38 @@ public:
     static const std::uint32_t  MAXIMUM_TABLES; //!< Maximum number of tables
     static const std::uint32_t  NO_TABLE;       //!< Identifier for "no table"
 
+    // Packets types
+    static const std::string cTypeData; ///< Means that there is a data argument
+
+    // Protocol constants
+    static const std::uint32_t cHeaderSize;
+
     Protocol();
     ~Protocol();
 
     std::uint32_t GetSourceUuid();
     std::uint32_t GetDestUuid();
+    std::uint32_t GetOption() { return mOption; }
     std::string GetType();
-    std::string GetArg();
-    bool Parse(const std::string &data);
+    std::string GetData();
+    std::uint32_t GetSize() { return mSize; }
+    std::uint32_t GetFreeSize() { return (mSize - mData.size()); }
 
+    // Append some data, to a maximum size determined by mSize
+    // Returns the number of missing bytes to reach mSize
+    std::uint32_t Append(const std::string &data);
+    bool Parse(const std::vector<char> &data);
     static std::string Build(std::uint32_t option, std::uint32_t src, std::uint32_t dst, const std::string &type, const std::string &arg);
 
 private:
     std::uint32_t mSrcUuid;
     std::uint32_t mDstUuid;
     std::uint32_t mOption;
-    std::string mArgument;
+    std::uint32_t mSize;
+    std::string mData;
     std::string mType;
 
-    bool ParseUint32(const std::string &data, std::uint32_t &value);
+    bool ParseUint32(const char *data, uint32_t size, std::uint32_t &value);
 };
 
 #endif // PROTOCOL_H

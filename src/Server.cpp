@@ -87,7 +87,7 @@ void Server::ReadData(const Peer &peer, const std::string &data)
         // If it is a valid player (already connected, send the packet to the lobby
         if (IsValid(proto.GetSourceUuid(), peer))
         {
-            mLobby.Decode(proto.GetSourceUuid(), proto.GetDestUuid(), proto.GetArg());
+            mLobby.Decode(proto.GetSourceUuid(), proto.GetDestUuid(), proto.GetData());
         }
         else
         {

@@ -8,6 +8,7 @@
 
 #include "tst_tarot_protocol.h"
 #include "Lobby.h"
+#include "Protocol.h"
 
 TarotProtocol::TarotProtocol()
 {
@@ -30,6 +31,102 @@ bool Dump(const std::vector<helper::Reply> &reply)
         }
     }
     return endOfGame;
+}
+
+void CopyString(std::vector<char> &to, const std::string &from)
+{
+    if (from.size() >= to.capacity())
+    {
+        // Just provide the desired number of bytes
+        for (size_t i = 0; i < to.capacity(); i++)
+        {
+            to.push_back(from[i]);
+        }
+    }
+}
+
+// Basic packet with no data
+static const std::string test1 = "4F:8B5C:00AC:0000:QUIT:";
+
+void TarotProtocol::TestPacketCodec()
+{
+    std::vector<char> buffer;
+    Protocol proto;
+
+    buffer.reserve(Protocol::cHeaderSize);
+    CopyString(buffer, test1);
+    QCOMPARE(proto.Parse(buffer), true);
+
+    QCOMPARE(proto.GetOption(), (std::uint32_t)0x4F);
+    QCOMPARE(proto.GetDestUuid(), (std::uint32_t)0x00AC);
+    QCOMPARE(proto.GetSourceUuid(), (std::uint32_t)0x8B5C);
+    QCOMPARE(proto.GetType(), std::string("QUIT"));
+    QCOMPARE(proto.GetSize(), (std::uint32_t)0U);
+}
+
+// Test data streaming with fragmented packets, last packet is not complete
+std::string data = test1 + test1 + test1 + test1.substr(0, 10);
+int offset = 0;
+
+void TarotProtocol::TestPacketStream()
+{
+    /*
+    Protocol proto;
+    bool waitForData = false;
+    std::uint32_t start = 0U;
+
+    // most efficient: v1.insert(v1.end(), v2.begin(), v2.end());
+
+    std::vector<char> buffer;
+
+    for(;;)
+    {
+        if (waitForData)
+        {
+
+        }
+        else
+        {
+            // We must first receive the header
+            if (buffer.size() < Protocol::cHeaderSize)
+            {
+                if (buffer.capacity() == 0)
+                {
+                    buffer.reserve(Protocol::cHeaderSize);
+                }
+                SimulateSocketPartial(buffer);
+            }
+            else
+            {
+                TLogInfo("Detected header");
+                QCOMPARE(proto.Parse(test1), true);
+                waitForData = true;
+            }
+        }
+
+
+
+
+        if (data.size() >= Protocol::cHeaderSize)
+        {
+
+
+            std::uint32_t copied = proto.Append(data.substr(start, ));
+
+            if (proto.GetFreeSize() == 0U)
+            {
+                TLogInfo("Detected 1 packet");
+            }
+        }
+        else
+        {
+            mBuffer += data;
+            TLogInfo("Partial packet: " + mBuffer);
+            waitForData = true;
+        }
+    }
+
+    */
 }
 
 
