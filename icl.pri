@@ -41,6 +41,26 @@ SOURCES += $$ICL_DIR/network/TcpSocket.cpp \
     $$ICL_DIR/network/TcpServerBase.cpp
 
 # ------------------------------------------------------------------------------
+# Protocol files
+# ------------------------------------------------------------------------------
+
+HEADERS += $$ICL_DIR/protocol/Http.h
+
+SOURCES += $$ICL_DIR/protocol/Http.cpp
+
+# ------------------------------------------------------------------------------
+# Database files
+# ------------------------------------------------------------------------------
+
+HEADERS += $$ICL_DIR/db/CouchDb.h \
+            $$ICL_DIR/db/DataBase.h
+
+SOURCES += $$ICL_DIR/db/CouchDb.cpp \
+            $$ICL_DIR/db/DataBase.cpp \
+            $$ICL_DIR/db/sqlite3.c
+
+
+# ------------------------------------------------------------------------------
 # Security files
 # ------------------------------------------------------------------------------
 
@@ -49,6 +69,7 @@ HEADERS += $$ICL_DIR/security/Base64.h \
 
 SOURCES += $$ICL_DIR/security/Base64.cpp \
     $$ICL_DIR/security/Sha1.cpp
+
 
 # ------------------------------------------------------------------------------
 # ZIP files
@@ -86,13 +107,19 @@ VPATH += $$ICL_DIR/util
 VPATH += $$ICL_DIR/zip
 VPATH += $$ICL_DIR/security
 VPATH += $$ICL_DIR/jsengine
+VPATH += $$ICL_DIR/protocol
 VPATH += $$ICL_DIR/json
+VPATH += $$ICL_DIR/io
+VPATH += $$ICL_DIR/db
 
 INCLUDEPATH += $$ICL_DIR/network
 INCLUDEPATH += $$ICL_DIR/util
 INCLUDEPATH += $$ICL_DIR/zip
 INCLUDEPATH += $$ICL_DIR/security
 INCLUDEPATH += $$ICL_DIR/jsengine
+INCLUDEPATH += $$ICL_DIR/protocol
 INCLUDEPATH += $$ICL_DIR/json
+INCLUDEPATH += $$ICL_DIR/io
+INCLUDEPATH += $$ICL_DIR/db
 
 
