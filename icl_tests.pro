@@ -102,4 +102,6 @@ SOURCES +=  main.cpp \
             tst_utilities.cpp \
             tst_webstuff.cpp
 
+OTHER_FILES = README.md
+
 # End of project file
