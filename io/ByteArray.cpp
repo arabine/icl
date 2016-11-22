@@ -45,6 +45,14 @@ ByteArray::ByteArray(const std::string &data)
     }
 }
 /*****************************************************************************/
+ByteArray::ByteArray(const char *data, std::uint32_t size)
+{
+    for (std::uint32_t i = 0U; i < size; i++)
+    {
+        mData.push_back(static_cast<std::uint8_t>(data[i]));
+    }
+}
+/*****************************************************************************/
 ByteArray::ByteArray()
 {
 

@@ -43,6 +43,7 @@ public:
 
     // Constructors
     ByteArray(const char *data);
+    ByteArray(const char *data, uint32_t size);
     ByteArray(const std::string &data);
     ByteArray();
 
