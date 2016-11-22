@@ -63,8 +63,16 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
+
+
+namespace tcp
+{
 
 /*****************************************************************************/
+/**
+ * @brief Simple wrapper around the socket
+ */
 struct Peer
 {
     Peer()
@@ -86,18 +94,83 @@ struct Peer
         return socket != -1;
     }
 
-    bool operator == (const Peer &rhs)
-    {
-        bool ret = false;
-        if ((socket == rhs.socket) && (isWebSocket == rhs.isWebSocket))
-        {
-            ret = true;
-        }
-        return ret;
-    }
-
     std::int32_t socket;
     bool isWebSocket;
+};
+
+/*****************************************************************************/
+/**
+ * @brief Connection state with the server, holds incoming data
+ */
+struct Conn
+{
+    static const std::uint8_t cStateClosed      = 0U;
+    static const std::uint8_t cStateConnected   = 1U;
+    static const std::uint8_t cStateDeleteLater = 2U;
+
+    Conn()
+        : state(cStateClosed)
+    {
+
+    }
+
+    Conn(std::int32_t s, bool ws)
+        : peer(s, ws)
+    {
+
+    }
+
+    Conn(const Peer &peer)
+        : peer(peer)
+    {
+
+    }
+
+    bool IsClosed() const { return state == cStateClosed; }
+    bool IsConnected()
+    {
+        bool connected = false;
+        if (peer.IsValid())
+        {
+            if (peer.isWebSocket)
+            {
+                if (state == cStateConnected)
+                {
+                    connected = true;
+                }
+            }
+            else
+            {
+                connected = true;
+            }
+        }
+        return connected;
+    }
+
+    inline bool operator ==(const std::int32_t &rhs)
+    {
+        return (peer.socket == rhs);
+    }
+
+    inline Conn & operator =(const std::int32_t &rhs)
+    {
+       peer.socket = rhs;
+       return *this;
+    }
+
+    inline bool operator >(const std::int32_t &rhs)
+    {
+        return (peer.socket > rhs);
+    }
+
+    inline bool operator <(const Conn &rhs)
+    {
+        return (peer.socket < rhs.peer.socket);
+    }
+
+    Peer peer;
+    std::uint8_t state;
+    std::string payload;
 };
 /*****************************************************************************/
 class TcpSocket
@@ -110,6 +183,9 @@ public:
     static const std::uint8_t WEBSOCKET_OPCODE_CONNECTION_CLOSE = 0x08U;
     static const std::uint8_t WEBSOCKET_OPCODE_PING             = 0x09U;
     static const std::uint8_t WEBSOCKET_OPCODE_PONG             = 0x0AU;
+
+    // Larger values will read larger chunks of data at one time (without fragmentation)
+    static const std::int32_t MAXRECV = 1024;
 
     TcpSocket();
     TcpSocket(const Peer &peer);
@@ -144,30 +220,38 @@ public:
     bool Listen(std::int32_t maxConnections) const;
     bool HostNameToIpAddress(const std::string &address, sockaddr_in &ipv4);
     // return true if socket has data waiting to be read
-    bool DataWaiting(uint32_t timeout);
     int AnalyzeSocketError(const char* context);
     int Accept() const;
-    std::int32_t Recv(std::string &output);
-    bool Connect(const std::string &host, const int port);
-    bool Send(const std::string &input) const;
+    bool Recv();
+    bool Recv(std::string &output);
+    bool Send(const std::string &input);
+    bool ProceedWsHandshake();
+    bool DecodeWsData(Conn &conn);
+    void DeliverData(Conn &conn);
+    bool IsConnected();
 
     // Static
     static bool Initialize();
-    static int AnalyzeSocketError(const Peer &peer, const char* context);
-    static bool Send(const std::string &input, const Peer &peer);
+    static bool AnalyzeSocketError(Peer &peer, const char* context);
+    static bool Send(const std::string &input, Peer &peer);
     static void Close(Peer &peer);
     static std::string BuildWsFrame(std::uint8_t opcode, const std::string &data);
+    static bool Recv(std::string &output, Peer &peer);
+    static bool SendToSocket(const std::string &input, Peer &peer);
 
 protected:
     std::string mHost;
     std::uint16_t mPort;
     Peer mPeer;
+    std::string mBuff;
     sockaddr_in mAddr;
     static bool mOneTimeInit;
 
 private:
-    static bool SendToSocket(const std::string &input, std::int32_t socket);
+    static std::string WsOpcodeToString(std::uint8_t opcode);
 };
+
+} // namespace tcp
 
 #endif // TCPSOCKET_H
 

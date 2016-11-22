@@ -28,6 +28,9 @@
 
 #include "TcpSocket.h"
 
+namespace tcp
+{
+
 /*****************************************************************************/
 class TcpClient : public TcpSocket
 {
@@ -36,9 +39,12 @@ public:
     TcpClient();
     ~TcpClient() { }
 
-    bool Start();
-
+    bool Initialize();
+    bool Connect(const std::string &host, const int port);
+    bool DataWaiting(std::uint32_t timeout);
 };
+
+} // namespace tcp
 
 #endif // TCPCLIENT_H
 

@@ -1,5 +1,8 @@
 #include "TcpServerBase.h"
 
+namespace tcp
+{
+
 TcpServerBase::TcpServerBase()
 {
 
@@ -48,4 +51,5 @@ bool TcpServerBase::CreateServer(std::uint16_t port, bool localHostOnly, std::in
     return true;
 }
 
+} // namespace tcp
 

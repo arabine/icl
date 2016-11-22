@@ -35,6 +35,9 @@
 #include "WebSocket.h"
 #include "TcpServerBase.h"
 
+namespace tcp
+{
+
 /*****************************************************************************/
 /**
  * @brief The TcpServer class
@@ -62,7 +65,7 @@ public:
          * Called when a new TCP/IP connection has been created
          * @param socket
          */
-        virtual void NewConnection(const Peer &peer) = 0;
+        virtual void NewConnection(const tcp::Conn &conn) = 0;
 
         /**
          * @brief ReadData
@@ -70,20 +73,20 @@ public:
          * @param socket
          * @param data
          */
-        virtual void ReadData(const Peer &peer, const std::string &data) = 0;
+        virtual void ReadData(const tcp::Conn &conn) = 0;
 
         /**
          * @brief ClientClosed
          * Called when a client has closed its connection
          * @param socket
          */
-        virtual void ClientClosed(const Peer &peer) = 0;
+        virtual void ClientClosed(const tcp::Conn &conn) = 0;
 
         /**
          * @brief ServerTerminated
          * Called when the server is about to shutdown (mainly because of an internal problem)
          */
-        virtual void ServerTerminated(CloseType type) = 0;
+        virtual void ServerTerminated(tcp::TcpServer::IEvent::CloseType type) = 0;
     };
 
     TcpServer(IEvent &handler);
@@ -104,77 +107,6 @@ public:
     std::string GetPeerName(int s);
 
 private:
-    struct Conn : public Peer
-    {
-        static const std::uint8_t cStateClosed      = 0U;
-        static const std::uint8_t cStateConnected   = 1U;
-        static const std::uint8_t cStateDeleteLater = 2U;
-
-        Conn()
-            : Peer()
-            , state(cStateClosed)
-        {
-
-        }
-
-        Conn(std::int32_t s, bool ws)
-            : Peer(s, ws)
-        {
-
-        }
-
-        Conn(const Peer &peer)
-            : Peer(peer)
-        {
-
-        }
-
-        bool IsClosed() const { return state == cStateClosed; }
-        bool IsConnected()
-        {
-            bool connected = false;
-            if (IsValid())
-            {
-                if (isWebSocket)
-                {
-                    if (state == cStateConnected)
-                    {
-                        connected = true;
-                    }
-                }
-                else
-                {
-                    connected = true;
-                }
-            }
-            return connected;
-        }
-
-        inline bool operator ==(const std::int32_t &rhs)
-        {
-            return (socket == rhs);
-        }
-
-        inline Conn & operator =(const std::int32_t &rhs)
-        {
-           socket = rhs;
-           return *this;
-        }
-
-        inline bool operator >(const std::int32_t &rhs)
-        {
-            return (socket > rhs);
-        }
-
-        inline bool operator <(const Conn &rhs)
-        {
-            return (socket < rhs.socket);
-        }
-
-        std::uint8_t state;
-        std::string wsPayload;
-    };
-
     TcpServerBase   mTcpServer;
     TcpServerBase   mWsServer;
     std::thread mThread;
@@ -194,12 +126,12 @@ private:
     void IncommingConnection(bool isWebSocket);
     void IncommingData(Conn &conn);
     void UpdateMaxSocket();
-    void ManageWsData(Conn &conn, std::string &data);
     void DeliverWsData(Conn &conn, std::string &buf);
     std::string WsOpcodeToString(std::uint8_t opcode);
     void UpdateClients();
 };
 
+} // namespace tcp
 
 #endif // TCP_SERVER_H
 

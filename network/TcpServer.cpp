@@ -30,6 +30,9 @@
 #include <iostream>
 #include <sstream>
 
+namespace tcp
+{
+
 /*****************************************************************************/
 TcpServer::TcpServer(IEvent &handler)
     : mMaxSd(0)
@@ -184,8 +187,7 @@ void TcpServer::Run()
             /**********************************************************/
             /* The select call failed.                                */
             /**********************************************************/
-            int err = mTcpServer.AnalyzeSocketError("select()");
-            if (err == -1)
+            if (!mTcpServer.AnalyzeSocketError("select()"))
             {
                 end_server = true;
                 mEventHandler.ServerTerminated(IEvent::WAIT_SOCK_FAILED);
@@ -196,8 +198,7 @@ void TcpServer::Run()
             /**********************************************************/
             /* The time out expired.                                  */
             /**********************************************************/
-            int err = mTcpServer.AnalyzeSocketError("select()");
-            if (err == -1)
+            if (!mTcpServer.AnalyzeSocketError("select()"))
             {
                 end_server = true;
                 mEventHandler.ServerTerminated(IEvent::TIMEOUT);
@@ -242,7 +243,7 @@ void TcpServer::Run()
                     // Scan for already connected clients
                     for (size_t j = 0; j < mClients.size(); j++)
                     {
-                        if (FD_ISSET(mClients[j].socket, &working_set))
+                        if (FD_ISSET(mClients[j].peer.socket, &working_set))
                         {
                             /****************************************************/
                             /* This is not the listening socket, therefore an   */
@@ -266,9 +267,9 @@ void TcpServer::Run()
     mMutex.lock();
     for (size_t i = 0; i < mClients.size(); i++)
     {
-        if (FD_ISSET(mClients[i].socket, &mMasterSet))
+        if (FD_ISSET(mClients[i].peer.socket, &mMasterSet))
         {
-            TcpSocket::Close(mClients[i]);
+            TcpSocket::Close(mClients[i].peer);
         }
     }
     mMutex.unlock();
@@ -314,7 +315,7 @@ void TcpServer::IncommingConnection(bool isWebSocket)
 
         if (new_sd >= 0)
         {
-            Peer newPeer(new_sd, webSocket);
+            Conn newPeer(new_sd, webSocket);
             // Save peers descriptor
             mClients.push_back(newPeer);
 
@@ -345,9 +346,7 @@ void TcpServer::IncommingConnection(bool isWebSocket)
 /*****************************************************************************/
 void TcpServer::IncommingData(Conn &conn)
 {
-    TcpSocket socket(conn);
-    int rc;
-    std::string data;
+    TcpSocket socket(conn.peer);
 
     // printf("  Descriptor %d is readable\n", in_sock);
     /*************************************************/
@@ -361,27 +360,41 @@ void TcpServer::IncommingData(Conn &conn)
     /* failure occurs, we will close the          */
     /* connection.                                */
     /**********************************************/
-    rc = socket.Recv(data);
 
-    if (rc > 0)
+    bool hasData = socket.Recv();
+    if (hasData)
     {
-        if (conn.isWebSocket)
+        if (conn.peer.isWebSocket)
         {
-            ManageWsData(conn, data);
+            if (conn.IsClosed())
+            {
+                if (socket.ProceedWsHandshake())
+                {
+                    // Websocket handshake success, warn the application
+                    conn.state = Conn::cStateConnected;
+                    mEventHandler.NewConnection(conn);
+                }
+                else
+                {
+                    TLogError("Websocket handshake failure.");
+                }
+            }
+            else
+            {
+                // Assume we are in the connected state, manage the frame to extract the data
+                hasData = socket.DecodeWsData(conn);
+            }
         }
-        else
+
+        if (hasData)
         {
             // Send the received data
-            mEventHandler.ReadData(conn, data);
+            socket.DeliverData(conn);
+            mEventHandler.ReadData(conn);
         }
-    }
-    else if (rc == -2)
-    {
-        // Try again to read from socket
     }
     else
     {
-        // Peer has closed the connection, schedule the cleaning
         conn.state = Conn::cStateDeleteLater;
     }
 }
@@ -407,7 +420,7 @@ void TcpServer::UpdateClients()
             Conn conn = mClients[i];
             if (conn.state == Conn::cStateDeleteLater)
             {
-                FD_CLR((u_int)conn.socket, &mMasterSet); // need a cast here because of the macro
+                FD_CLR((u_int)conn.peer.socket, &mMasterSet); // need a cast here because of the macro
 
                 mClients.erase(mClients.begin() + i);
 
@@ -417,7 +430,7 @@ void TcpServer::UpdateClients()
                 {
                     mEventHandler.ClientClosed(conn);
                 }
-                conn.wsPayload.clear();
+                conn.payload.clear();
                 conn.state = Conn::cStateClosed;
 
                 haveDeleted = true;
@@ -448,189 +461,12 @@ void TcpServer::UpdateMaxSocket()
 	{
 		if (*pos > mMaxSd)
 		{
-            mMaxSd = pos->socket;
+            mMaxSd = pos->peer.socket;
 		}
 	}
 }
-/*****************************************************************************/
-void TcpServer::ManageWsData(Conn &conn, std::string &data)
-{
-    if (conn.IsClosed())
-    {
-        // Process the handshake, upgrade into our own protocol
-        WebSocketRequest ws;
 
-        ws.Parse(data);
-        if (ws.IsValid())
-        {
-            // Trick here: send handshake using raw tcp, not with websocket framing
-            Peer peer = conn;
-            peer.isWebSocket = false;
-            TcpSocket::Send(ws.Upgrade("tarotclub"), peer);
-            conn.state = Conn::cStateConnected;
-            conn.wsPayload.clear();
-            mEventHandler.NewConnection(conn);
-        }
-    }
-    else
-    {
-        // Assume we are in the connected state, manage the frame to extract the data
-        DeliverWsData(conn, data);
-    }
-}
-/*****************************************************************************/
-/*
-0                   1                   2                   3
-0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
-+-+-+-+-+-------+-+-------------+-------------------------------+
-|F|R|R|R| opcode|M| Payload len |    Extended payload length    |
-|I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
-|N|V|V|V|       |S|             |   (if payload len==126/127)   |
-| |1|2|3|       |K|             |                               |
-+-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
-|     Extended payload length continued, if payload len == 127  |
-+ - - - - - - - - - - - - - - - +-------------------------------+
-|                               |Masking-key, if MASK set to 1  |
-+-------------------------------+-------------------------------+
-| Masking-key (continued)       |          Payload Data         |
-+-------------------------------- - - - - - - - - - - - - - - - +
-:                     Payload Data continued ...                :
-+ - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
-|                     Payload Data continued ...                |
-+---------------------------------------------------------------+
-*/
-void TcpServer::DeliverWsData(Conn &conn, std::string &buf)
-{
-    // Having buf unsigned char * is important, as it is used below in arithmetic
-    size_t i, len, mask_len = 0, header_len = 0, data_len = 0;
-
-    std::uint32_t buf_len = buf.size();
-
-    /* Extracted from the RFC 6455 Chapter 5-2
-     *
-    The length of the "Payload data", in bytes: if 0-125, that is the
-    payload length.  If 126, the following 2 bytes interpreted as a
-    16-bit unsigned integer are the payload length.  If 127, the
-    following 8 bytes interpreted as a 64-bit unsigned integer (the
-    most significant bit MUST be 0) are the payload length.  Multibyte
-    length quantities are expressed in network byte order.  Note that
-    in all cases, the minimal number of bytes MUST be used to encode
-    the length, for example, the length of a 124-byte-long string
-    can't be encoded as the sequence 126, 0, 124.  The payload length
-    is the length of the "Extension data" + the length of the
-    "Application data".  The length of the "Extension data" may be
-    zero, in which case the payload length is the length of the
-    "Application data". */
-    if (buf_len >= 2)
-    {
-        len = buf[1] & 127;
-        mask_len = buf[1] & 128 ? 4 : 0;
-        if (len < 126 && buf_len >= mask_len)
-        {
-            data_len = len;
-            header_len = 2 + mask_len;
-        }
-        else if (len == 126 && buf_len >= 4 + mask_len)
-        {
-            header_len = 4 + mask_len;
-            data_len = ((((size_t) buf[2]) << 8) + buf[3]);
-        }
-        else if (buf_len >= 10 + mask_len)
-        {
-            header_len = 10 + mask_len;
-            data_len = (size_t) (((uint64_t) htonl(* (uint32_t *) &buf[2])) << 32) + htonl(* (uint32_t *) &buf[6]);
-        }
-    }
-
-    // frame_len = header_len + data_len;
-    // Apply mask if necessary
-    char *mask_ptr = (&buf[0] + header_len) - mask_len; // pointer to the mask located in the header
-    if (mask_len > 0)
-    {
-        for (i = 0; i < data_len; i++)
-        {
-            buf[i + header_len] ^= mask_ptr[i % 4];
-        }
-    }
-
-    std::uint8_t opcode = buf[0] & 0xFU;
-    bool FIN = (buf[0] & 0x80U) == 0x80U;
-    TLogNetwork("received opcode: " + WsOpcodeToString(opcode));
-
-    /*
-    Manage fragmentation here: extract from the RFC:
-
-    EXAMPLE: For a text message sent as three fragments, the first
-      fragment would have an opcode of 0x1 and a FIN bit clear, the
-      second fragment would have an opcode of 0x0 and a FIN bit clear,
-      and the third fragment would have an opcode of 0x0 and a FIN bit
-      that is set.
-
-      */
-    if(opcode == TcpSocket::WEBSOCKET_OPCODE_PING)
-    {
-        TcpSocket::Send(TcpSocket::BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_PONG, std::string()), conn);
-    }
-    else if (opcode == TcpSocket::WEBSOCKET_OPCODE_CONNECTION_CLOSE)
-    {
-        conn.wsPayload.clear();
-        conn.state = Conn::cStateClosed;
-    }
-    else
-    {
-        if ((opcode == TcpSocket::WEBSOCKET_OPCODE_TEXT) ||
-            (opcode == TcpSocket::WEBSOCKET_OPCODE_BINARY))
-        {
-            conn.wsPayload.clear();
-            conn.wsPayload += buf.substr(header_len, data_len);
-        }
-        else if(opcode == TcpSocket::WEBSOCKET_OPCODE_CONTINUATION)
-        {
-            conn.wsPayload += buf.substr(header_len, data_len);
-        }
-
-        if (FIN)
-        {
-            // Send the received data
-            mEventHandler.ReadData(conn, conn.wsPayload);
-        }
-    }
-}
-/*****************************************************************************/
-std::string TcpServer::WsOpcodeToString(std::uint8_t opcode)
-{
-    std::string ocString;
-    if (opcode == TcpSocket::WEBSOCKET_OPCODE_CONTINUATION)
-    {
-        ocString = "WebSocket opcode: continuation";
-    }
-    else if (opcode == TcpSocket::WEBSOCKET_OPCODE_TEXT)
-    {
-        ocString = "WebSocket opcode: text data";
-    }
-    else if (opcode == TcpSocket::WEBSOCKET_OPCODE_BINARY)
-    {
-        ocString = "WebSocket opcode: binary data";
-    }
-    else if (opcode == TcpSocket::WEBSOCKET_OPCODE_CONNECTION_CLOSE)
-    {
-        ocString = "WebSocket opcode: connection close";
-    }
-    else if (opcode == TcpSocket::WEBSOCKET_OPCODE_PING)
-    {
-        ocString = "WebSocket opcode: ping";
-    }
-    else if (opcode == TcpSocket::WEBSOCKET_OPCODE_PONG)
-    {
-        ocString = "WebSocket opcode: pong";
-    }
-    else
-    {
-        ocString = "Unkown WebSocket opcode";
-    }
-    return ocString;
-}
-
+} // namespace tcp
 
 //=============================================================================
 // End of file TcpServer.cpp
