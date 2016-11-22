@@ -5,83 +5,94 @@
 #include "TcpClient.h"
 #include "TcpServer.h"
 #include "WebSocket.h"
-
+#include "tst_tcp_socket.h"
 
 /**
  * @brief Simple echo server
  */
-class EchoServer : public TcpServer::IEvent
+class EchoServer : public tcp::TcpServer::IEvent
 {
 
 public:
 
-	virtual void NewConnection(int socket)
+    virtual void NewConnection(const tcp::Conn &conn)
 	{
-	
+        (void) conn;
 	}
 
-	virtual void ReadData(int socket, const std::string &data)
+    virtual void ReadData(const tcp::Conn &conn)
 	{
 		// echo the data received
-		TcpSocket peer;
-		peer.SetSocket(socket);
-		peer.Send(data);
+        tcp::TcpSocket peer(conn.peer);
+        peer.Send(conn.payload);
 	}
 
-	virtual void ClientClosed(int socket)
+    virtual void ClientClosed(const tcp::Conn &conn)
 	{
+        (void) conn;
 	}
+
+    virtual void ServerTerminated(tcp::TcpServer::IEvent::CloseType type)
+    {
+        (void) type;
+    }
 
 };
 
+static bool echoTestSuccess = false;
+
 void ClientThread()
 {
-    TcpClient client;
+    tcp::TcpClient client;
     std::string buff;
+    std::string data = "Hello, world!";
 
-    if (client.Start())
+    client.Initialize();
+    client.Connect("127.0.0.1", 61617);
+
+    std::this_thread::sleep_for(std::chrono::seconds(1U));
+    if (client.Send(data))
     {
-        client.Connect("127.0.0.1", 61617);
-
-        for (;;)
+        if (client.DataWaiting(2U))
         {
-            std::this_thread::sleep_for(std::chrono::seconds(1U));
-            if (client.Send("Hello, world!"))
+            if (client.Recv(buff))
             {
-                if (client.Recv(buff))
+                std::cout << "TEST Received: " << buff << std::endl;
+                if (data == buff)
                 {
-                    std::cout << "Received: " << buff << std::endl;
-                }
-                else
-                {
-                    std::cout << "Read error" << std::endl;
-                    break;
+                    echoTestSuccess = true;
                 }
             }
             else
             {
-                std::cout << "Write error" << std::endl;
-                break;
+                std::cout << "TEST Read error" << std::endl;
             }
         }
+        else
+        {
+            std::cout << "TEST Client Timeout" << std::endl;
+        }
     }
-    std::cout << "Exiting client thread..." << std::endl;
+    else
+    {
+        std::cout << "Write error" << std::endl;
+    }
 }
 
-
-class WebSocketServer : public TcpServer::IEvent
+/*
+class WebSocketServer : public tcp::TcpServer::IEvent
 {
 
 public:
 
-	virtual void NewConnection(int socket)
+    virtual void NewConnection(const tcp::Conn &conn)
 	{
-
+        (void) conn;
 	}
 
-	virtual void ReadData(int socket, const std::string &data)
+    virtual void ReadData(const tcp::Conn &conn)
 	{
-		std::cout << "Received: " << data << std::endl;
+        std::cout << "Received: " << conn.payload << std::endl;
 
 		WebSocketRequest req;
 		req.Parse(data);
@@ -90,8 +101,7 @@ public:
 		{
 			std::string upgrade = req.Upgrade("tarotclub");
 			std::cout << "Upgrade header: " << std::endl << upgrade << std::endl;
-			TcpSocket peer;
-			peer.SetSocket(socket);
+            tcp::TcpSocket peer(tcp::Peer(socket, false));
 			peer.Send(upgrade);
 		}
 		else
@@ -100,12 +110,21 @@ public:
 		}
 	}
 
-	virtual void ClientClosed(int socket)
+    virtual void ClientClosed(const tcp::Conn &conn)
 	{
+        (void) conn;
 	}
+
+    virtual void ServerTerminated(tcp::TcpServer::IEvent::CloseType type)
+    {
+        (void) type;
+    }
 
 };
 
+*/
+
+/*
 
 // #define DEBUG_THREAD
 // #define TEST_WEBSOCKET_HANDSHAKE
@@ -116,18 +135,18 @@ int main()
 
 	// Declare tcp server callbacks
 	EchoServer echo;
-	WebSocketServer webSockEvent;
+//	WebSocketServer webSockEvent;
 
 	// Actually instanciate the Tcp server thread using the previously defined callbacks
-    TcpServer server(echo);
-	TcpServer webSock(webSockEvent);
+    tcp::TcpServer server(echo);
+//    tcp::TcpServer webSock(webSockEvent);
     
 	// Init the whole Tcp stack
-    TcpSocket::Initialize();
+    tcp::TcpSocket::Initialize();
 
 	// Start the server threads
     server.Start(61617, 10U);
-	webSock.Start(4242, 5U);
+//	webSock.Start(4242, 5U);
 
 #ifdef DEBUG_THREAD
     std::this_thread::sleep_for(std::chrono::seconds(2U));
@@ -142,3 +161,31 @@ int main()
     return 0;
 }
 
+*/
+
+TcpSocketTest::TcpSocketTest()
+{
+
+}
+
+void TcpSocketTest::SimpleTcpEchoServer()
+{
+    EchoServer echo;
+    std::thread client;
+
+    tcp::TcpServer server(echo);
+
+    // Init the whole Tcp stack
+    tcp::TcpSocket::Initialize();
+
+    server.Start(10U, false, 61617);
+
+    // Then initialize the client
+    std::this_thread::sleep_for(std::chrono::seconds(2U));
+    client = std::thread(ClientThread);
+    client.join();
+    server.Stop();
+    server.Join();
+
+    QCOMPARE(echoTestSuccess, true);
+}

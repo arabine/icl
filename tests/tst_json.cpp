@@ -18,7 +18,7 @@ void JsonTest::ParseFile()
 {
     JsonValue json;
 
-    std::string path = Util::ExecutablePath() + "/../../tests/json/test.json";
+    std::string path = Util::ExecutablePath() + "/../../tests/input/test.json";
 
     if (!JsonReader::ParseFile(json, path))
     {
@@ -95,7 +95,7 @@ void JsonTest::ModifyValue()
 {
     JsonValue json;
 
-    std::string path = Util::ExecutablePath() + "/../../tests/json/test.json";
+    std::string path = Util::ExecutablePath() + "/../../tests/input/test.json";
 
     if (!JsonReader::ParseFile(json, path))
     {

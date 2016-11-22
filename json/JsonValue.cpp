@@ -41,13 +41,13 @@ static std::string CreateIndent(std::uint32_t level)
     return indent;
 }
 /*****************************************************************************/
-std::string JsonArray::ToString(std::uint32_t level)
+std::string JsonArray::ToString(std::uint32_t level) const
 {
     std::string text = "[\n";
     std::string indent = CreateIndent(level + 1U);
 
     std::uint32_t index = 0U;
-    for (std::vector<JsonValue>::iterator iter = mArray.begin(); iter != mArray.end(); ++iter)
+    for (std::vector<JsonValue>::const_iterator iter = mArray.begin(); iter != mArray.end(); ++iter)
     {
         text += indent + iter->ToString(level + 1U);
         index++;
@@ -118,14 +118,25 @@ void JsonObject::Clear()
     mObject.clear();
 }
 /*****************************************************************************/
-std::string JsonObject::ToString(std::uint32_t level)
+JsonObject::JsonObject(const JsonObject &obj)
+{
+    *this = obj;
+}
+/*****************************************************************************/
+JsonObject &JsonObject::operator = (JsonObject const &rhs)
+{
+    mObject = rhs.mObject;
+    return *this;
+}
+/*****************************************************************************/
+std::string JsonObject::ToString(std::uint32_t level) const
 {
     std::string text = "{\n";
     std::string indent = CreateIndent(level + 1U);
 
     std::uint32_t index = 0U;
 
-    for (std::map<std::string, JsonValue>::iterator it = mObject.begin(); it != mObject.end(); ++it)
+    for (std::map<std::string, JsonValue>::const_iterator it = mObject.begin(); it != mObject.end(); ++it)
     {
         text += indent + "\"" + it->first + "\": " + it->second.ToString(level + 1U);
         index++;
@@ -184,10 +195,10 @@ bool JsonObject::HasValue(const std::string &key)
     return ret;
 }
 /*****************************************************************************/
-JsonValue JsonObject::GetValue(const std::string &key)
+JsonValue JsonObject::GetValue(const std::string &key) const
 {
     JsonValue value;
-    for (std::map<std::string, JsonValue>::iterator it = mObject.begin(); it != mObject.end(); ++it)
+    for (std::map<std::string, JsonValue>::const_iterator it = mObject.begin(); it != mObject.end(); ++it)
     {
         if (it->first == key)
         {
@@ -202,7 +213,7 @@ JsonValue JsonObject::GetValue(const std::string &key)
 //          *                          *                                  *
 
 /*****************************************************************************/
-std::string JsonValue::ToString(std::uint32_t level)
+std::string JsonValue::ToString(std::uint32_t level) const
 {
     std::string text;
     std::stringstream ss;

@@ -4,6 +4,7 @@
 #include <cstdint>
 #include <string>
 
+#include "TcpSocket.h"
 #include "WebSocket.h"
 #include "tst_webstuff.h"
 #include "CouchDb.h"
@@ -14,7 +15,7 @@ TstWebStuff::TstWebStuff()
 
 void TstWebStuff::Http()
 {
-    TcpSocket::Initialize();
+    tcp::TcpSocket::Initialize();
     std::string value;
     std::string expected;
 

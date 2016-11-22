@@ -70,10 +70,6 @@ public:
         JSON_PARSE_ALLOC_ERROR
     };
 
-    // ctors / dtor
-    JsonReader();
-    ~JsonReader();
-
     // Helpers
     static bool ParseFile(JsonValue &json, const std::string &fileName);
     static bool ParseString(JsonValue &json, const std::string &data);

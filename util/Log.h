@@ -63,12 +63,15 @@ public:
         mLogPath = path;
     }
 
+    static void EnableLog(bool enable) { mEnableFileOutput = enable; }
+
 private:
     static void Save(const std::string &line);
 
     static std::mutex mMutex;
     static Subject<std::string> mSubject;
     static std::string mLogPath;
+    static bool mEnableFileOutput;
 };
 
 // Macros definitions

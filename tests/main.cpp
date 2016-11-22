@@ -4,13 +4,12 @@
 #include <cstdint>
 #include <iostream>
 
-#include "tst_tarot_base.h"
-#include "tst_tarot_rules.h"
 #include "tst_utilities.h"
 #include "tst_json.h"
 #include "tst_hash.h"
 #include "tst_webstuff.h"
 #include "tst_database.h"
+#include "tst_tcp_socket.h"
 
 int main(int argc, char *argv[])
 {
@@ -29,16 +28,6 @@ int main(int argc, char *argv[])
         testFailures++;
     }
 
-    TarotBase tst_base;
-    if (QTest::qExec(&tst_base, argc, argv) == 0)
-    {
-        testSuccesses++;
-    }
-    else
-    {
-        testFailures++;
-    }
-
     JsonTest tst_json;
     if (QTest::qExec(&tst_json, argc, argv) == 0)
     {
@@ -49,15 +38,6 @@ int main(int argc, char *argv[])
         testFailures++;
     }
 
-    TarotRules tst_rules;
-    if (QTest::qExec(&tst_rules, argc, argv) == 0)
-    {
-        testSuccesses++;
-    }
-    else
-    {
-        testFailures++;
-    }
 
     LibraryHash tst_hash;
     if (QTest::qExec(&tst_hash, argc, argv) == 0)
@@ -81,6 +61,16 @@ int main(int argc, char *argv[])
 
     TstDataBase tst_db;
     if (QTest::qExec(&tst_db, argc, argv) == 0)
+    {
+        testSuccesses++;
+    }
+    else
+    {
+        testFailures++;
+    }
+
+    TcpSocketTest tst_sock;
+    if (QTest::qExec(&tst_sock, argc, argv) == 0)
     {
         testSuccesses++;
     }
