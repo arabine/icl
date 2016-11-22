@@ -26,6 +26,7 @@
 
 
 #include "Http.h"
+#include "ByteArray.h"
 #include "Log.h"
 
 #include <cstdio>
@@ -56,7 +57,7 @@ Connection::Connection(const char* host, int port , IEvent &eventHandler)
     , mPort(port)
     , mConnected(false)
 {
-    mClient.Start();
+    mClient.Initialize();
 }
 
 
@@ -237,10 +238,8 @@ bool Connection::pump()
     if (!mClient.DataWaiting(2U))
         return true;				// recv will block
 
-    ByteArray buf;
-    std::int32_t retCode = mClient.Recv(buf);
-
-    if (retCode == 0)
+    std::string buf;
+    if (!mClient.Recv(buf))
 	{
 		// connection has closed
 		Response* r = m_Outstanding.front();
@@ -252,17 +251,14 @@ bool Connection::pump()
 		// any outstanding requests will be discarded
 		close();
 	}
-    else if (retCode < 0)
-    {
-        // try again or failure
-    }
 	else
 	{
 		int used = 0;
-        while( used < retCode && !m_Outstanding.empty() )
+        int size = buf.size();
+        while( used < size && !m_Outstanding.empty() )
 		{
 			Response* r = m_Outstanding.front();
-            int u = r->pump( (char *)buf.Data() + used, retCode - used );
+            int u = r->pump( (char *)buf.c_str() + used, size - used );
 
 			// delete response once completed
 			if( r->completed() )
@@ -276,7 +272,7 @@ bool Connection::pump()
 		// NOTE: will lose bytes if response queue goes empty
 		// (but server shouldn't be sending anything if we don't have
 		// anything outstanding anyway)
-        assert( used == retCode );	// all bytes should be used up by here.
+        assert( used == size );	// all bytes should be used up by here.
 	}
 
     return false;

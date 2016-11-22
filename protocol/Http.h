@@ -183,7 +183,7 @@ private:
     IEvent  &mEventHandler;
 
     enum { IDLE, REQ_STARTED, REQ_SENT } m_State;
-    TcpClient mClient;
+    tcp::TcpClient mClient;
     std::string mHost;
     std::uint16_t mPort;
     bool mConnected;
