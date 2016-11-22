@@ -1,10 +1,4 @@
+*.gcno
 *.o
-build-*
-*.gcov
-*~
-*.user
-pkg/ubuntu/deb_temp
-cov-int
-*.autosave
-www/node_modules
-www/logs/app.log
+*.pro.user
+build-icl_tests
