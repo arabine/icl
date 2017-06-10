@@ -52,7 +52,19 @@
 #include <sstream>
 #include <iomanip>
 #include <cstdint>
+#include <cctype>
+#include <chrono>
+#include <locale>
+#include <codecvt>
+#include "date.h"
 #include "Util.h"
+
+// utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
+template <typename Facet>
+struct deletable_facet : Facet
+{
+    using Facet::Facet;
+};
 
 /*****************************************************************************/
 /**
@@ -66,27 +78,10 @@
  */
 std::string Util::CurrentDateTime(const std::string &format)
 {
-    std::stringstream datetime;
+	auto time_point = std::chrono::system_clock::now();
+    std::string s = date::format(format, time_point);
 
-    time_t rawtime;
-    struct tm *timeinfo;
-    char buffer [80];
-
-    time(&rawtime);
-    timeinfo = localtime(&rawtime);
-
-    strftime(buffer, sizeof(buffer), format.c_str(), timeinfo);
-
-    datetime << buffer;
-    /*
-     * This code is the C++0x11 way of formating date, but GCC does not support it yet :(
-        std::stringstream datetime;
-        std::time_t t = std::time(nullptr);
-        std::tm tm = *std::localtime(&t);
-
-        datetime << std::put_time(&tm, format);
-    */
-    return datetime.str();
+    return s;
 }
 /*****************************************************************************/
 std::string Util::ExecutablePath()
@@ -345,6 +340,13 @@ bool Util::Compare(std::string const& a, std::string const& b)
     else {
         return false;
     }
+}
+/*****************************************************************************/
+std::wstring Util::ToWString(const std::string &str)
+{
+    std::wstring_convert<deletable_facet<std::codecvt<wchar_t, char, std::mbstate_t>>> conv;
+
+    return conv.from_bytes(str);
 }
 /*****************************************************************************/
 /**

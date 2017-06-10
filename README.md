@@ -1,53 +1,17 @@
 # ICL: Independant C++ Library
 
 ICL provides a set of (nearly) non interdependant utility classes that fill the missing standard C++ library features or wrap OS specific stuff.
-The classes are portables and have been tested on Windows 7 and last versions of Ubuntu.
 
-## Utility classes
+## Synchronization with ICL subdirectories
 
-### Zip / archive
+### Add Subtree
+git subtree add --prefix src/icl https://github.com/arabine/icl master --squash
 
-This utility class provides only the decompressing feature.
+### Update Subtree
+git subtree pull --prefix src/icl https://github.com/arabine/icl master --squash
 
-### Database
+### Push changes
 
-Thin wrapper for SQLite database and CouchDB protocol.
-
-### Network
-
-These utility classes implement server/client and Websocket protocols. The server uses a dedicated thread. The Websocket is completely transparent.
-
-### I/O
-
-Byte manipulation and serialization targeted for protocol communication.
-
-### JSEngine
-
-C++ wrapper around the Duktape tiny Javascript Engine
-
-### JSON
-
-Reader/writer classes to encode and decode JSON text format.
-
-### Protocol
-
-Very simple HTTP encoding/decoding.
-
-### Security
-
-Base64 and Sha1 classes.
-
-### Utilities
-
-Various portable classes static functions:
-
-  * Log
-  * Unique ID management
-  * Generic Value
-  * DateTime formating
-  * String manipulation
-  * Disk, files and directories
-  * OS specific wrappers
-
-
+Now we can use the subtree push command like the following:
+git subtree push --prefix src/icl https://github.com/arabine/icl master
 

@@ -110,6 +110,7 @@ JsonReader::ParseStatus JsonReader::Parse(char *s, char **endptr, JsonValue &jso
                     *endptr = s;
                     return JSON_PARSE_BAD_NUMBER;
                 }
+                /* fallthrough */
             case '0':
             case '1':
             case '2':
@@ -299,7 +300,7 @@ JsonReader::ParseStatus JsonReader::Parse(char *s, char **endptr, JsonValue &jso
                     if (tags[prev] == JsonValue::OBJECT)
                     {
                         // if previous node was an object, then we create a new object
-                        nodes[prev].GetObject().AddValue(keys[prev], nodes[pos]);
+                        nodes[prev].GetObj().AddValue(keys[prev], nodes[pos]);
                     }
                     else
                     {
@@ -347,7 +348,7 @@ JsonReader::ParseStatus JsonReader::Parse(char *s, char **endptr, JsonValue &jso
                     if (tags[prev] == JsonValue::OBJECT)
                     {
                         // if previous node was an object, then we create a new object
-                        nodes[prev].GetObject().AddValue(keys[prev], nodes[pos]);
+                        nodes[prev].GetObj().AddValue(keys[prev], nodes[pos]);
                     }
                     else
                     {
@@ -431,7 +432,7 @@ JsonReader::ParseStatus JsonReader::Parse(char *s, char **endptr, JsonValue &jso
             // Use our own type management, event if the RTTI thing would also work...
             if (nodes[pos].IsObject())
             {
-                nodes[pos].GetObject().AddValue(keys[pos], o);
+                nodes[pos].GetObj().AddValue(keys[pos], o);
                 keys[pos] = "";
             }
             else

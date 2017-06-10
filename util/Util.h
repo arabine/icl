@@ -23,8 +23,8 @@
  *=============================================================================
  */
 
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef ICL_UTIL_H
+#define ICL_UTIL_H
 
 #include <string>
 #include <vector>
@@ -60,10 +60,11 @@ public:
         return std::equal(ending.rbegin(), ending.rend(), value.rbegin());
     }
     // Case insensitive version
-    bool Compare(const std::string &a, const std::string &b);
+    static bool Compare(const std::string &a, const std::string &b);
+    static std::wstring ToWString(const std::string &str);
 };
 
-#endif // UTIL_H
+#endif // ICL_UTIL_H
 
 //=============================================================================
 // End of file Util.h

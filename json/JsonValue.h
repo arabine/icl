@@ -49,7 +49,7 @@ public:
     void Clear();
     void AddValue(const std::string &name, const JsonValue &value);
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
-    std::uint32_t GetSize() { return mObject.size(); }
+    std::uint32_t GetSize() { return static_cast<std::uint32_t>(mObject.size()); }
 
     JsonObject &operator = (JsonObject const &rhs);
 
@@ -65,7 +65,7 @@ public:
     void Clear();
     // JsonArray
     JsonValue GetEntry(std::uint32_t index);
-    std::uint32_t Size() { return mArray.size(); }
+    std::uint32_t Size() { return static_cast<std::uint32_t>(mArray.size()); }
     void AddValue(const JsonValue &value);
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
 
@@ -126,7 +126,7 @@ public:
     bool IsBoolean() const    { return mTag == BOOLEAN; }
     bool IsDouble() const     { return mTag == DOUBLE; }
 
-    JsonObject &GetObject() { return mObject; }
+    JsonObject &GetObj() { return mObject; }
     JsonArray &GetArray() { return mArray; }
 
     std::int32_t    GetInteger() const   { return mIntegerValue; }

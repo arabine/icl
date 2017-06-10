@@ -60,6 +60,8 @@ public:
             CLOSED
         };
 
+        virtual ~IEvent() {}
+
         /**
          * @brief NewConnection
          * Called when a new TCP/IP connection has been created
@@ -91,7 +93,7 @@ public:
 
     TcpServer(IEvent &handler);
 
-    virtual ~TcpServer(void) { }
+    virtual ~TcpServer(void) { Stop(); }
 
     /**
      * @brief Start the Tcp thread server, with an optional WebSocket port to listen at
@@ -104,13 +106,14 @@ public:
     bool Start(std::int32_t maxConnections, bool localHostOnly, std::uint16_t tcpPort, std::uint16_t wsPort = 0U);
     void Stop();
     void Join();
+    bool IsStarted() { return mInitialized; }
     std::string GetPeerName(int s);
 
 private:
     TcpServerBase   mTcpServer;
     TcpServerBase   mWsServer;
     std::thread mThread;
-    int  mMaxSd;
+    SocketType  mMaxSd;
     fd_set mMasterSet;
     std::vector<Conn> mClients;
     std::mutex mMutex; // To protect mClients

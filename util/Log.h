@@ -51,6 +51,7 @@ public:
     static const std::uint8_t Network;
     static const std::uint8_t Script;
     static const std::uint8_t Server;
+    static const std::uint8_t All;
 
     static const std::uint32_t SizeLimit = 50 * (1024U * 1024U); // Filesize limit to 50MB per log
 
@@ -58,11 +59,13 @@ public:
 
     static void AddEntry(std::uint8_t event, const std::string &file, const int line, const std::string &message);
     static void RegisterListener(Observer<std::string> &listener);
+    static void RemoveListener(Observer<std::string> &listener);
     static void SetLogPath(const std::string &path)
     {
         mLogPath = path;
     }
 
+    static void Clear();
     static void EnableLog(bool enable) { mEnableFileOutput = enable; }
 
 private:
