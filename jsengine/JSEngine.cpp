@@ -30,26 +30,86 @@
 
 #define DUKTAPE_DEBUG
 
-int SystemPrint(duk_context *ctx)
+static const char *gIdName = "ctx_id";
+static std::mutex gListenersMutex;
+static std::uint32_t gIdCounter = 1U; // global counter to deliver an ID to each script instance
+static std::map<std::uint32_t, IScriptEngine::IPrinter*> gPrintList;
+
+static duk_ret_t SystemPrint(duk_context *ctx)
 {
-    if (duk_check_type(ctx, 0, DUK_TYPE_STRING))
+    std::string msg;
+    duk_idx_t nargs = duk_get_top(ctx);
+
+    /* If argument count is 1 and first argument is a buffer, write the buffer
+     * as raw data into the file without a newline; this allows exact control
+     * over stdout/stderr without an additional entrypoint (useful for now).
+     * Otherwise current print/alert semantics are to ToString() coerce
+     * arguments, join them with a single space, and append a newline.
+     */
+
+    if (nargs == 1 && duk_is_buffer(ctx, 0))
     {
-        std::string msg = duk_get_string(ctx, 0);
-        TLogScript(msg);
+        duk_size_t sz_buf;
+        const char *buf = (const char *) duk_get_buffer(ctx, 0, &sz_buf);
+        msg.assign(buf, sz_buf);
     }
     else
     {
-        TLogError("JSEngine custom print: not a string!");
+        duk_push_string(ctx, " ");
+        duk_insert(ctx, 0);
+        duk_concat(ctx, nargs);
+        msg = std::string(duk_require_string(ctx, -1));
     }
 
-    return 0;  /* one return value */
+    msg += "\r\n";
+
+    // Get the instance id if that context
+    duk_bool_t ok = duk_get_global_string(ctx, gIdName);
+    if (ok != 0U)
+    {
+        std::uint32_t id = duk_get_uint(ctx, -1);
+
+        gListenersMutex.lock();
+        // Call the listener of that id, if it exists
+        if (gPrintList.count(id) > 0U)
+        {
+            gPrintList[id]->Print(msg);
+        }
+        gListenersMutex.unlock();
+    }
+
+    return 0;
 }
+
+static void fatal_handler(void *udata, const char *msg)
+{
+    (void) udata;
+    TLogError("JS engine fatal error: " + std::string(msg));
+}
+
+static duk_ret_t tostring_raw(duk_context *ctx, void *udata)
+{
+    (void) udata;
+    duk_to_string(ctx, -1);
+    return 1;
+}
+
+static int eval_string_raw(duk_context *ctx, void *udata)
+{
+    (void) udata;
+
+    duk_eval(ctx);
+    return 1;
+}
+
 
 /*****************************************************************************/
 JSEngine::JSEngine()
     : mCtx(NULL)
     , mValidContext(false)
+    , mId(0U)
 {
+
 
 }
 /*****************************************************************************/
@@ -61,14 +121,28 @@ JSEngine::~JSEngine()
 void JSEngine::Initialize()
 {
     Close();
-    mCtx = duk_create_heap_default();
+    mCtx = duk_create_heap(NULL /*duk_alloc_function alloc_func*/,
+                           NULL/*duk_realloc_function realloc_func*/,
+                           NULL/*duk_free_function free_func*/,
+                           NULL/*void *heap_udata*/,
+                           fatal_handler);
     if (mCtx != NULL)
     {
         // Register our custom print function
         duk_push_global_object(mCtx);
-        duk_push_c_function(mCtx, SystemPrint, 1);
+        duk_push_c_function(mCtx, SystemPrint, DUK_VARARGS);
         duk_put_prop_string(mCtx, -2 /*idx:global*/, "systemPrint");
         duk_pop(mCtx);  /* pop global */
+
+        // Generate an id for that context
+        gListenersMutex.lock();
+        mId = gIdCounter;
+        gIdCounter++;
+        gListenersMutex.unlock();
+
+        // Register our context ID
+        duk_push_uint(mCtx, mId);
+        (void) duk_put_global_string(mCtx, "ctx_id");
 
         mValidContext = true;
     }
@@ -78,58 +152,63 @@ void JSEngine::Initialize()
     }
 }
 /*****************************************************************************/
-bool JSEngine::EvaluateFile(const std::string &fileName)
+void JSEngine::RegisterPrinter(IScriptEngine::IPrinter *printer)
 {
-    if (!mValidContext)
+    if (printer != nullptr)
     {
-        return false;
-    }
-
-    // Test if the file exists, try to open it!
-    std::ifstream is;
-    is.open(fileName, std::ios_base::in);
-    if (!is.is_open())
-    {
-        // file does not exists
-        return false;
-    }
-    is.close();
-
-    // Push argument into the stack: file name to evaluate
-    duk_push_lstring(mCtx, fileName.c_str(), fileName.size());
-
-    int rc = duk_safe_call(mCtx, JSEngine::WrappedScriptEvalFile, 1 /*nargs*/, 0 /*nrets*/);
-    if (rc != DUK_EXEC_SUCCESS)
-    {
-        PrintError();
-        return false;
-    }
-    else
-    {
-        return true;
+        gListenersMutex.lock();
+        gPrintList[mId] = printer;
+        gListenersMutex.unlock();
     }
 }
 /*****************************************************************************/
-bool JSEngine::EvaluateString(const std::string &contents)
+bool JSEngine::EvaluateFile(const std::string &fileName)
 {
-    if (!mValidContext)
+    bool ret = false;
+    if (mValidContext)
     {
-        return false;
+        // Test if the file exists, try to open it!
+        std::ifstream in;
+        in.open(fileName, std::ios_base::in | std::ios::binary);
+        if (in.is_open())
+        {
+            std::string contents;
+            std::string output;
+
+            // Read whole file and store it into memory
+            in.seekg(0, std::ios::end);
+            contents.resize(in.tellg());
+            in.seekg(0, std::ios::beg);
+            in.read(&contents[0], contents.size());
+            in.close();
+
+            ret = EvaluateString(contents, output);
+        }
     }
 
-    // Push argument into the stack: file name to evaluate
-    duk_push_lstring(mCtx, contents.c_str(), contents.size());
+    return ret;
+}
+/*****************************************************************************/
+bool JSEngine::EvaluateString(const std::string &contents, std::string &output)
+{
+    bool ret = false;
+    if (mValidContext)
+    {
+        duk_push_string(mCtx, contents.c_str());
+        int rc = duk_safe_call(mCtx, eval_string_raw, NULL /*udata*/, 1 /*nargs*/, 1 /*nrets*/);
+        (void) duk_safe_call(mCtx, tostring_raw /*udata*/, NULL, 1 /*nargs*/, 1 /*nrets*/);
+        output = duk_get_string(mCtx, -1);
 
-    int rc = duk_safe_call(mCtx, JSEngine::WrappedScriptEvalString, 1 /*nargs*/, 0 /*nrets*/);
-    if (rc != DUK_EXEC_SUCCESS)
-    {
-        PrintError();
-        return false;
+        if (rc == DUK_EXEC_SUCCESS)
+        {
+            ret = true;
+        }
+        else
+        {
+            output = "Compile failed: " + output;
+        }
     }
-    else
-    {
-        return true;
-    }
+    return ret;
 }
 /*****************************************************************************/
 Value JSEngine::Call(const std::string &function, const IScriptEngine::StringList &args)
@@ -158,10 +237,10 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
             duk_push_string(mCtx, args[i].c_str());
         }
 
-        int rc = duk_safe_call(mCtx, JSEngine::WrappedScriptCall, 1 /*nargs*/, 1 /*nrets*/);
+        int rc = duk_pcall(mCtx, args.size() /*nargs*/);
         if (rc != DUK_EXEC_SUCCESS)
         {
-            TLogError("JS engine script call failed.");
+            TLogError(std::string("JS engine script call failed for function: ") + function);
             PrintError();
         }
         else
@@ -211,52 +290,6 @@ void JSEngine::Close()
         mCtx = NULL;
     }
     mValidContext = false;
-}
-/*****************************************************************************/
-int JSEngine::WrappedScriptEvalFile(duk_context *ctx)
-{
-    std::string fileName = duk_get_string(ctx, -1);
-    duk_pop(ctx);
-
-    duk_eval_file(ctx, fileName.c_str());
-
-    // The result of the evaluation is pushed on top of the value stack. Here we don't need th evaluation result, so we pop the value off the stack.
-    duk_pop(ctx);
-
-    return 0; // no return values
-}
-/*****************************************************************************/
-int JSEngine::WrappedScriptEvalString(duk_context *ctx)
-{
-    // Evaluate the Ecmascript source code at the top of the stack
-    duk_eval(ctx);
-
-    // The result of the evaluation is pushed on top of the value stack. Here we don't need th evaluation result, so we pop the value off the stack.
-    duk_pop(ctx);
-
-    return 0; // no return values
-}
-/*****************************************************************************/
-/**
- * @brief WrappedScriptCall
- *
- * context must be initialized:
- * [ global_object "function" arg1 ... argN ]
- *
- * @param ctx
- * @return
- */
-int JSEngine::WrappedScriptCall(duk_context *ctx)
-{
-    int args = duk_get_top(ctx) - 2; // number of args is the stack size minus contex and function
-
-    // Call the function
-    duk_call(ctx, args/*nargs*/);
-
-    // After the call, the stack is: [ global_object return value ]
-    // The return value is set to undefined type if the function called returns nothing
-
-    return 1; // number of return values
 }
 /*****************************************************************************/
 /**
