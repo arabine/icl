@@ -46,12 +46,14 @@ public:
     UniqueId(std::uint32_t min, std::uint32_t max);
 
     std::uint32_t TakeId();
+    std::uint32_t FindId();
+    void AddId(std::uint32_t id);
     bool ReleaseId(std::uint32_t id);
     bool IsTaken(std::uint32_t id);
-    bool AddId(std::uint32_t id);
     std::uint32_t GetMin() { return mMin; }
     std::uint32_t GetMax() { return mMax; }
     void Clear() { mUsedIds.clear(); }
+    void Dump();
 
 private:
     std::uint32_t mMin;
