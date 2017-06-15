@@ -361,6 +361,7 @@ void TcpServer::IncommingData(Conn &conn)
                     // Websocket handshake success, warn the application
                     conn.state = Conn::cStateConnected;
                     mEventHandler.NewConnection(conn);
+                    hasData = false; // Handshake is not application data
                 }
                 else
                 {

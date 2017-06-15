@@ -41,7 +41,7 @@ public:
     void Parse(const std::string &msg);
     bool IsProtocol(const std::string &proto);
     std::string Accept();
-    std::string Upgrade(const std::string &proto);
+    std::string Upgrade();
     bool IsValid();
 
 private:

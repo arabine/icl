@@ -63,15 +63,20 @@ std::string WebSocketRequest::Accept()
     return encoded;
 }
 /*****************************************************************************/
-std::string WebSocketRequest::Upgrade(const std::string &proto)
+std::string WebSocketRequest::Upgrade()
 {
     std::string accept = Accept();
 
     std::string header = "HTTP/1.1 101 Switching Protocols\r\n";
     header += "Upgrade: websocket\r\n";
     header += "Connection: Upgrade\r\n";
+    header += "Sec-WebSocket-Version: 13\r\n";
     header += "Sec-WebSocket-Accept: " + accept + "\r\n";
-    header += "Sec-WebSocket-Protocol: " + proto + "\r\n";
+
+    if (protocol.size() != 0)
+    {
+        header += "Sec-WebSocket-Protocol: " + protocol + "\r\n";
+    }
     header += "\r\n";
 
     return header;
@@ -83,8 +88,7 @@ bool WebSocketRequest::IsValid()
     if ((resource.size() != 0) &&
             (host.size() != 0) &&
             (origin.size() != 0) &&
-            (key.size() != 0) &&
-            (protocol.size() != 0))
+            (key.size() != 0))
     {
         valid = true;
     }
