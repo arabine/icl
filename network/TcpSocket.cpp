@@ -166,13 +166,13 @@ bool TcpSocket::IsConnected()
     return connected;
 }
 /*****************************************************************************/
-bool TcpSocket::Send(const std::string &input, Peer &peer)
+bool TcpSocket::Send(const std::string &input, const Peer &peer)
 {
     bool ret = false;
 
     if (peer.isWebSocket)
     {
-        ret = SendToSocket(BuildWsFrame(WEBSOCKET_OPCODE_BINARY, input), peer);
+        ret = SendToSocket(BuildWsFrame(WEBSOCKET_OPCODE_TEXT, input), peer);
     }
     else
     {
@@ -186,32 +186,47 @@ std::string TcpSocket::BuildWsFrame(std::uint8_t opcode, const std::string &data
 {
     std::stringstream  writer;
     std::uint32_t data_len = data.size();
+    std::uint8_t ws_header[10];
+    std::uint32_t header_len = 0U;
 
     // We do not use fragmentation when sending data, so raise the FIN flag
-    writer << static_cast<std::uint8_t>(0x80U + (opcode & 0x0FU));
+    ws_header[0] = static_cast<std::uint8_t>(0x80U + (opcode & 0x0FU));
 
     // Frame format: http://tools.ietf.org/html/rfc6455#section-5.2
     if (data_len < 126)
     {
         // Inline 7-bit length field
-        writer << static_cast<std::uint8_t>(data_len);
+        ws_header[1] = static_cast<std::uint8_t>(data_len);
+        header_len = 2U;
     }
     else if (data_len <= 0xFFFF)
     {
         // 16-bit length field
-        writer << static_cast<std::uint8_t>(126);
-        writer << static_cast<std::uint16_t>(data_len);
+        ws_header[1] = static_cast<std::uint8_t>(126);
+        ws_header[2] = static_cast<std::uint8_t>((data_len >> 8) & 0xFFU);
+        ws_header[3] = static_cast<std::uint8_t>(data_len & 0xFFU);
+        header_len = 4U;
     }
     else
     {
         // 64-bit length field
-        writer << static_cast<std::uint8_t>(127);
-        writer << static_cast<std::uint32_t>(0U); // hi part always zero (std::string is 32bits max!
-        writer << static_cast<std::uint32_t>(data_len);
+        ws_header[1] = static_cast<std::uint8_t>(127);
+
+        // hi part always zero (std::string is 32bits max!)
+        ws_header[2] = 0U;
+        ws_header[3] = 0U;
+        ws_header[4] = 0U;
+        ws_header[5] = 0U;
+        // Low part
+        ws_header[6] = static_cast<std::uint8_t>((data_len >> 24) & 0xFFU);
+        ws_header[7] = static_cast<std::uint8_t>((data_len >> 16) & 0xFFU);
+        ws_header[8] = static_cast<std::uint8_t>((data_len >> 8) & 0xFFU);
+        ws_header[9] = static_cast<std::uint8_t>(data_len & 0xFFU);
+        header_len = 10U;
     }
 
     // Finally, append our data
-    return writer.str() + data;
+    return std::string(reinterpret_cast<char *>(&ws_header[0]), header_len) + data;
 }
 /*****************************************************************************/
 bool TcpSocket::SendToSocket(const std::string &input, const Peer &peer)
@@ -248,7 +263,7 @@ bool TcpSocket::ProceedWsHandshake()
     if (ws.IsValid())
     {
         // Trick here: send handshake using raw tcp, not with websocket framing
-        TcpSocket::SendToSocket(ws.Upgrade("tarotclub"), mPeer);
+        TcpSocket::SendToSocket(ws.Upgrade(), mPeer);
         ret = true;
     }
 

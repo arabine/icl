@@ -250,7 +250,7 @@ public:
     static bool Initialize();
     // return true if socket has data waiting to be read
     static bool AnalyzeSocketError(const char* context);
-    static bool Send(const std::string &input, Peer &peer);
+    static bool Send(const std::string &input, const Peer &peer);
     static void Close(Peer &peer);
     static std::string BuildWsFrame(std::uint8_t opcode, const std::string &data);
     static bool Recv(std::string &output, const Peer &peer);

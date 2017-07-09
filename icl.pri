@@ -56,12 +56,15 @@ SOURCES += Http.cpp
 # ------------------------------------------------------------------------------
 # Database files
 # ------------------------------------------------------------------------------
-HEADERS += CouchDb.h \
-            DataBase.h
 
-SOURCES += CouchDb.cpp \
-            DataBase.cpp \
-            sqlite3.c
+ICL_DB {
+    HEADERS += CouchDb.h \
+                DataBase.h
+
+    SOURCES += CouchDb.cpp \
+                DataBase.cpp \
+                sqlite3.c
+}
 
 # ------------------------------------------------------------------------------
 # Security files

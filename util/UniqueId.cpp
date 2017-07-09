@@ -24,6 +24,7 @@
  */
 
 #include <algorithm>
+#include <iostream>
 #include "UniqueId.h"
 
 /*****************************************************************************/
@@ -75,6 +76,30 @@ std::uint32_t UniqueId::TakeId()
     return id;
 }
 /*****************************************************************************/
+uint32_t UniqueId::FindId()
+{
+    std::uint32_t id = 0U;
+
+    for (std::uint32_t i = mMin; i <= mMax; i++)
+    {
+        if (std::find(mUsedIds.begin(), mUsedIds.end(), i) == mUsedIds.end())
+        {
+            // Id not used
+            id = i;
+            break;
+        }
+    }
+    return id;
+}
+/*****************************************************************************/
+void UniqueId::AddId(uint32_t id)
+{
+    if (!IsTaken(id))
+    {
+        mUsedIds.push_back(id);
+    }
+}
+/*****************************************************************************/
 // Return true if the id has been found AND successfully erased
 bool UniqueId::ReleaseId(std::uint32_t id)
 {
@@ -93,17 +118,13 @@ bool UniqueId::IsTaken(std::uint32_t id)
     return (std::find(mUsedIds.begin(), mUsedIds.end(), id) != mUsedIds.end());
 }
 /*****************************************************************************/
-bool UniqueId::AddId(uint32_t id)
+void UniqueId::Dump()
 {
-    bool ret = false;
-
-    if (std::find(mUsedIds.begin(), mUsedIds.end(), id) == mUsedIds.end())
+    for (auto id: mUsedIds)
     {
-        // Id not found
-        mUsedIds.push_back(id);
-        ret = true;
+        std::cout << id <<", ";
     }
-    return ret;
+    std::cout << std::endl;
 }
 
 //=============================================================================
