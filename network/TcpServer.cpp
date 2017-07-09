@@ -431,12 +431,18 @@ void TcpServer::UpdateClients()
     UpdateMaxSocket();
 }
 /*****************************************************************************/
+
+
+static bool compare_conn(Conn a, Conn b)
+{
+    return (a < b);
+}
 void TcpServer::UpdateMaxSocket()
 {
     std::vector<Conn>::iterator pos;
 
     // find the maximum socket file descriptor with the clients
-    pos = std::max_element(mClients.begin(), mClients.end());
+    pos = std::max_element(mClients.begin(), mClients.end(), compare_conn);
 
     // Find max socket of the servers
     mMaxSd = mTcpServer.GetSocket();
