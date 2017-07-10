@@ -3,14 +3,161 @@
 #include <QCoreApplication>
 #include <cstdint>
 #include <string>
+#include <regex>
+
 
 #include "TcpSocket.h"
+#include "TcpServer.h"
 #include "WebSocket.h"
 #include "tst_webstuff.h"
 #include "CouchDb.h"
+#include "Http.h"
+
+/*
+
+GET /docs/index.html HTTP/1.1
+Host: www.nowhere123.com
+Accept-Language: en-us
+Accept-Encoding: gzip, deflate
+User-Agent: Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1)
+(blank line)
+
+
+HTTP/1.1 200 OK
+Date: Sun, 18 Oct 2009 08:56:53 GMT
+Server: Apache/2.2.14 (Win32)
+Last-Modified: Sat, 20 Nov 2004 07:16:26 GMT
+ETag: "10000000565a5-2c-3e94b66c2e680"
+Accept-Ranges: bytes
+Content-Length: 44
+Connection: close
+Content-Type: text/html
+X-Pad: avoid browser bug
+
+<html><body><h1>It works!</h1></body></html>
+*/
+
+extern "C" {
+const char *find_embedded_file(const char *name, size_t *size, const char **mime);
+}
 
 TstWebStuff::TstWebStuff()
 {
+}
+
+bool continueServer = true;
+
+class BasicFileHandler : public tcp::TcpServer::IEvent
+{
+public:
+    BasicFileHandler()
+        : mCounter(0)
+    {
+
+    }
+
+    void NewConnection(const tcp::Conn &conn) {
+        (void) conn;
+    }
+
+    void ReadData(const tcp::Conn &conn)
+    {
+        std::string resource = Match(conn.payload, "GET (.*) HTTP");
+
+        std::cout << "Get file: " << resource << std::endl;
+
+        if (resource == "/")
+        {
+            resource = "/index.html";
+        }
+
+        const char *data;
+        const char *mime;
+        size_t size;
+
+        data = find_embedded_file(resource.c_str(), &size, &mime);
+
+        std::string output;
+        if (data != NULL)
+        {
+            std::cout << "File found, size: " << size << " MIME: " << mime << std::endl;
+
+            std::stringstream ss;
+
+            ss << "HTTP/1.1 200 OK\r\n";
+            ss << "Content-type: " << std::string(mime) << "\r\n";
+            ss << "Content-length: " << (int)size << "\r\n\r\n";
+            ss << std::string(data, size) << std::flush;
+
+            output = ss.str();
+            mCounter++;
+        }
+        else
+        {
+            std::stringstream ss;
+            std::string html = "<html><head><title>Not Found</title></head><body>404</body><html>";
+
+            ss << "HTTP/1.1 404 Not Found\r\n";
+            ss << "Content-type: text/html\r\n";
+            ss << "Content-length: " << html.size() << "\r\n\r\n";
+            ss << html << std::flush;
+
+            output = ss.str();
+        }
+        tcp::TcpSocket::SendToSocket(output, conn.peer);
+
+        if (mCounter >= 4)
+        {
+            continueServer = false;
+        }
+    }
+
+    void ClientClosed(const tcp::Conn &conn)
+    {
+        (void) conn;
+    }
+
+    void ServerTerminated(tcp::TcpServer::IEvent::CloseType type)
+    {
+        (void) type;
+    }
+
+
+    std::string Match(const std::string &msg, const std::string &patternString)
+    {
+        std::regex pattern(patternString);
+        std::smatch matcher;
+        std::string subMatch;
+
+        std::regex_search(msg, matcher, pattern);
+
+        if (matcher.size() == 2)
+        {
+            // Extracted value is located at index 1
+            subMatch = matcher[1].str();
+        }
+        return subMatch; // empty string if not found
+    }
+
+private:
+    int mCounter;
+};
+
+
+
+void TstWebStuff::HttpServer()
+{
+    BasicFileHandler fileHandler;
+    tcp::TcpServer server(fileHandler);
+
+    tcp::TcpSocket::Initialize();
+
+    std::cout << "=============== OPEN BROWSER TO 127.0.0.1:8000 ===================" << std::endl;
+    server.Start(10, true, 8000);
+
+    while(continueServer);
+
+    server.Stop();
 }
 
 void TstWebStuff::Http()
@@ -157,7 +304,7 @@ void TstWebStuff::WebSocketUpgrade()
         std::string accept = req.Accept();
         if (accept == "s3pPLMBiTxaQ9kYGzzhZRbK+xOo=")
         {
-            std::cout << "Upgrade header: " << std::endl << req.Upgrade("tarotclub") << std::endl;
+            std::cout << "Upgrade header: " << std::endl << req.Upgrade() << std::endl;
         }
         else
         {

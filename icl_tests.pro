@@ -46,9 +46,6 @@ MOC_DIR         = $$DESTDIR/moc
 VPATH += $$BASE_DIR/tests
 INCLUDEPATH += $$BASE_DIR/tests
 
-ICL_DIR = $$BASE_DIR
-include($$ICL_DIR/icl.pri)
-
 # ------------------------------------------------------------------------------
 # COMPILER CONFIG
 # ------------------------------------------------------------------------------
@@ -58,6 +55,7 @@ QT       -= gui
 
 TARGET = unit_tests
 CONFIG   += console
+CONFIG   += icl_database
 CONFIG   -= app_bundle
 
 TEMPLATE = app
@@ -65,7 +63,6 @@ TEMPLATE = app
 QMAKE_CXXFLAGS += -std=c++11  -fprofile-arcs -ftest-coverage
 
 QMAKE_CFLAGS_DEBUG +=  -O0  -ggdb -pedantic -std=c99 -fstrict-aliasing  -fprofile-arcs -ftest-coverage
-DEFINES += DUK_OPT_SELF_TESTS
 DEFINES += DEAL_TEST
 
 # Specific OS stuff
@@ -80,8 +77,14 @@ unix {
 
 CONFIG(debug, debug|release) {
     DEFINES += TAROT_DEBUG
-    DEFINES += DUK_OPT_DEBUG
 }
+
+
+# ------------------------------------------------------------------------------
+# ICL files
+# ------------------------------------------------------------------------------
+ICL_DIR = $$BASE_DIR
+include($$ICL_DIR/icl.pri)
 
 # ------------------------------------------------------------------------------
 # Unit test files
@@ -95,6 +98,7 @@ HEADERS +=  tst_database.h \
             tst_webstuff.h
 
 SOURCES +=  main.cpp \
+            filesystem.c \
             tst_database.cpp \
             tst_hash.cpp \
             tst_json.cpp \
