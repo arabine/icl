@@ -122,7 +122,11 @@ void TcpServer::Run()
     /*************************************************************/
     FD_ZERO(&mMasterSet);
     UpdateMaxSocket();
-    FD_SET(mTcpServer.GetSocket(), &mMasterSet);
+
+    if (mTcpServer.IsValid())
+    {
+        FD_SET(mTcpServer.GetSocket(), &mMasterSet);
+    }
     if (mWsServer.IsValid())
     {
         FD_SET(mWsServer.GetSocket(), &mMasterSet);
@@ -208,44 +212,49 @@ void TcpServer::Run()
                     mEventHandler.ServerTerminated(IEvent::CLOSED);
                     break;
                 }
-                else if (FD_ISSET(mTcpServer.GetSocket(), &working_set))
-                {
-                    /****************************************************/
-                    /* This is the listening socket                     */
-                    /****************************************************/
-                    mMutex.lock();
-                    IncommingConnection(false);
-                    mMutex.unlock();
-                }
-                else if (FD_ISSET(mWsServer.GetSocket(), &working_set))
-                {
-                    /****************************************************/
-                    /* This is the listening socket                     */
-                    /****************************************************/
-                    mMutex.lock();
-                    IncommingConnection(true);
-                    mMutex.unlock();
-                }
-                else
-                {
-                    mMutex.lock();
 
-                    // Scan for already connected clients
-                    for (size_t j = 0; j < mClients.size(); j++)
+                if (mTcpServer.IsValid())
+                {
+                    if (FD_ISSET(mTcpServer.GetSocket(), &working_set))
                     {
-                        if (FD_ISSET(mClients[j].peer.socket, &working_set))
-                        {
-                            /****************************************************/
-                            /* This is not the listening socket, therefore an   */
-                            /* existing connection must be readable             */
-                            /****************************************************/
-                            IncommingData(mClients[j]);
-                        }
+                        /****************************************************/
+                        /* This is the listening socket                     */
+                        /****************************************************/
+                        mMutex.lock();
+                        IncommingConnection(false);
+                        mMutex.unlock();
                     }
-
-                    UpdateClients(); // refresh status, manage proper closing if necessary
-                    mMutex.unlock();
                 }
+                if (mWsServer.IsValid())
+                {
+                    if (FD_ISSET(mWsServer.GetSocket(), &working_set))
+                    {
+                        /****************************************************/
+                        /* This is the listening socket                     */
+                        /****************************************************/
+                        mMutex.lock();
+                        IncommingConnection(true);
+                        mMutex.unlock();
+                    }
+                }
+
+                mMutex.lock();
+
+                // Scan for already connected clients
+                for (size_t j = 0; j < mClients.size(); j++)
+                {
+                    if (FD_ISSET(mClients[j].peer.socket, &working_set))
+                    {
+                        /****************************************************/
+                        /* This is not the listening socket, therefore an   */
+                        /* existing connection must be readable             */
+                        /****************************************************/
+                        IncommingData(mClients[j]);
+                    }
+                }
+
+                UpdateClients(); // refresh status, manage proper closing if necessary
+                mMutex.unlock();
             }
         }
     }
