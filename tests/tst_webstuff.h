@@ -13,6 +13,7 @@ public:
     TstWebStuff();
 
 private Q_SLOTS:
+    void HttpServer();
     void Http();
     void WebSocketUpgrade();
 

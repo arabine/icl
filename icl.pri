@@ -57,7 +57,7 @@ SOURCES += Http.cpp
 # Database files
 # ------------------------------------------------------------------------------
 
-ICL_DB {
+icl_database {
     HEADERS += CouchDb.h \
                 DataBase.h
 
