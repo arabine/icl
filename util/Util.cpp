@@ -436,7 +436,63 @@ std::int32_t Util::GetMaximumMemoryUsage()
     return (size_t)0L;          /* Unsupported. */
 #endif
 }
+/*****************************************************************************/
+std::string Util::HexDump(const char *desc, const void *addr, int len)
+{
+    int i;
+    unsigned char buff[17];
+    unsigned char *pc = (unsigned char*)addr;
+    std::stringstream ss;
 
+    // Output description if given.
+    if (desc != NULL)
+    {
+        ss << desc << ":\n";
+    }
+
+    if (len == 0) {
+        ss << "  ZERO LENGTH\n";
+        return ss.str();
+    }
+    if (len < 0) {
+        ss << "  NEGATIVE LENGTH: " << len << "\n";
+        return ss.str();
+    }
+
+    // Process every byte in the data.
+    for (i = 0; i < len; i++) {
+        // Multiple of 16 means new line (with line offset).
+
+        if ((i % 16) == 0) {
+            // Just don't print ASCII for the zeroth line.
+            if (i != 0)
+                ss <<  "  " << buff << "\n";
+
+            // Output the offset.
+            ss <<  " " << std::setfill('0') << std::setw(4) << std::hex  << i;
+        }
+
+        // Now the hex code for the specific character.
+        ss <<  " " << std::setfill('0') << std::setw(2) << std::hex  << (int)pc[i] << ", ";
+
+        // And store a printable ASCII character for later.
+        if ((pc[i] < 0x20) || (pc[i] > 0x7e))
+            buff[i % 16] = '.';
+        else
+            buff[i % 16] = pc[i];
+        buff[(i % 16) + 1] = '\0';
+    }
+
+    // Pad out last line if not exactly 16 characters.
+    while ((i % 16) != 0) {
+        ss <<  "   ";
+        i++;
+    }
+
+    // And print the final ASCII bit.
+    ss << "  "<< buff << "\n";
+    return ss.str();
+}
 
 //=============================================================================
 // End of file Util.cpp

@@ -62,6 +62,7 @@ public:
     // Case insensitive version
     static bool Compare(const std::string &a, const std::string &b);
     static std::wstring ToWString(const std::string &str);
+    static std::string HexDump(const char *desc, const void *addr, int len);
 };
 
 #endif // ICL_UTIL_H
