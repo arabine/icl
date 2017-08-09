@@ -58,6 +58,7 @@ public:
     Log();
 
     static void AddEntry(std::uint8_t event, const std::string &file, const int line, const std::string &message);
+    static void Print(const std::string &message);
     static void RegisterListener(Observer<std::string> &listener);
     static void RemoveListener(Observer<std::string> &listener);
     static void SetLogPath(const std::string &path)
@@ -83,6 +84,7 @@ private:
 #define TLogNetwork(message)    Log::AddEntry(Log::Network, __FILE__, __LINE__, (message))
 #define TLogScript(message)     Log::AddEntry(Log::Script, __FILE__, __LINE__, (message))
 #define TLogServer(message)     Log::AddEntry(Log::Server, __FILE__, __LINE__, (message))
+#define TLogPrint(message)      Log::Print(message)
 
 #endif // LOG_H
 

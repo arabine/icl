@@ -112,6 +112,13 @@ void Log::AddEntry(uint8_t event, const std::string &file, const int line, const
     }
 }
 /*****************************************************************************/
+void Log::Print(const std::string &message)
+{
+    mMutex.lock();
+    mSubject.Notify(message, Log::All);    // send message to all the listeners
+    mMutex.unlock();
+}
+/*****************************************************************************/
 void Log::Save(const std::string &line)
 {
     std::fstream f;
