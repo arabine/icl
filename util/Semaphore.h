@@ -9,7 +9,7 @@
 class Semaphore
 {
 public:
-    Semaphore (int count = 0)
+    Semaphore (std::uint32_t count = 0U)
         : mCount(count)
     {
 
@@ -17,35 +17,41 @@ public:
 
     inline void Notify()
     {
-        std::unique_lock<std::mutex> lock(mMutex);
+        mMutex.lock();
         mCount++;
+        mMutex.unlock();
         mCondVar.notify_one();
     }
 
     inline bool Wait(int ms = 0)
     {
         bool normal = true;
+        if (ms < 100)
+        {
+            ms = 100;
+        }
         std::unique_lock<std::mutex> lock(mMutex);
 
-        while(mCount == 0)
+        while(mCount == 0U)
         {
-            if (ms > 0)
+            normal = (mCondVar.wait_for(lock, std::chrono::milliseconds(ms)) == std::cv_status::no_timeout);
+
+            if (!normal)
             {
-                normal = (mCondVar.wait_for(lock, std::chrono::milliseconds(ms)) == std::cv_status::no_timeout);
-            }
-            else
-            {
-                mCondVar.wait(lock);
+                break;
             }
         }
-        mCount--;
+        if (mCount > 0U)
+        {
+            mCount--;
+        }
         return normal;
     }
 
 private:
     std::mutex mMutex;
     std::condition_variable mCondVar;
-    int mCount;
+    std::uint32_t mCount;
 };
 
 #endif // SEMAPHORE_H
