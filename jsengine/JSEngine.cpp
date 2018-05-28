@@ -27,6 +27,7 @@
 #include "Log.h"
 #include <fstream>
 #include <sstream>
+#include <iostream>
 
 #define DUKTAPE_DEBUG
 
@@ -81,6 +82,30 @@ static duk_ret_t SystemPrint(duk_context *ctx)
     return 0;
 }
 
+/**
+ * @brief WriteFile
+ * @param ctx
+ *         arg 1: filename (string)
+ *         arg 2: contents (string)
+ * @return
+ */
+static duk_ret_t WriteToFile(duk_context *ctx)
+{
+    duk_idx_t nargs = duk_get_top(ctx);
+
+    if (nargs == 2 && duk_is_string(ctx, 0) && duk_is_string(ctx, 1))
+    {
+        std::string fileName = duk_get_string(ctx, 0);
+        std::string fileData = duk_get_string(ctx, 1);
+        std::ofstream outputFile;
+        outputFile.open(fileName, std::ofstream::out);
+        outputFile << fileData << std::endl;
+        outputFile.close();
+    }
+
+    return 0;
+}
+
 static void fatal_handler(void *udata, const char *msg)
 {
     (void) udata;
@@ -129,10 +154,12 @@ void JSEngine::Initialize()
     if (mCtx != NULL)
     {
         // Register our custom print function
-        duk_push_global_object(mCtx);
         duk_push_c_function(mCtx, SystemPrint, DUK_VARARGS);
-        duk_put_prop_string(mCtx, -2 /*idx:global*/, "systemPrint");
-        duk_pop(mCtx);  /* pop global */
+        duk_put_global_string(mCtx, "systemPrint");
+
+        // Register basic file write function
+        duk_push_c_function(mCtx, WriteToFile, DUK_VARARGS);
+        duk_put_global_string(mCtx, "writeToFile");
 
         // Generate an id for that context
         gListenersMutex.lock();
