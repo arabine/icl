@@ -183,6 +183,10 @@ bool JSEngine::EvaluateFile(const std::string &fileName)
             in.close();
 
             ret = EvaluateString(contents, output);
+            if (!ret)
+            {
+                TLogError(output);
+            }
         }
     }
 
