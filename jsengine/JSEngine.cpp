@@ -28,6 +28,13 @@
 #include <fstream>
 #include <sstream>
 #include <iostream>
+#include <cstdio>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <array>
+#include <chrono>
+#include <thread>
 
 #define DUKTAPE_DEBUG
 
@@ -93,7 +100,7 @@ static duk_ret_t WriteToFile(duk_context *ctx)
 {
     duk_idx_t nargs = duk_get_top(ctx);
 
-    if (nargs == 2 && duk_is_string(ctx, 0) && duk_is_string(ctx, 1))
+    if ((nargs == 2) && duk_is_string(ctx, 0) && duk_is_string(ctx, 1))
     {
         std::string fileName = duk_get_string(ctx, 0);
         std::string fileData = duk_get_string(ctx, 1);
@@ -103,6 +110,49 @@ static duk_ret_t WriteToFile(duk_context *ctx)
         outputFile.close();
     }
 
+    return 0;
+}
+
+std::string exec(const char* cmd)
+{
+    std::array<char, 128> buffer;
+    std::string result;
+    std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
+    if (pipe)
+    {
+        while (!feof(pipe.get())) {
+            if (fgets(buffer.data(), 128, pipe.get()) != nullptr)
+                result += buffer.data();
+        }
+    }
+    else
+    {
+        std::cout << "PIPE open failed!" << std::endl;
+    }
+    return result;
+}
+
+static duk_ret_t ExecuteCommand(duk_context *ctx)
+{
+    duk_idx_t nargs = duk_get_top(ctx);
+    std::string ret = "ERROR";
+    if ((nargs == 1) && duk_is_string(ctx, 0))
+    {
+        std::string command = duk_get_string(ctx, 0);
+        ret = exec(command.c_str());
+    }
+    duk_push_string(ctx, ret.c_str());
+    return 1;
+}
+
+static duk_ret_t DelayMs(duk_context *ctx)
+{
+    duk_idx_t nargs = duk_get_top(ctx);
+    if ((nargs == 1) && duk_is_number(ctx, 0))
+    {
+        uint32_t delay = duk_get_number(ctx, 0);
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+    }
     return 0;
 }
 
@@ -126,7 +176,6 @@ static int eval_string_raw(duk_context *ctx, void *udata)
     duk_eval(ctx);
     return 1;
 }
-
 
 /*****************************************************************************/
 JSEngine::JSEngine()
@@ -160,6 +209,14 @@ void JSEngine::Initialize()
         // Register basic file write function
         duk_push_c_function(mCtx, WriteToFile, DUK_VARARGS);
         duk_put_global_string(mCtx, "writeToFile");
+
+        // Execute system command
+        duk_push_c_function(mCtx, ExecuteCommand, DUK_VARARGS);
+        duk_put_global_string(mCtx, "executeCommand");
+
+        // OS delay in milliseconds
+        duk_push_c_function(mCtx, DelayMs, DUK_VARARGS);
+        duk_put_global_string(mCtx, "delayMs");
 
         // Generate an id for that context
         gListenersMutex.lock();

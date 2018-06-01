@@ -30,6 +30,7 @@
 #include <vector>
 #include <iostream>
 #include <type_traits>
+#include <functional>
 
 #include "Observer.h"
 #include "duktape.h"
@@ -53,6 +54,7 @@ public:
     bool EvaluateString(const std::string &contents, std::string &output);
     Value Call(const std::string &function, const IScriptEngine::StringList &args);
     void Close();
+
 private:
     duk_context *mCtx;
     bool mValidContext;
