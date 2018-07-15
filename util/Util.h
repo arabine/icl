@@ -29,6 +29,8 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <chrono>
+#include "date.h"
 
 /*****************************************************************************/
 class Util
@@ -40,7 +42,13 @@ public:
     static const char DIR_SEPARATOR = '/';
 #endif
 
+    // DATE-TIME UTILITIES
     static std::string CurrentDateTime(const std::string &format);
+    static std::string ToISODateTime(const std::chrono::system_clock::time_point &tp);
+    static std::chrono::system_clock::time_point FromISODateTime(const std::string &str);
+    static std::string DateTimeFormat(const std::chrono::system_clock::time_point &tp, const std::string &format);
+    static int GetYear(const std::chrono::system_clock::time_point &tp);
+
     static std::string ExecutablePath();
     static std::string HomePath();
     static bool FolderExists(const std::string &foldername);
@@ -54,6 +62,9 @@ public:
     static std::string GetFileName(const std::string &path);
     static std::string GetDirectoryPath(const std::string &path);
     static std::int64_t FileSize(const std::string &fileName);
+
+    // STRING UTILITIES
+    static std::string ToLower(const std::string &text);
     static inline bool EndsWith(std::string const & value, std::string const & ending)
     {
         if (ending.size() > value.size()) return false;

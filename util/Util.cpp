@@ -48,6 +48,7 @@
 #include <mach/mach.h>
 #endif
 
+#include <algorithm>
 #include <ctime>
 #include <sstream>
 #include <iomanip>
@@ -82,6 +83,37 @@ std::string Util::CurrentDateTime(const std::string &format)
     std::string s = date::format(format, time_point);
 
     return s;
+}
+/*****************************************************************************/
+std::string Util::DateTimeFormat(const std::chrono::system_clock::time_point &tp, const std::string &format)
+{
+    return date::format(format, tp);
+}
+/*****************************************************************************/
+int Util::GetYear(const std::chrono::system_clock::time_point &tp)
+{
+    auto dp = date::floor<date::days>(tp);
+    auto ymd = date::year_month_day{dp};
+    return (int)ymd.year();
+}
+/*****************************************************************************/
+std::string Util::ToISODateTime(const std::chrono::system_clock::time_point &tp)
+{
+    return  date::format("%FT%TZ", tp);
+}
+/*****************************************************************************/
+std::chrono::system_clock::time_point Util::FromISODateTime(const std::string &str)
+{
+    std::istringstream in(str);
+    date::sys_seconds tp;
+    in >> date::parse("%FT%TZ", tp);
+    if (in.fail())
+    {
+        in.clear();
+        in.str(str);
+        in >> date::parse("%FT%T%z", tp);
+    }
+    return tp;
 }
 /*****************************************************************************/
 std::string Util::ExecutablePath()
@@ -194,6 +226,13 @@ std::int64_t Util::FileSize(const std::string &fileName)
         size = st.st_size;
     }
     return size;
+}
+/*****************************************************************************/
+std::string Util::ToLower(const std::string &text)
+{
+    std::string data = text;
+    std::transform(data.begin(), data.end(), data.begin(), ::tolower);
+    return data;
 }
 /*****************************************************************************/
 std::string Util::GetFileName(const std::string &path)
