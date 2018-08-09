@@ -54,6 +54,7 @@ public:
     bool EvaluateString(const std::string &contents, std::string &output);
     Value Call(const std::string &function, const IScriptEngine::StringList &args);
     void Close();
+    void RegisterFunction(const std::string &name, IScriptEngine::IFunction *function);
 
 private:
     duk_context *mCtx;

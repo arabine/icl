@@ -42,6 +42,14 @@ public:
         virtual void Print(const std::string &msg) = 0;
     };
 
+    class IFunction
+    {
+    public:
+        ~IFunction() {}
+
+        virtual void Execute(const std::vector<Value> &val) = 0;
+    };
+
     typedef std::vector<std::string> StringList;
 
     virtual ~IScriptEngine() { /* Nothing to do */ }
@@ -52,6 +60,8 @@ public:
     virtual bool EvaluateString(const std::string &contents, std::string &output) = 0;
     virtual Value Call(const std::string &function, const StringList &args) = 0;
     virtual void Close() = 0;
+    virtual void RegisterFunction(const std::string &name, IScriptEngine::IFunction *function) = 0;
+
 };
 
 #endif // I_SCRIPT_ENGINE_H

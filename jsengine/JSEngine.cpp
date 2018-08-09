@@ -43,6 +43,46 @@ static std::mutex gListenersMutex;
 static std::uint32_t gIdCounter = 1U; // global counter to deliver an ID to each script instance
 static std::map<std::uint32_t, IScriptEngine::IPrinter*> gPrintList;
 
+// Same thing for user defined functions
+static std::mutex gFunctionsMutex;
+static std::uint32_t gMagicIdCounter = 1U;
+static std::map<std::uint32_t, IScriptEngine::IFunction*> gFunctionList;
+
+
+static duk_ret_t GenericCallback(duk_context *ctx)
+{
+    duk_idx_t nargs = duk_get_top(ctx);
+    std::vector<Value> args;
+
+    for (int i = 0; i < nargs; i++)
+    {
+        if (duk_is_string(ctx, i))
+        {
+            std::string value = duk_get_string(ctx, i);
+            args.push_back(Value(value));
+        }
+        else if (duk_is_number(ctx, i))
+        {
+            int value = duk_get_number(ctx, i);
+            args.push_back(Value(value));
+        }
+    }
+
+    // Get the id associated to this function
+    duk_int_t id = duk_get_current_magic(ctx);
+
+    gFunctionsMutex.lock();
+    // Call the listener of that id, if it exists
+    if (gFunctionList.count(id) > 0U)
+    {
+        gFunctionList[id]->Execute(args);
+    }
+    gFunctionsMutex.unlock();
+
+    return 0;
+}
+
+
 static duk_ret_t SystemPrint(duk_context *ctx)
 {
     std::string msg;
@@ -216,7 +256,7 @@ void JSEngine::Initialize()
 
         // OS delay in milliseconds
         duk_push_c_function(mCtx, DelayMs, DUK_VARARGS);
-        duk_put_global_string(mCtx, "delayMs");
+        duk_put_global_string(mCtx, "delayMs");        
 
         // Generate an id for that context
         gListenersMutex.lock();
@@ -243,6 +283,22 @@ void JSEngine::RegisterPrinter(IScriptEngine::IPrinter *printer)
         gListenersMutex.lock();
         gPrintList[mId] = printer;
         gListenersMutex.unlock();
+    }
+}
+/*****************************************************************************/
+void JSEngine::RegisterFunction(const std::string &name, IScriptEngine::IFunction *function)
+{
+    if (function != nullptr)
+    {
+        gFunctionsMutex.lock();
+
+        duk_push_c_function(mCtx, GenericCallback, DUK_VARARGS);
+        duk_set_magic(mCtx, -1, gMagicIdCounter);
+        duk_put_global_string(mCtx, name.c_str());
+        gFunctionList[gMagicIdCounter] = function;
+        gMagicIdCounter++;
+
+        gFunctionsMutex.unlock();
     }
 }
 /*****************************************************************************/
