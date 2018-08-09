@@ -68,34 +68,34 @@ public:
 
     Value &operator = (Value const &rhs);
 
-    bool IsValid()
+    bool IsValid() const
     {
         return mType != INVALID;
     }
 
-    bool IsNull()
+    bool IsNull() const
     {
         return mType == NULL_VAL;
     }
 
-    Type GetType()
+    Type GetType() const
     {
         return mType;
     }
 
-    std::int32_t    GetInteger()
+    std::int32_t    GetInteger() const
     {
         return mIntegerValue;
     }
-    double          GetDouble()
+    double          GetDouble() const
     {
         return mDoubleValue;
     }
-    bool            GetBool()
+    bool            GetBool() const
     {
         return mBoolValue;
     }
-    std::string     GetString()
+    std::string     GetString() const
     {
         return mStringValue;
     }
