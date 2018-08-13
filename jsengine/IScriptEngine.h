@@ -37,7 +37,7 @@ public:
     class IPrinter
     {
     public:
-        ~IPrinter() {}
+        virtual ~IPrinter() = 0;
 
         virtual void Print(const std::string &msg) = 0;
     };
@@ -45,14 +45,14 @@ public:
     class IFunction
     {
     public:
-        ~IFunction() {}
+        virtual ~IFunction() = 0;
 
         virtual void Execute(const std::vector<Value> &val) = 0;
     };
 
     typedef std::vector<std::string> StringList;
 
-    virtual ~IScriptEngine() { /* Nothing to do */ }
+    virtual ~IScriptEngine() = 0;
 
     virtual void Initialize() = 0;
     virtual void RegisterPrinter(IScriptEngine::IPrinter *printer) = 0;
