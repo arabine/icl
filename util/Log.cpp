@@ -36,6 +36,7 @@ std::mutex Log::mMutex;
 Subject<std::string> Log::mSubject;
 std::string Log::mLogPath;
 bool Log::mEnableFileOutput = true;
+bool Log::mEnableSourceInfo = true;
 
 const std::uint8_t Log::Error   = 1U;
 const std::uint8_t Log::Info    = 2U;
@@ -65,11 +66,6 @@ std::map<uint8_t, std::string> LogInit()
 
     return evt;
 }
-
-/*****************************************************************************/
-Log::Log()
-{
-}
 /*****************************************************************************/
 void Log::RegisterListener(Observer<std::string> &listener)
 {
@@ -97,10 +93,14 @@ void Log::AddEntry(uint8_t event, const std::string &file, const int line, const
     std::stringstream ss;
 
     ss << eventString[event] << ", " <<
-       Util::CurrentDateTime("%Y-%m-%d.%X") << ", " <<
-       file << ", " <<
-       line << ", " <<
-       message;
+       Util::CurrentDateTime("%Y-%m-%d.%X") << ", ";
+
+    if (mEnableSourceInfo)
+    {
+        ss <<  file << ", " << line << ", ";
+    }
+
+    ss << message;
 
     mMutex.lock();
     mSubject.Notify(ss.str(), event);    // send message to all the listeners

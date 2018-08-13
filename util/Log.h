@@ -55,8 +55,6 @@ public:
 
     static const std::uint32_t SizeLimit = 50 * (1024U * 1024U); // Filesize limit to 50MB per log
 
-    Log();
-
     static void AddEntry(std::uint8_t event, const std::string &file, const int line, const std::string &message);
     static void Print(const std::string &message);
     static void RegisterListener(Observer<std::string> &listener);
@@ -66,6 +64,7 @@ public:
         mLogPath = path;
     }
 
+    static void EnableSourceInfos(bool enable) { mEnableSourceInfo = enable; }
     static void Clear();
     static void EnableLog(bool enable) { mEnableFileOutput = enable; }
 
@@ -76,6 +75,7 @@ private:
     static Subject<std::string> mSubject;
     static std::string mLogPath;
     static bool mEnableFileOutput;
+    static bool mEnableSourceInfo;
 };
 
 // Macros definitions
