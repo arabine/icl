@@ -35,8 +35,12 @@
 std::mutex Log::mMutex;
 Subject<Log::Infos> Log::mSubject;
 std::string Log::mLogPath;
+std::vector<Log::Infos> Log::mHistory;
+
 bool Log::mEnableFileOutput = true;
 bool Log::mEnableSourceInfo = true;
+bool Log::mEnableHistory = false;
+
 
 const std::uint8_t Log::Error   = 1U;
 const std::uint8_t Log::Info    = 2U;
@@ -81,6 +85,21 @@ void Log::RemoveListener(Observer<Infos> &listener)
     mMutex.unlock();
 }
 /*****************************************************************************/
+void Log::SetLogPath(const std::string &path)
+{
+    mLogPath = path;
+}
+/*****************************************************************************/
+void Log::ClearHistory()
+{
+    mHistory.clear();
+}
+/*****************************************************************************/
+std::vector<Log::Infos> Log::GetHistory()
+{
+    return mHistory;
+}
+/*****************************************************************************/
 void Log::Clear()
 {
     mMutex.lock();
@@ -99,6 +118,11 @@ void Log::AddEntry(uint8_t event, const std::string &file, const int line, const
     mMutex.lock();
     mSubject.Notify(infos, event);    // send message to all the listeners
     mMutex.unlock();
+
+    if (mEnableHistory)
+    {
+        mHistory.push_back(infos);
+    }
 
     if (mEnableFileOutput)
     {
@@ -129,7 +153,7 @@ void Log::Save(const std::string &line)
     }
     mMutex.unlock();
 }
-
+/*****************************************************************************/
 std::string Log::Infos::ToString() const
 {
     std::stringstream ss;

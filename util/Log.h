@@ -69,11 +69,9 @@ public:
     static void AddEntry(std::uint8_t event, const std::string &file, const int line, const std::string &message);
     static void RegisterListener(Observer<Infos> &listener);
     static void RemoveListener(Observer<Infos> &listener);
-    static void SetLogPath(const std::string &path)
-    {
-        mLogPath = path;
-    }
-
+    static void SetLogPath(const std::string &path);
+    static void ClearHistory();
+    static std::vector<Log::Infos> GetHistory();
     static void EnableSourceInfos(bool enable) { mEnableSourceInfo = enable; }
     static void Clear();
     static void EnableLog(bool enable) { mEnableFileOutput = enable; }
@@ -84,8 +82,10 @@ private:
     static std::mutex mMutex;
     static Subject<Log::Infos> mSubject;
     static std::string mLogPath;
+    static std::vector<Log::Infos> mHistory;
     static bool mEnableFileOutput;
     static bool mEnableSourceInfo;
+    static bool mEnableHistory;
 };
 
 // Macros definitions
