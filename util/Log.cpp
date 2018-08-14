@@ -33,7 +33,7 @@
 #include "Util.h"
 
 std::mutex Log::mMutex;
-Subject<std::string> Log::mSubject;
+Subject<Log::Infos> Log::mSubject;
 std::string Log::mLogPath;
 bool Log::mEnableFileOutput = true;
 bool Log::mEnableSourceInfo = true;
@@ -67,14 +67,14 @@ std::map<uint8_t, std::string> LogInit()
     return evt;
 }
 /*****************************************************************************/
-void Log::RegisterListener(Observer<std::string> &listener)
+void Log::RegisterListener(Observer<Infos> &listener)
 {
     mMutex.lock();
     mSubject.Attach(listener);
     mMutex.unlock();
 }
 /*****************************************************************************/
-void Log::RemoveListener(Observer<std::string> &listener)
+void Log::RemoveListener(Observer<Infos> &listener)
 {
     mMutex.lock();
     mSubject.Detach(listener);
@@ -90,33 +90,20 @@ void Log::Clear()
 /*****************************************************************************/
 void Log::AddEntry(uint8_t event, const std::string &file, const int line, const std::string &message)
 {
-    std::stringstream ss;
-
-    ss << eventString[event] << ", " <<
-       Util::CurrentDateTime("%Y-%m-%d.%X") << ", ";
-
-    if (mEnableSourceInfo)
-    {
-        ss <<  file << ", " << line << ", ";
-    }
-
-    ss << message;
+    Infos infos;
+    infos.event = event;
+    infos.file = file;
+    infos.line = line;
+    infos.message = message;
 
     mMutex.lock();
-    mSubject.Notify(ss.str(), event);    // send message to all the listeners
+    mSubject.Notify(infos, event);    // send message to all the listeners
     mMutex.unlock();
 
     if (mEnableFileOutput)
     {
-        Save(ss.str());                     // save message to a file
+        Save(infos.ToString());                     // save message to a file
     }
-}
-/*****************************************************************************/
-void Log::Print(const std::string &message)
-{
-    mMutex.lock();
-    mSubject.Notify(message, Log::All);    // send message to all the listeners
-    mMutex.unlock();
 }
 /*****************************************************************************/
 void Log::Save(const std::string &line)
@@ -143,6 +130,23 @@ void Log::Save(const std::string &line)
     mMutex.unlock();
 }
 
+std::string Log::Infos::ToString() const
+{
+    std::stringstream ss;
+
+    ss << eventString[event] << ", " << Util::CurrentDateTime("%Y-%m-%d.%X") << ", ";
+
+    if (Log::mEnableSourceInfo)
+    {
+        ss <<  file << ", " << line << ", ";
+    }
+
+    ss << message;
+
+    return ss.str();
+}
+
 //=============================================================================
 // End of file Log.cpp
 //=============================================================================
+

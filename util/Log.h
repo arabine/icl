@@ -43,6 +43,7 @@
  * Error, 19-04-2013 09:17:30, "Protocol.cpp", "Buffer length too small!",
  *
  */
+
 class Log
 {
 public:
@@ -55,10 +56,19 @@ public:
 
     static const std::uint32_t SizeLimit = 50 * (1024U * 1024U); // Filesize limit to 50MB per log
 
+    struct Infos
+    {
+        std::uint8_t event;
+        std::string file;
+        int line;
+        std::string message;
+
+        std::string ToString() const;
+    };
+
     static void AddEntry(std::uint8_t event, const std::string &file, const int line, const std::string &message);
-    static void Print(const std::string &message);
-    static void RegisterListener(Observer<std::string> &listener);
-    static void RemoveListener(Observer<std::string> &listener);
+    static void RegisterListener(Observer<Infos> &listener);
+    static void RemoveListener(Observer<Infos> &listener);
     static void SetLogPath(const std::string &path)
     {
         mLogPath = path;
@@ -72,7 +82,7 @@ private:
     static void Save(const std::string &line);
 
     static std::mutex mMutex;
-    static Subject<std::string> mSubject;
+    static Subject<Log::Infos> mSubject;
     static std::string mLogPath;
     static bool mEnableFileOutput;
     static bool mEnableSourceInfo;
