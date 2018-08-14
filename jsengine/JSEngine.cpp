@@ -73,7 +73,7 @@ static duk_ret_t GenericCallback(duk_context *ctx)
 
     gFunctionsMutex.lock();
     // Call the listener of that id, if it exists
-    if (gFunctionList.count(id) > 0U)
+    if (gFunctionList.count(id) > 0)
     {
         gFunctionList[id]->Execute(args);
     }
@@ -219,7 +219,7 @@ static int eval_string_raw(duk_context *ctx, void *udata)
 
 /*****************************************************************************/
 JSEngine::JSEngine()
-    : mCtx(NULL)
+    : mCtx(nullptr)
     , mValidContext(false)
     , mId(0U)
 {
@@ -235,12 +235,12 @@ JSEngine::~JSEngine()
 void JSEngine::Initialize()
 {
     Close();
-    mCtx = duk_create_heap(NULL /*duk_alloc_function alloc_func*/,
-                           NULL/*duk_realloc_function realloc_func*/,
-                           NULL/*duk_free_function free_func*/,
-                           NULL/*void *heap_udata*/,
+    mCtx = duk_create_heap(nullptr /*duk_alloc_function alloc_func*/,
+                           nullptr/*duk_realloc_function realloc_func*/,
+                           nullptr/*duk_free_function free_func*/,
+                           nullptr/*void *heap_udata*/,
                            fatal_handler);
-    if (mCtx != NULL)
+    if (mCtx != nullptr)
     {
         // Register our custom print function
         duk_push_c_function(mCtx, SystemPrint, DUK_VARARGS);
@@ -339,8 +339,8 @@ bool JSEngine::EvaluateString(const std::string &contents, std::string &output)
     if (mValidContext)
     {
         duk_push_string(mCtx, contents.c_str());
-        int rc = duk_safe_call(mCtx, eval_string_raw, NULL /*udata*/, 1 /*nargs*/, 1 /*nrets*/);
-        (void) duk_safe_call(mCtx, tostring_raw /*udata*/, NULL, 1 /*nargs*/, 1 /*nrets*/);
+        int rc = duk_safe_call(mCtx, eval_string_raw, nullptr /*udata*/, 1 /*nargs*/, 1 /*nrets*/);
+        (void) duk_safe_call(mCtx, tostring_raw /*udata*/, nullptr, 1 /*nargs*/, 1 /*nrets*/);
         output = duk_get_string(mCtx, -1);
 
         if (rc == DUK_EXEC_SUCCESS)
@@ -428,10 +428,10 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
 /*****************************************************************************/
 void JSEngine::Close()
 {
-    if (mCtx != NULL)
+    if (mCtx != nullptr)
     {
         duk_destroy_heap(mCtx);
-        mCtx = NULL;
+        mCtx = nullptr;
     }
     mValidContext = false;
 }
