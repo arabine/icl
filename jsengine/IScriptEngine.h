@@ -47,7 +47,7 @@ public:
     public:
         virtual ~IFunction() {}
 
-        virtual void Execute(const std::vector<Value> &val) = 0;
+        virtual bool Execute(const std::vector<Value> &val, Value &ret) = 0;
     };
 
     typedef std::vector<std::string> StringList;
@@ -61,7 +61,8 @@ public:
     virtual Value Call(const std::string &function, const StringList &args) = 0;
     virtual void Close() = 0;
     virtual void RegisterFunction(const std::string &name, IScriptEngine::IFunction *function) = 0;
-
+    virtual bool HasError() = 0;
+    virtual std::string GetLastError() = 0;
 };
 
 #endif // I_SCRIPT_ENGINE_H

@@ -24,16 +24,17 @@
  */
 
 #include "JSEngine.h"
-#include "Log.h"
+
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <cstdio>
 #include <memory>
-#include <stdexcept>
+#include <mutex>
 #include <string>
 #include <array>
 #include <chrono>
+#include <map>
 #include <thread>
 
 #define DUKTAPE_DEBUG
@@ -46,11 +47,13 @@ static std::map<std::uint32_t, IScriptEngine::IPrinter*> gPrintList;
 // Same thing for user defined functions
 static std::mutex gFunctionsMutex;
 static std::uint32_t gMagicIdCounter = 1U;
-static std::map<std::uint32_t, IScriptEngine::IFunction*> gFunctionList;
+static std::map<std::int32_t, IScriptEngine::IFunction*> gFunctionList;
 
 
 static duk_ret_t GenericCallback(duk_context *ctx)
 {
+    duk_ret_t dukRet = DUK_ERR_NONE;
+
     duk_idx_t nargs = duk_get_top(ctx);
     std::vector<Value> args;
 
@@ -71,15 +74,22 @@ static duk_ret_t GenericCallback(duk_context *ctx)
     // Get the id associated to this function
     duk_int_t id = duk_get_current_magic(ctx);
 
+    bool retCode = false;
     gFunctionsMutex.lock();
     // Call the listener of that id, if it exists
     if (gFunctionList.count(id) > 0)
     {
-        gFunctionList[id]->Execute(args);
+        Value retVal;
+        retCode = gFunctionList[id]->Execute(args, retVal);
     }
     gFunctionsMutex.unlock();
 
-    return 0;
+    if (!retCode)
+    {
+        dukRet = DUK_RET_ERROR;
+    }
+
+    return dukRet;
 }
 
 
@@ -199,7 +209,8 @@ static duk_ret_t DelayMs(duk_context *ctx)
 static void fatal_handler(void *udata, const char *msg)
 {
     (void) udata;
-    TLogError("JS engine fatal error: " + std::string(msg));
+
+    std::cout << "Fatal error from Javascript engine" << std::endl;
 }
 
 static duk_ret_t tostring_raw(duk_context *ctx, void *udata)
@@ -222,6 +233,7 @@ JSEngine::JSEngine()
     : mCtx(nullptr)
     , mValidContext(false)
     , mId(0U)
+    , mHasError(false)
 {
 
 
@@ -235,6 +247,7 @@ JSEngine::~JSEngine()
 void JSEngine::Initialize()
 {
     Close();
+    mLastError = "";
     mCtx = duk_create_heap(nullptr /*duk_alloc_function alloc_func*/,
                            nullptr/*duk_realloc_function realloc_func*/,
                            nullptr/*duk_free_function free_func*/,
@@ -269,10 +282,12 @@ void JSEngine::Initialize()
         (void) duk_put_global_string(mCtx, "ctx_id");
 
         mValidContext = true;
+        mHasError = false;
     }
     else
     {
-        TLogScript("Cannot initialize script context");
+        mHasError = true;
+        mLastError = "Cannot initialize script context";
     }
 }
 /*****************************************************************************/
@@ -302,6 +317,16 @@ void JSEngine::RegisterFunction(const std::string &name, IScriptEngine::IFunctio
     }
 }
 /*****************************************************************************/
+bool JSEngine::HasError()
+{
+    return mHasError;
+}
+/*****************************************************************************/
+std::string JSEngine::GetLastError()
+{
+    return mLastError;
+}
+/*****************************************************************************/
 bool JSEngine::EvaluateFile(const std::string &fileName)
 {
     bool ret = false;
@@ -323,10 +348,6 @@ bool JSEngine::EvaluateFile(const std::string &fileName)
             in.close();
 
             ret = EvaluateString(contents, output);
-            if (!ret)
-            {
-                TLogError(output);
-            }
         }
     }
 
@@ -361,7 +382,8 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
 
     if (!mValidContext)
     {
-        TLogError("Cannot call script function without a valid context.");
+        mHasError = true;
+        mLastError = "Cannot call script function without a valid context.";
         return retval;
     }
 
@@ -384,7 +406,8 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
         int rc = duk_pcall(mCtx, args.size() /*nargs*/);
         if (rc != DUK_EXEC_SUCCESS)
         {
-            TLogError(std::string("JS engine script call failed for function: ") + function);
+            mHasError = true;
+            mLastError = "JS engine script call failed for function: " + function;
             PrintError();
         }
         else
@@ -409,9 +432,10 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
 
                 if (ret != DUK_TYPE_UNDEFINED)
                 {
+                    mHasError = true;
                     std::stringstream ss;
                     ss << "Unsupported value type returned: " << ret;
-                    TLogError(ss.str());
+                    mLastError = ss.str();
                 }
             }
         }

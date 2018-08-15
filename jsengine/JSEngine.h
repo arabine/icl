@@ -55,11 +55,15 @@ public:
     Value Call(const std::string &function, const IScriptEngine::StringList &args);
     void Close();
     void RegisterFunction(const std::string &name, IScriptEngine::IFunction *function);
+    bool HasError();
+    std::string GetLastError();
 
 private:
     duk_context *mCtx;
     bool mValidContext;
     std::uint32_t mId; // Id of the current script context
+    bool mHasError;
+    std::string mLastError;
 
     void PrintError() const;
     void PrintTop() const;
