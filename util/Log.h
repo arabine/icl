@@ -52,6 +52,7 @@ public:
     static const std::uint8_t Network;
     static const std::uint8_t Script;
     static const std::uint8_t Server;
+    static const std::uint8_t Warning;
     static const std::uint8_t All;
 
     static const std::uint32_t SizeLimit = 50 * (1024U * 1024U); // Filesize limit to 50MB per log
@@ -90,6 +91,7 @@ private:
 
 // Macros definitions
 #define TLogInfo(message)       Log::AddEntry(Log::Info, __FILE__, __LINE__, (message))
+#define TLogWarning(message)    Log::AddEntry(Log::Warning, __FILE__, __LINE__, (message))
 #define TLogError(message)      Log::AddEntry(Log::Error, __FILE__, __LINE__, (message))
 #define TLogNetwork(message)    Log::AddEntry(Log::Network, __FILE__, __LINE__, (message))
 #define TLogScript(message)     Log::AddEntry(Log::Script, __FILE__, __LINE__, (message))
