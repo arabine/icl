@@ -407,8 +407,7 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
         if (rc != DUK_EXEC_SUCCESS)
         {
             mHasError = true;
-            mLastError = "JS engine script call failed for function: " + function;
-            PrintError();
+            mLastError = "Call to function " + function + " failed: " + duk_safe_to_string(mCtx, -1);
         }
         else
         {
@@ -458,38 +457,6 @@ void JSEngine::Close()
         mCtx = nullptr;
     }
     mValidContext = false;
-}
-/*****************************************************************************/
-/**
- * @brief PrintError
- *
- * Print and pop error.
- *
- */
-void JSEngine::PrintError() const
-{
-
-#ifdef DUKTAPE_DEBUG
-    if (duk_is_object(mCtx, -1) && duk_has_prop_string(mCtx, -1, "stack"))
-    {
-        /* FIXME: print error objects specially */
-        /* FIXME: pcall the string coercion */
-        duk_get_prop_string(mCtx, -1, "stack");
-        if (duk_is_string(mCtx, -1))
-        {
-            std::cout << duk_get_string(mCtx, -1) << std::endl;
-            duk_pop_2(mCtx);
-            return;
-        }
-        else
-        {
-            duk_pop(mCtx);
-        }
-    }
-    duk_to_string(mCtx, -1);
-    std::cout << duk_get_string(mCtx, -1) << std::endl;
-    duk_pop(mCtx);
-#endif
 }
 /*****************************************************************************/
 /**

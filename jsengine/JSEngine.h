@@ -65,7 +65,6 @@ private:
     bool mHasError;
     std::string mLastError;
 
-    void PrintError() const;
     void PrintTop() const;
 
 };
