@@ -74,17 +74,44 @@ static duk_ret_t GenericCallback(duk_context *ctx)
     // Get the id associated to this function
     duk_int_t id = duk_get_current_magic(ctx);
 
-    bool retCode = false;
+    bool isOk = false;
     gFunctionsMutex.lock();
     // Call the listener of that id, if it exists
     if (gFunctionList.count(id) > 0)
     {
         Value retVal;
-        retCode = gFunctionList[id]->Execute(args, retVal);
+        isOk = gFunctionList[id]->Execute(args, retVal);
+
+        Value::Type typeOfRetValue = retVal.GetType();
+        if (isOk && (typeOfRetValue != Value::INVALID))
+        {
+            if (typeOfRetValue == Value::BOOLEAN)
+            {
+                duk_push_boolean(ctx, retVal.GetBool());
+            }
+            else if (typeOfRetValue == Value::DOUBLE)
+            {
+                duk_push_number(ctx, retVal.GetDouble());
+            }
+            else if (typeOfRetValue == Value::INTEGER)
+            {
+                duk_push_int(ctx, retVal.GetInteger());
+            }
+            else if (typeOfRetValue == Value::STRING)
+            {
+                std::string str = retVal.GetString();
+                duk_push_lstring(ctx, str.c_str(), str.size());
+            }
+            else
+            {
+                duk_push_null(ctx);
+            }
+            dukRet = 1; // This function returns one value
+        }
     }
     gFunctionsMutex.unlock();
 
-    if (!retCode)
+    if (!isOk)
     {
         dukRet = DUK_RET_ERROR;
     }
@@ -200,7 +227,7 @@ static duk_ret_t DelayMs(duk_context *ctx)
     duk_idx_t nargs = duk_get_top(ctx);
     if ((nargs == 1) && duk_is_number(ctx, 0))
     {
-        uint32_t delay = duk_get_number(ctx, 0);
+        uint32_t delay = static_cast<uint32_t>(duk_get_int(ctx, 0));
         std::this_thread::sleep_for(std::chrono::milliseconds(delay));
     }
     return 0;
@@ -210,7 +237,7 @@ static void fatal_handler(void *udata, const char *msg)
 {
     (void) udata;
 
-    std::cout << "Fatal error from Javascript engine" << std::endl;
+    std::cout << "Fatal error from Javascript engine: " << msg << std::endl;
 }
 
 static duk_ret_t tostring_raw(duk_context *ctx, void *udata)
