@@ -54,6 +54,7 @@ public:
     static std::string GetFileName(const std::string &path);
     static std::string GetDirectoryPath(const std::string &path);
     static std::int64_t FileSize(const std::string &fileName);
+    static std::string ToUpper(const std::string &input);
     static inline bool EndsWith(std::string const & value, std::string const & ending)
     {
         if (ending.size() > value.size()) return false;
@@ -62,6 +63,7 @@ public:
     // Case insensitive version
     static bool Compare(const std::string &a, const std::string &b);
     static std::wstring ToWString(const std::string &str);
+    static std::string ToString(const std::wstring &wstr);
     static std::string HexDump(const char *desc, const void *addr, int len);
 };
 

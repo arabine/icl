@@ -56,6 +56,7 @@
 #include <chrono>
 #include <locale>
 #include <codecvt>
+#include <algorithm>
 #include "date.h"
 #include "Util.h"
 
@@ -92,8 +93,8 @@ std::string Util::ExecutablePath()
     wchar_t buf[MAX_PATH];
 
     // Will contain exe path
-    HMODULE hModule = GetModuleHandle(NULL);
-    if (hModule != NULL)
+    HMODULE hModule = GetModuleHandle(nullptr);
+    if (hModule != nullptr)
     {
         // When passing NULL to GetModuleHandle, it returns handle of exe itself
         GetModuleFileName(hModule, buf, MAX_PATH);
@@ -194,6 +195,13 @@ std::int64_t Util::FileSize(const std::string &fileName)
         size = st.st_size;
     }
     return size;
+}
+/*****************************************************************************/
+std::string Util::ToUpper(const std::string &input)
+{
+    std::string str = input;
+    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+    return str;
 }
 /*****************************************************************************/
 std::string Util::GetFileName(const std::string &path)
@@ -349,6 +357,14 @@ std::wstring Util::ToWString(const std::string &str)
     return conv.from_bytes(str);
 }
 /*****************************************************************************/
+std::string Util::ToString(const std::wstring &wstr)
+{
+    using convert_typeX = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+    return converterX.to_bytes(wstr);
+}
+/*****************************************************************************/
 /**
  * @brief Util::GetCurrentMemoryUsage
  *
@@ -362,7 +378,7 @@ std::int32_t Util::GetCurrentMemoryUsage()
     /* Windows -------------------------------------------------- */
     PROCESS_MEMORY_COUNTERS info;
     GetProcessMemoryInfo( GetCurrentProcess( ), &info, sizeof(info) );
-    return (size_t)info.WorkingSetSize;
+    return static_cast<std::int32_t>(info.WorkingSetSize);
 
 #elif defined(__APPLE__) && defined(__MACH__)
     /* OSX ------------------------------------------------------ */
@@ -405,7 +421,7 @@ std::int32_t Util::GetMaximumMemoryUsage()
     /* Windows -------------------------------------------------- */
     PROCESS_MEMORY_COUNTERS info;
     GetProcessMemoryInfo( GetCurrentProcess( ), &info, sizeof(info) );
-    return (size_t)info.PeakWorkingSetSize;
+    return static_cast<std::int32_t>(info.PeakWorkingSetSize);
 
 #elif (defined(_AIX) || defined(__TOS__AIX__)) || (defined(__sun__) || defined(__sun) || defined(sun) && (defined(__SVR4) || defined(__svr4__)))
     /* AIX and Solaris ------------------------------------------ */
@@ -441,11 +457,11 @@ std::string Util::HexDump(const char *desc, const void *addr, int len)
 {
     int i;
     unsigned char buff[17];
-    unsigned char *pc = (unsigned char*)addr;
+    const unsigned char *pc = static_cast<const unsigned char*>(addr);
     std::stringstream ss;
 
     // Output description if given.
-    if (desc != NULL)
+    if (desc != nullptr)
     {
         ss << desc << ":\n";
     }
@@ -473,7 +489,7 @@ std::string Util::HexDump(const char *desc, const void *addr, int len)
         }
 
         // Now the hex code for the specific character.
-        ss <<  " " << std::setfill('0') << std::setw(2) << std::hex  << (int)pc[i] << ", ";
+        ss <<  " " << std::setfill('0') << std::setw(2) << std::hex  << static_cast<int>(pc[i]) << ", ";
 
         // And store a printable ASCII character for later.
         if ((pc[i] < 0x20) || (pc[i] > 0x7e))
