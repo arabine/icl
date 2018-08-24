@@ -100,6 +100,16 @@ public:
         return mStringValue;
     }
 
+    bool IsJsonString()
+    {
+        return mJsonString;
+    }
+
+    void SetJsonString(bool enable)
+    {
+        mJsonString = enable;
+    }
+
     void SetNull()
     {
         mType = NULL_VAL;
@@ -111,6 +121,7 @@ private:
     double mDoubleValue;
     std::string mStringValue;
     bool mBoolValue;
+    bool mJsonString;
 };
 
 #endif // VALUE_H
