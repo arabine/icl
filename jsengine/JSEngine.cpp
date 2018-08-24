@@ -101,6 +101,11 @@ static duk_ret_t GenericCallback(duk_context *ctx)
             {
                 std::string str = retVal.GetString();
                 duk_push_lstring(ctx, str.c_str(), str.size());
+                if (retVal.IsJsonString())
+                {
+                    // Transform it into JS object
+                    duk_json_decode(ctx, -1);
+                }
             }
             else
             {
