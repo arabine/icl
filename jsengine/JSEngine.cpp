@@ -66,8 +66,15 @@ static duk_ret_t GenericCallback(duk_context *ctx)
         }
         else if (duk_is_number(ctx, i))
         {
-            int value = duk_get_number(ctx, i);
+            int value = duk_get_int(ctx, i);
             args.push_back(Value(value));
+        }
+        else if (duk_is_object(ctx, i))
+        {
+            std::string value = duk_json_encode(ctx, i);
+            Value argVal = Value(value);
+            argVal.SetJsonString(true);
+            args.push_back(argVal);
         }
     }
 
@@ -456,6 +463,12 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
                     value = true;
                 }
                 retval = Value(value);
+            }
+            else if (duk_check_type(mCtx, -1, DUK_TYPE_OBJECT))
+            {
+                std::string value = duk_json_encode(mCtx, -1);
+                retval = Value(value);
+                retval.SetJsonString(true);
             }
             else
             {
