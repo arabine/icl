@@ -206,18 +206,35 @@ std::string Util::ToUpper(const std::string &input)
 /*****************************************************************************/
 std::string Util::GetFileName(const std::string &path)
 {
-    return path.substr( path.find_last_of(DIR_SEPARATOR) + 1 );
+    unsigned found = path.find_last_of("/\\");
+    return path.substr(found+1);
 }
 /*****************************************************************************/
 std::string Util::GetDirectoryPath(const std::string &path)
 {
-    std::string directory = path;
-    // transform into native path
-#ifdef USE_WINDOWS_OS
-    ReplaceCharacter(directory, "/", "\\");
-#endif
+    unsigned found = path.find_last_of("/\\");
+    return path.substr(0,found);
+}
+/*****************************************************************************/
+std::string Util::GetModifiedFileDateTime(const std::string &fileName)
+{
+    struct stat result;
+    std::string dateTime;
 
-    return directory.substr(0, directory.find_last_of(DIR_SEPARATOR));
+    if (::stat(fileName.c_str(), &result)==0)
+    {
+        struct tm * timeinfo = std::localtime(&result.st_mtime); // or gmtime() depending on what you want
+        dateTime = asctime(timeinfo);
+    }
+
+    return dateTime;
+}
+/*****************************************************************************/
+std::string Util::ToLeadingZeros(const int value, const int precision)
+{
+    std::ostringstream oss;
+    oss << std::setw(precision) << std::setfill('0') << value;
+    return oss.str();
 }
 /*****************************************************************************/
 /**

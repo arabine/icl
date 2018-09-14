@@ -65,6 +65,8 @@ public:
     static std::wstring ToWString(const std::string &str);
     static std::string ToString(const std::wstring &wstr);
     static std::string HexDump(const char *desc, const void *addr, int len);
+    static std::string GetModifiedFileDateTime(const std::string &fileName);
+    static std::string ToLeadingZeros(const int value, const int precision);
 };
 
 #endif // ICL_UTIL_H
