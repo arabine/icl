@@ -35,6 +35,7 @@
 std::mutex Log::mMutex;
 Subject<Log::Infos> Log::mSubject;
 std::string Log::mLogPath;
+std::string Log::mLogFileName;
 std::vector<Log::Infos> Log::mHistory;
 
 bool Log::mEnableFileOutput = true;
@@ -91,6 +92,16 @@ void Log::SetLogPath(const std::string &path)
     mLogPath = path;
 }
 /*****************************************************************************/
+void Log::SetLogFileName(const std::string &fileName)
+{
+    mLogFileName = fileName;
+}
+/*****************************************************************************/
+std::string Log::GetLogFileName()
+{
+    return mLogFileName;
+}
+/*****************************************************************************/
 void Log::ClearHistory()
 {
     mHistory.clear();
@@ -136,10 +147,22 @@ void Log::Save(const std::string &line)
     std::fstream f;
     std::string fileName;
 
-    mMutex.lock();
-    // One log file per day should be enough!
+    Util::Mkdir(mLogPath); // Make sure path exists
 
-    fileName = mLogPath + "/log_" + Util::CurrentDateTime("%Y-%m-%d") + ".csv";
+    if (mLogFileName.size() > 0)
+    {
+        // Use specified file name
+        fileName = mLogFileName;
+    }
+    else
+    {
+        // One log file per day should be enough!
+        fileName = "log_" + Util::CurrentDateTime("%Y-%m-%d") + ".csv";
+    }
+
+    fileName = mLogPath + Util::DIR_SEPARATOR + fileName;
+
+    mMutex.lock();
 
     // Avoid generating too much log for the server
     if (Util::FileSize(fileName) < SizeLimit)

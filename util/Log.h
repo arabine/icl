@@ -71,6 +71,8 @@ public:
     static void RegisterListener(Observer<Infos> &listener);
     static void RemoveListener(Observer<Infos> &listener);
     static void SetLogPath(const std::string &path);
+    static void SetLogFileName(const std::string &fileName);
+    static std::string GetLogFileName();
     static void ClearHistory();
     static std::vector<Log::Infos> GetHistory();
     static void EnableSourceInfos(bool enable) { mEnableSourceInfo = enable; }
@@ -83,6 +85,7 @@ private:
     static std::mutex mMutex;
     static Subject<Log::Infos> mSubject;
     static std::string mLogPath;
+    static std::string mLogFileName;
     static std::vector<Log::Infos> mHistory;
     static bool mEnableFileOutput;
     static bool mEnableSourceInfo;
