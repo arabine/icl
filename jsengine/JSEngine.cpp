@@ -202,6 +202,11 @@ static duk_ret_t WriteToFile(duk_context *ctx)
     return 0;
 }
 
+#ifdef _WIN32
+#define popen _popen
+#define pclose _pclose
+#endif
+
 std::string exec(const char* cmd)
 {
     std::array<char, 128> buffer;

@@ -29,6 +29,7 @@
 #include <cstdint>
 #include <mutex>
 #include <map>
+#include <vector>
 #include "Observer.h"
 
 /*****************************************************************************/

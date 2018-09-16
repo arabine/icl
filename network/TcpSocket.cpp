@@ -185,7 +185,7 @@ bool TcpSocket::Send(const std::string &input, const Peer &peer)
 std::string TcpSocket::BuildWsFrame(std::uint8_t opcode, const std::string &data)
 {
     std::stringstream  writer;
-    std::uint32_t data_len = data.size();
+    std::uint32_t data_len = static_cast<std::uint32_t>(data.size());
     std::uint8_t ws_header[10];
     std::uint32_t header_len = 0U;
 
@@ -574,7 +574,7 @@ bool TcpSocket::DecodeWsData(Conn &conn)
     size_t i, len, mask_len = 0, header_len = 0, data_len = 0;
 
     std::string &buf = mBuff;
-    std::uint32_t buf_len = buf.size();
+    std::uint32_t buf_len = static_cast<std::uint32_t>(buf.size());
 
     /* Extracted from the RFC 6455 Chapter 5-2
      *
