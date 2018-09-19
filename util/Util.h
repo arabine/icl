@@ -29,6 +29,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <sstream>
 
 /*****************************************************************************/
 class Util
@@ -67,6 +68,23 @@ public:
     static std::string HexDump(const char *desc, const void *addr, int len);
     static std::string GetModifiedFileDateTime(const std::string &fileName);
     static std::string ToLeadingZeros(const int value, const int precision);
+
+    template<typename T>
+    static std::string ToString(const T& v)
+    {
+        std::ostringstream ss;
+        ss << v;
+        return ss.str();
+    }
+
+    template<typename T>
+    static T FromString(const std::string& str)
+    {
+        std::istringstream ss(str);
+        T ret;
+        ss >> ret;
+        return ret;
+    }
 };
 
 #endif // ICL_UTIL_H
