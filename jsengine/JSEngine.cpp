@@ -301,7 +301,7 @@ void JSEngine::Initialize()
     {
         // Register our custom print function
         duk_push_c_function(mCtx, SystemPrint, DUK_VARARGS);
-        duk_put_global_string(mCtx, "systemPrint");
+        duk_put_global_string(mCtx, "printConsole");
 
         // Register basic file write function
         duk_push_c_function(mCtx, WriteToFile, DUK_VARARGS);
