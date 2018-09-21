@@ -326,12 +326,12 @@ void JSEngine::Initialize()
         (void) duk_put_global_string(mCtx, "ctx_id");
 
         mValidContext = true;
-        mHasError = false;
+
+        ClearError();
     }
     else
     {
-        mHasError = true;
-        mLastError = "Cannot initialize script context";
+        SetError("Cannot initialize script context");
     }
 }
 /*****************************************************************************/
@@ -371,11 +371,24 @@ std::string JSEngine::GetLastError()
     return mLastError;
 }
 /*****************************************************************************/
+void JSEngine::ClearError()
+{
+    mHasError = false;
+    mLastError.clear();
+}
+/*****************************************************************************/
+void JSEngine::SetError(const std::string &error)
+{
+    mHasError = true;
+    mLastError = error;
+}
+/*****************************************************************************/
 bool JSEngine::EvaluateFile(const std::string &fileName)
 {
     bool ret = false;
     if (mValidContext)
     {
+        ClearError();
         // Test if the file exists, try to open it!
         std::ifstream in;
         in.open(fileName, std::ios_base::in | std::ios::binary);
@@ -403,6 +416,8 @@ bool JSEngine::EvaluateString(const std::string &contents, std::string &output)
     bool ret = false;
     if (mValidContext)
     {
+        ClearError();
+
         duk_push_string(mCtx, contents.c_str());
         int rc = duk_safe_call(mCtx, eval_string_raw, nullptr /*udata*/, 1 /*nargs*/, 1 /*nrets*/);
         (void) duk_safe_call(mCtx, tostring_raw /*udata*/, nullptr, 1 /*nargs*/, 1 /*nrets*/);
@@ -414,7 +429,7 @@ bool JSEngine::EvaluateString(const std::string &contents, std::string &output)
         }
         else
         {
-            output = "Compile failed: " + output;
+            SetError("Compile failed: " + output);
         }
     }
     return ret;
@@ -426,10 +441,10 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
 
     if (!mValidContext)
     {
-        mHasError = true;
-        mLastError = "Cannot call script function without a valid context.";
+        SetError("Cannot call script function without a valid context.");
         return retval;
     }
+    ClearError();
 
     // Push the Ecmascript global object to the value stack
     duk_push_global_object(mCtx);
@@ -450,8 +465,7 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
         int rc = duk_pcall(mCtx, args.size() /*nargs*/);
         if (rc != DUK_EXEC_SUCCESS)
         {
-            mHasError = true;
-            mLastError = "Call to function " + function + " failed: " + duk_safe_to_string(mCtx, -1);
+            SetError("Call to function " + function + " failed: " + duk_safe_to_string(mCtx, -1));
         }
         else
         {
@@ -481,10 +495,9 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
 
                 if (ret != DUK_TYPE_UNDEFINED)
                 {
-                    mHasError = true;
                     std::stringstream ss;
                     ss << "Unsupported value type returned: " << ret;
-                    mLastError = ss.str();
+                    SetError(ss.str());
                 }
             }
         }

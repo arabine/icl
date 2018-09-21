@@ -63,6 +63,7 @@ public:
     virtual void RegisterFunction(const std::string &name, IScriptEngine::IFunction *function) = 0;
     virtual bool HasError() = 0;
     virtual std::string GetLastError() = 0;
+    virtual void ClearError() = 0;
 };
 
 #endif // I_SCRIPT_ENGINE_H

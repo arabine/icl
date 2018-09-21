@@ -57,6 +57,7 @@ public:
     void RegisterFunction(const std::string &name, IScriptEngine::IFunction *function);
     bool HasError();
     std::string GetLastError();
+    void ClearError();
 
 private:
     duk_context *mCtx;
@@ -65,6 +66,7 @@ private:
     bool mHasError;
     std::string mLastError;
 
+    void SetError(const std::string &error);
     void PrintTop() const;
 
 };
