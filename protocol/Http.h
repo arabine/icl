@@ -1,7 +1,8 @@
 /*
- * HappyHTTP - a simple HTTP library
+ * HappyHTTP - a simple HTTP library (modified from original source)
  * Version 0.1
  * 
+ * Copyright (c) 2017 Anthony Rabine (modifications from original source)
  * Copyright (c) 2006 Ben Campbell
  *
  * This software is provided 'as-is', without any express or implied
@@ -36,15 +37,15 @@
 
 #include "TcpClient.h"
 
-
-namespace http
-{
+namespace http {
 
 class Response;
 
 class IEvent
 {
 public:
+    virtual ~IEvent();
+
     virtual void ResponseBegin( const Response* r) = 0;
     virtual void ResponseData( const Response* r, const char* data, int numbytes ) = 0;
     virtual void ResponseComplete( const Response* r) = 0;
@@ -126,14 +127,14 @@ class Connection
 	friend class Response;
 public:
 	// doesn't connect immediately
-    Connection( const char* host, int port, IEvent &eventHandler);
+    Connection(IEvent &eventHandler);
 	~Connection();
 
 	// Don't need to call connect() explicitly as issuing a request will
 	// call it automatically if needed.
 	// But it could block (for name lookup etc), so you might prefer to
 	// call it in advance.
-    bool connect();
+    bool connect(const char* host, uint16_t port);
 
 	// close connection, discarding any pending requests.
 	void close();
@@ -155,7 +156,7 @@ public:
 	// headers is array of name/value pairs, terminated by a null-ptr
 	// body & bodysize specify body data of request (eg values for a form)
     void request(const char* method, const char* url, const std::map<std::string, std::string> &headers,
-        const char *body=0, int bodysize=0 );
+        const char *body = nullptr, int bodysize = 0 );
 
 	// ---------------------------
 	// low-level request interface
@@ -284,11 +285,6 @@ private:
 	void Finish();
 };
 
-
-
-}	// end namespace happyhttp
-
-
 #endif // HAPPYHTTP_H
 
-
+} // namespace http

@@ -1,13 +1,14 @@
 /*
- * HappyHTTP - a simple HTTP library
+ * HappyHTTP - a simple HTTP library (modified from original source)
  * Version 0.1
- * 
+ *
+ * Copyright (c) 2017 Anthony Rabine (modifications from original source)
  * Copyright (c) 2006 Ben Campbell
  *
  * This software is provided 'as-is', without any express or implied
  * warranty. In no event will the authors be held liable for any damages
  * arising from the use of this software.
- * 
+ *
  * Permission is granted to anyone to use this software for any purpose,
  * including commercial applications, and to alter it and redistribute it
  * freely, subject to the following restrictions:
@@ -19,7 +20,7 @@
  *
  * 2. Altered source versions must be plainly marked as such, and must not
  * be misrepresented as being the original software.
- * 
+ *
  * 3. This notice may not be removed or altered from any source distribution.
  *
  */
@@ -49,23 +50,23 @@
 // Connection
 //
 //---------------------------------------------------------------------
+namespace http {
 
-namespace http
-{
 
-Connection::Connection(const char* host, int port , IEvent &eventHandler)
+Connection::Connection(IEvent &eventHandler)
     : mEventHandler(eventHandler)
     , m_State( IDLE)
-    , mHost(host)
-    , mPort(port)
     , mConnected(false)
 {
-    mClient.Initialize();
+
 }
 
 
-bool Connection::connect()
+bool Connection::connect(const char* host, std::uint16_t port)
 {
+    mClient.Initialize();
+    mHost.assign(host);
+    mPort = port;
     return mClient.Connect(mHost, mPort);
 }
 
@@ -223,13 +224,12 @@ void Connection::endheaders()
 
 void Connection::send( const char* buf, int numbytes )
 {
-    if (!mClient.IsValid())
+    if (mClient.IsValid())
     {
-		connect();
+        std::string bytes;
+        bytes.append(buf, static_cast<size_t>(numbytes));
+        (void) mClient.Send(bytes);
     }
-    std::string bytes;
-    bytes.append(buf, static_cast<size_t>(numbytes));
-    (void) mClient.Send(bytes);
 }
 
 
@@ -731,7 +731,6 @@ bool Response::CheckClose()
 }
 
 
+IEvent::~IEvent() {}
 
-}	// end namespace http
-
-
+} // namespace http
