@@ -48,6 +48,7 @@ public:
     static bool FileExists(const std::string &fileName);
     static bool Mkdir(const std::string &fullPath);
     static void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
+    static std::string EscapeChar(const std::string &str);
     static std::vector<std::string> Split(const std::string &theString, const std::string &delimiter);
     static std::string Join(const std::vector<std::string> &tokens, const std::string &delimiter);
     static std::int32_t GetCurrentMemoryUsage();
@@ -68,6 +69,7 @@ public:
     static std::string HexDump(const char *desc, const void *addr, int len);
     static std::string GetModifiedFileDateTime(const std::string &fileName);
     static std::string ToLeadingZeros(const int value, const int precision);
+    static int Exec(std::string CmdLine, std::string CmdRunDir, std::string& ListStdOut, std::string& ListStdErr, int32_t& RetCode);
 
     template<typename T>
     static std::string ToString(const T& v)
@@ -85,6 +87,7 @@ public:
         ss >> ret;
         return ret;
     }
+
 };
 
 #endif // ICL_UTIL_H

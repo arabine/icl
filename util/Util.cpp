@@ -34,6 +34,11 @@
 #include <windows.h>
 #include <psapi.h>
 
+static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFUL);
+
+#define popen _popen
+#define pclose _pclose
+
 #endif
 
 #ifdef USE_UNIX_OS
@@ -57,6 +62,7 @@
 #include <locale>
 #include <codecvt>
 #include <algorithm>
+#include <thread>
 #include "date.h"
 #include "Util.h"
 
@@ -237,6 +243,197 @@ std::string Util::ToLeadingZeros(const int value, const int precision)
     return oss.str();
 }
 /*****************************************************************************/
+int Util::Exec(
+        std::string     CmdLine,    //Command Line
+        std::string     CmdRunDir,  //set to '.' for current directory
+        std::string&    ListStdOut, //Return List of StdOut
+        std::string&    ListStdErr, //Return List of StdErr
+        int32_t&        RetCode)    //Return Exit Code
+{
+#ifdef USE_WINDOWS_OS
+
+    int                  Success;
+    SECURITY_ATTRIBUTES  security_attributes;
+    HANDLE               stdout_rd = WIN_INVALID_HND_VALUE;
+    HANDLE               stdout_wr = WIN_INVALID_HND_VALUE;
+    HANDLE               stderr_rd = WIN_INVALID_HND_VALUE;
+    HANDLE               stderr_wr = WIN_INVALID_HND_VALUE;
+    PROCESS_INFORMATION  process_info;
+    STARTUPINFO          startup_info;
+    std::thread               stdout_thread;
+    std::thread               stderr_thread;
+
+    security_attributes.nLength              = sizeof(SECURITY_ATTRIBUTES);
+    security_attributes.bInheritHandle       = TRUE;
+    security_attributes.lpSecurityDescriptor = nullptr;
+
+    if (!CreatePipe(&stdout_rd, &stdout_wr, &security_attributes, 0) ||
+            !SetHandleInformation(stdout_rd, HANDLE_FLAG_INHERIT, 0))
+    {
+        return -1;
+    }
+
+    if (!CreatePipe(&stderr_rd, &stderr_wr, &security_attributes, 0) ||
+            !SetHandleInformation(stderr_rd, HANDLE_FLAG_INHERIT, 0))
+    {
+        if (stdout_rd != WIN_INVALID_HND_VALUE) CloseHandle(stdout_rd);
+        if (stdout_wr != WIN_INVALID_HND_VALUE) CloseHandle(stdout_wr);
+        return -2;
+    }
+
+    ZeroMemory(&process_info, sizeof(PROCESS_INFORMATION));
+    ZeroMemory(&startup_info, sizeof(STARTUPINFO));
+
+    startup_info.cb         = sizeof(STARTUPINFO);
+    startup_info.hStdInput  = nullptr;
+    startup_info.hStdOutput = stdout_wr;
+    startup_info.hStdError  = stderr_wr;
+
+    if(stdout_rd || stderr_rd)
+    {
+        startup_info.dwFlags |= STARTF_USESTDHANDLES;
+    }
+
+    // Make a copy because CreateProcess needs to modify string buffer
+    char      CmdLineStr[MAX_PATH];
+    strncpy(CmdLineStr, CmdLine.c_str(), MAX_PATH);
+    CmdLineStr[MAX_PATH-1] = 0;
+
+    std::wstring WCmdLineStr = Util::ToWString(CmdLineStr);
+    std::wstring WRunDirStr = Util::ToWString(CmdRunDir);
+
+    wchar_t Wbuf[2048];
+    WCmdLineStr.copy(Wbuf, WCmdLineStr.size());
+
+    wchar_t WRunDirBuf[2048];
+    WRunDirStr.copy(WRunDirBuf, WRunDirStr.size());
+
+    Success = CreateProcess(
+        nullptr,
+        Wbuf,
+        nullptr,
+        nullptr,
+        TRUE,
+        CREATE_NO_WINDOW ,
+        nullptr,
+        WRunDirBuf,
+        &startup_info,
+        &process_info
+    );
+    CloseHandle(stdout_wr);
+    CloseHandle(stderr_wr);
+
+    if(!Success)
+    {
+        CloseHandle(process_info.hProcess);
+        CloseHandle(process_info.hThread);
+        CloseHandle(stdout_rd);
+        CloseHandle(stderr_rd);
+        return -4;
+    }
+    else
+    {
+        CloseHandle(process_info.hThread);
+    }
+
+    if(stdout_rd)
+    {
+        stdout_thread = std::thread([&]()
+        {
+            DWORD  n;
+            const size_t bufsize = 1000;
+            char         buffer [bufsize];
+            for(;;) {
+                n = 0;
+                int Success = ReadFile(
+                    stdout_rd,
+                    buffer,
+                    static_cast<DWORD>(bufsize),
+                    &n,
+                    nullptr
+                );
+//                printf("STDERR: Success:%d n:%d\n", Success, static_cast<int>(n));
+                if(!Success || n == 0)
+                    break;
+                std::string s(buffer, n);
+//                printf("STDOUT:(%s)\n", s.c_str());
+                ListStdOut += s;
+            }
+//            printf("STDOUT:BREAK!\n");
+        });
+    }
+
+    if(stderr_rd)
+    {
+        stderr_thread=std::thread([&]()
+        {
+            DWORD        n;
+            const size_t bufsize = 1000;
+            char         buffer [bufsize];
+            for(;;) {
+                n = 0;
+                int Success = ReadFile(
+                    stderr_rd,
+                    buffer,
+                    static_cast<DWORD>(bufsize),
+                    &n,
+                    nullptr
+                );
+//                printf("STDERR: Success:%d n:%d\n", Success, static_cast<int>(n));
+                if(!Success || n == 0)
+                    break;
+                std::string s(buffer, n);
+//                printf("STDERR:(%s)\n", s.c_str());
+                ListStdErr += s;
+            }
+//            printf("STDERR:BREAK!\n");
+        });
+    }
+
+    WaitForSingleObject(process_info.hProcess,    INFINITE);
+    if(!GetExitCodeProcess(process_info.hProcess, reinterpret_cast<DWORD*>(&RetCode)))
+    {
+        RetCode = -1;
+    }
+
+    CloseHandle(process_info.hProcess);
+
+    if(stdout_thread.joinable())
+    {
+        stdout_thread.join();
+    }
+
+    if(stderr_thread.joinable())
+    {
+        stderr_thread.join();
+    }
+
+    CloseHandle(stdout_rd);
+    CloseHandle(stderr_rd);
+
+    return 0;
+
+#else
+
+    std::array<char, 128> buffer;
+
+    std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
+    if (pipe)
+    {
+        while (!feof(pipe.get())) {
+            if (fgets(buffer.data(), 128, pipe.get()) != nullptr)
+                ListStdOut += buffer.data();
+        }
+    }
+    else
+    {
+        std::cout << "PIPE open failed!" << std::endl;
+    }
+
+    return 0
+#endif
+}
+/*****************************************************************************/
 /**
  * Portable wrapper for mkdir. Internally used by mkdir()
  * @param[in] path the full path of the directory to create.
@@ -332,6 +529,17 @@ std::vector<std::string> Util::Split(const std::string &theString, const std::st
                  ?  std::string::npos  :  end + delimiter.size());
     }
     return theStringVector;
+}
+/*****************************************************************************/
+std::string Util::EscapeChar(const std::string &str)
+{
+    std::string escaped = str;
+    ReplaceCharacter(escaped, "\\", "/");
+    ReplaceCharacter(escaped, "\r\n", "\\n");
+    ReplaceCharacter(escaped, "\n", "\\n");
+    ReplaceCharacter(escaped, "\t", "\\t");
+
+    return escaped;
 }
 /*****************************************************************************/
 std::string Util::Join(const std::vector<std::string> &tokens, const std::string &delimiter)
