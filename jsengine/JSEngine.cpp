@@ -66,7 +66,7 @@ static duk_ret_t GenericCallback(duk_context *ctx)
         }
         else if (duk_is_number(ctx, i))
         {
-            int value = duk_get_int(ctx, i);
+            double value = duk_get_number(ctx, i);
             args.push_back(Value(value));
         }
         else if (duk_is_object(ctx, i))
@@ -147,7 +147,7 @@ static duk_ret_t SystemPrint(duk_context *ctx)
     if (nargs == 1 && duk_is_buffer(ctx, 0))
     {
         duk_size_t sz_buf;
-        const char *buf = (const char *) duk_get_buffer(ctx, 0, &sz_buf);
+        const char *buf = static_cast<const char *>(duk_get_buffer(ctx, 0, &sz_buf));
         msg.assign(buf, sz_buf);
     }
     else
@@ -200,43 +200,6 @@ static duk_ret_t WriteToFile(duk_context *ctx)
     }
 
     return 0;
-}
-
-#ifdef _WIN32
-#define popen _popen
-#define pclose _pclose
-#endif
-
-std::string exec(const char* cmd)
-{
-    std::array<char, 128> buffer;
-    std::string result;
-    std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
-    if (pipe)
-    {
-        while (!feof(pipe.get())) {
-            if (fgets(buffer.data(), 128, pipe.get()) != nullptr)
-                result += buffer.data();
-        }
-    }
-    else
-    {
-        std::cout << "PIPE open failed!" << std::endl;
-    }
-    return result;
-}
-
-static duk_ret_t ExecuteCommand(duk_context *ctx)
-{
-    duk_idx_t nargs = duk_get_top(ctx);
-    std::string ret = "ERROR";
-    if ((nargs == 1) && duk_is_string(ctx, 0))
-    {
-        std::string command = duk_get_string(ctx, 0);
-        ret = exec(command.c_str());
-    }
-    duk_push_string(ctx, ret.c_str());
-    return 1;
 }
 
 static duk_ret_t DelayMs(duk_context *ctx)
@@ -306,10 +269,6 @@ void JSEngine::Initialize()
         // Register basic file write function
         duk_push_c_function(mCtx, WriteToFile, DUK_VARARGS);
         duk_put_global_string(mCtx, "writeToFile");
-
-        // Execute system command
-        duk_push_c_function(mCtx, ExecuteCommand, DUK_VARARGS);
-        duk_put_global_string(mCtx, "executeCommand");
 
         // OS delay in milliseconds
         duk_push_c_function(mCtx, DelayMs, DUK_VARARGS);
