@@ -243,13 +243,14 @@ std::string Util::ToLeadingZeros(const int value, const int precision)
     return oss.str();
 }
 /*****************************************************************************/
-int Util::Exec(
-        std::string     CmdLine,    //Command Line
-        std::string     CmdRunDir,  //set to '.' for current directory
+std::uint32_t Util::Exec(
+        std::string     exePath,    //Command Line
+        std::string     params,  //set to '.' for current directory
         std::string&    ListStdOut, //Return List of StdOut
         std::string&    ListStdErr, //Return List of StdErr
         int32_t&        RetCode)    //Return Exit Code
 {
+    std::uint32_t status = 0;
 #ifdef USE_WINDOWS_OS
 
     int                  Success;
@@ -270,7 +271,8 @@ int Util::Exec(
     if (!CreatePipe(&stdout_rd, &stdout_wr, &security_attributes, 0) ||
             !SetHandleInformation(stdout_rd, HANDLE_FLAG_INHERIT, 0))
     {
-        return -1;
+        status = GetLastError();
+        return status;
     }
 
     if (!CreatePipe(&stderr_rd, &stderr_wr, &security_attributes, 0) ||
@@ -278,7 +280,8 @@ int Util::Exec(
     {
         if (stdout_rd != WIN_INVALID_HND_VALUE) CloseHandle(stdout_rd);
         if (stdout_wr != WIN_INVALID_HND_VALUE) CloseHandle(stdout_wr);
-        return -2;
+        status = GetLastError();
+        return status;
     }
 
     ZeroMemory(&process_info, sizeof(PROCESS_INFORMATION));
@@ -294,29 +297,29 @@ int Util::Exec(
         startup_info.dwFlags |= STARTF_USESTDHANDLES;
     }
 
-    // Make a copy because CreateProcess needs to modify string buffer
-    char      CmdLineStr[MAX_PATH];
-    strncpy(CmdLineStr, CmdLine.c_str(), MAX_PATH);
-    CmdLineStr[MAX_PATH-1] = 0;
+    std::wstring FullPathToExe = L"\"" + Util::ToWString(exePath) +  L"\"";
+    FullPathToExe += L' ' + Util::ToWString(params);
 
-    std::wstring WCmdLineStr = Util::ToWString(CmdLineStr);
-    std::wstring WRunDirStr = Util::ToWString(CmdRunDir);
+    std::wstring sTempStr = L"";
 
-    wchar_t Wbuf[2048];
-    WCmdLineStr.copy(Wbuf, WCmdLineStr.size());
-
-    wchar_t WRunDirBuf[2048];
-    WRunDirStr.copy(WRunDirBuf, WRunDirStr.size());
+     /* CreateProcessW can modify Parameters thus we allocate needed memory */
+    wchar_t * pwszParam = new wchar_t[FullPathToExe.size() + 1];
+    if (pwszParam == nullptr)
+    {
+        return 1;
+    }
+    const wchar_t* pchrTemp = FullPathToExe.c_str();
+    wcscpy_s(pwszParam, FullPathToExe.size() + 1, pchrTemp);
 
     Success = CreateProcess(
         nullptr,
-        Wbuf,
+        pwszParam,
         nullptr,
         nullptr,
         TRUE,
-        CREATE_NO_WINDOW ,
+        CREATE_NO_WINDOW,
         nullptr,
-        WRunDirBuf,
+        nullptr,
         &startup_info,
         &process_info
     );
@@ -329,72 +332,76 @@ int Util::Exec(
         CloseHandle(process_info.hThread);
         CloseHandle(stdout_rd);
         CloseHandle(stderr_rd);
-        return -4;
+        status = GetLastError();
     }
     else
     {
         CloseHandle(process_info.hThread);
-    }
 
-    if(stdout_rd)
-    {
-        stdout_thread = std::thread([&]()
+        if(stdout_rd)
         {
-            DWORD  n;
-            const size_t bufsize = 1000;
-            char         buffer [bufsize];
-            for(;;) {
-                n = 0;
-                int Success = ReadFile(
-                    stdout_rd,
-                    buffer,
-                    static_cast<DWORD>(bufsize),
-                    &n,
-                    nullptr
-                );
-//                printf("STDERR: Success:%d n:%d\n", Success, static_cast<int>(n));
-                if(!Success || n == 0)
-                    break;
-                std::string s(buffer, n);
-//                printf("STDOUT:(%s)\n", s.c_str());
-                ListStdOut += s;
-            }
-//            printf("STDOUT:BREAK!\n");
-        });
-    }
+            stdout_thread = std::thread([&]()
+            {
+                DWORD  n;
+                const size_t bufsize = 1000;
+                char         buffer [bufsize];
+                for(;;) {
+                    n = 0;
+                    int Success = ReadFile(
+                        stdout_rd,
+                        buffer,
+                        static_cast<DWORD>(bufsize),
+                        &n,
+                        nullptr
+                    );
+    //                printf("STDERR: Success:%d n:%d\n", Success, static_cast<int>(n));
+                    if(!Success || n == 0)
+                        break;
+                    std::string s(buffer, n);
+    //                printf("STDOUT:(%s)\n", s.c_str());
+                    ListStdOut += s;
+                }
+    //            printf("STDOUT:BREAK!\n");
+            });
+        }
 
-    if(stderr_rd)
-    {
-        stderr_thread=std::thread([&]()
+        if(stderr_rd)
         {
-            DWORD        n;
-            const size_t bufsize = 1000;
-            char         buffer [bufsize];
-            for(;;) {
-                n = 0;
-                int Success = ReadFile(
-                    stderr_rd,
-                    buffer,
-                    static_cast<DWORD>(bufsize),
-                    &n,
-                    nullptr
-                );
-//                printf("STDERR: Success:%d n:%d\n", Success, static_cast<int>(n));
-                if(!Success || n == 0)
-                    break;
-                std::string s(buffer, n);
-//                printf("STDERR:(%s)\n", s.c_str());
-                ListStdErr += s;
-            }
-//            printf("STDERR:BREAK!\n");
-        });
+            stderr_thread=std::thread([&]()
+            {
+                DWORD        n;
+                const size_t bufsize = 1000;
+                char         buffer [bufsize];
+                for(;;) {
+                    n = 0;
+                    int Success = ReadFile(
+                        stderr_rd,
+                        buffer,
+                        static_cast<DWORD>(bufsize),
+                        &n,
+                        nullptr
+                    );
+    //                printf("STDERR: Success:%d n:%d\n", Success, static_cast<int>(n));
+                    if(!Success || n == 0)
+                        break;
+                    std::string s(buffer, n);
+    //                printf("STDERR:(%s)\n", s.c_str());
+                    ListStdErr += s;
+                }
+    //            printf("STDERR:BREAK!\n");
+            });
+        }
     }
 
-    WaitForSingleObject(process_info.hProcess,    INFINITE);
+    WaitForSingleObject(process_info.hProcess, INFINITE);
     if(!GetExitCodeProcess(process_info.hProcess, reinterpret_cast<DWORD*>(&RetCode)))
     {
-        RetCode = -1;
+         status = GetLastError();
     }
+
+    /* Free memory */
+    delete[]pwszParam;
+    pwszParam = nullptr;
 
     CloseHandle(process_info.hProcess);
 
@@ -408,10 +415,16 @@ int Util::Exec(
         stderr_thread.join();
     }
 
-    CloseHandle(stdout_rd);
-    CloseHandle(stderr_rd);
+    if (stdout_rd)
+    {
+        CloseHandle(stdout_rd);
+    }
+    if (stderr_rd)
+    {
+        CloseHandle(stderr_rd);
+    }
 
-    return 0;
+    return status;
 
 #else
 

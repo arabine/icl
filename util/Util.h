@@ -69,7 +69,7 @@ public:
     static std::string HexDump(const char *desc, const void *addr, int len);
     static std::string GetModifiedFileDateTime(const std::string &fileName);
     static std::string ToLeadingZeros(const int value, const int precision);
-    static int Exec(std::string CmdLine, std::string CmdRunDir, std::string& ListStdOut, std::string& ListStdErr, int32_t& RetCode);
+    static uint32_t Exec(std::string exePath, std::string params, std::string& ListStdOut, std::string& ListStdErr, int32_t& RetCode);
 
     template<typename T>
     static std::string ToString(const T& v)
