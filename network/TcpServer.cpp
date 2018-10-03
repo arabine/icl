@@ -56,7 +56,7 @@ bool TcpServer::Start(std::int32_t maxConnections, bool localHostOnly, std::uint
     // Create the thread the first time only
     if (!mInitialized)
     {
-        mThread = std::thread(TcpServer::EntryPoint, this);
+        mThread = std::thread(&TcpServer::Run, this);
         mInitialized = true;
     }
 
@@ -272,12 +272,6 @@ void TcpServer::Run()
         }
     }
     mMutex.unlock();
-}
-/*****************************************************************************/
-void TcpServer::EntryPoint(void *pthis)
-{
-    TcpServer *pt = static_cast<TcpServer *>(pthis);
-    pt->Run();
 }
 /*****************************************************************************/
 void TcpServer::IncommingConnection(bool isWebSocket)

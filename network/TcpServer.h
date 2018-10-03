@@ -30,10 +30,11 @@
 #include <vector>
 #include <mutex>
 #include <map>
+#include "TcpServerBase.h"
 #include "Observer.h"
 #include "ThreadQueue.h"
 #include "WebSocket.h"
-#include "TcpServerBase.h"
+
 
 namespace tcp
 {
@@ -124,7 +125,6 @@ private:
     int mReceiveFd;
     int mSendFd;
 
-    static void EntryPoint(void *pthis);
     void Run();
     void IncommingConnection(bool isWebSocket);
     void IncommingData(Conn &conn);
