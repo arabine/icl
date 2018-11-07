@@ -64,6 +64,7 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFU
 #include <algorithm>
 #include <thread>
 #include "date.h"
+#include "tz.h"
 #include "Util.h"
 
 // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
@@ -85,10 +86,11 @@ struct deletable_facet : Facet
  */
 std::string Util::CurrentDateTime(const std::string &format)
 {
-	auto time_point = std::chrono::system_clock::now();
-    std::string s = date::format(format, time_point);
+    std::stringstream ss;
+    auto time = std::time(nullptr);
+    ss << std::put_time(std::localtime(&time), format.c_str());
 
-    return s;
+    return ss.str();
 }
 /*****************************************************************************/
 std::string Util::ExecutablePath()

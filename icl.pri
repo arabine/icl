@@ -18,7 +18,8 @@ SOURCES += Log.cpp \
     Value.cpp \
     UniqueId.cpp \
     Console.cpp \
-    EventLoop.cpp
+    EventLoop.cpp \
+    tz.cpp
 
 # ------------------------------------------------------------------------------
 # I/O files
@@ -119,6 +120,7 @@ VPATH += $$ICL_DIR/protocol
 VPATH += $$ICL_DIR/json
 VPATH += $$ICL_DIR/io
 VPATH += $$ICL_DIR/db
+VPATH += $$ICL_DIR/date
 
 INCLUDEPATH += $$ICL_DIR/network
 INCLUDEPATH += $$ICL_DIR/util
@@ -129,5 +131,5 @@ INCLUDEPATH += $$ICL_DIR/protocol
 INCLUDEPATH += $$ICL_DIR/json
 INCLUDEPATH += $$ICL_DIR/io
 INCLUDEPATH += $$ICL_DIR/db
-
-
+INCLUDEPATH += $$ICL_DIR/date
+INCLUDEPATH += $$ICL_DIR
