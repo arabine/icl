@@ -39,13 +39,17 @@ HEADERS += TcpSocket.h \
     TcpServer.h \
     TcpClient.h \
     WebSocket.h \
-    TcpServerBase.h
+    TcpServerBase.h \
+    civetweb.h
 
 SOURCES += TcpSocket.cpp \
     TcpServer.cpp \
     TcpClient.cpp \
     WebSocket.cpp \
-    TcpServerBase.cpp
+    TcpServerBase.cpp \
+    civetweb.c
+
+DEFINES += ASIO_STANDALONE
 
 # ------------------------------------------------------------------------------
 # Protocol files
