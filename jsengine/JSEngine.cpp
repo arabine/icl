@@ -76,6 +76,11 @@ static duk_ret_t GenericCallback(duk_context *ctx)
             argVal.SetJsonString(true);
             args.push_back(argVal);
         }
+        else if (duk_is_boolean(ctx, i))
+        {
+            bool boolVal = duk_get_boolean(ctx, i);
+            args.push_back(Value(boolVal));
+        }
     }
 
     // Get the id associated to this function
