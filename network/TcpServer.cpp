@@ -377,11 +377,14 @@ void TcpServer::IncommingData(Conn &conn)
                 hasData = socket.DecodeWsData(conn);
             }
         }
+        else
+        {
+            // Transfer the received data to to connection paypload
+            socket.DeliverData(conn);
+        }
 
         if (hasData)
         {
-            // Send the received data
-            socket.DeliverData(conn);
             mEventHandler.ReadData(conn);
         }
     }
