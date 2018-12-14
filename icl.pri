@@ -18,8 +18,7 @@ SOURCES += Log.cpp \
     Value.cpp \
     UniqueId.cpp \
     Console.cpp \
-    EventLoop.cpp \
-    tz.cpp
+    EventLoop.cpp
 
 # ------------------------------------------------------------------------------
 # I/O files
@@ -39,24 +38,20 @@ HEADERS += TcpSocket.h \
     TcpServer.h \
     TcpClient.h \
     WebSocket.h \
-    TcpServerBase.h \
-    civetweb.h
+    TcpServerBase.h
 
 SOURCES += TcpSocket.cpp \
     TcpServer.cpp \
     TcpClient.cpp \
     WebSocket.cpp \
-    TcpServerBase.cpp \
-    civetweb.c
-
-DEFINES += ASIO_STANDALONE
+    TcpServerBase.cpp
 
 # ------------------------------------------------------------------------------
 # Protocol files
 # ------------------------------------------------------------------------------
-HEADERS += Http.h
+HEADERS += Http.h HttpFileServer.h
 
-SOURCES += Http.cpp
+SOURCES += Http.cpp HttpFileServer.cpp
 
 # ------------------------------------------------------------------------------
 # Database files
