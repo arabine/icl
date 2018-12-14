@@ -122,6 +122,17 @@ std::string Util::ExecutablePath()
     return (GetDirectoryPath(path));
 }
 /*****************************************************************************/
+std::string Util::Util::GetCurrentDirectory()
+{
+    std::string currentDir;
+    char cwd[4096];
+    if (getcwd(cwd, sizeof(cwd)) != nullptr)
+    {
+       currentDir.append(cwd);
+    }
+    return currentDir;
+}
+/*****************************************************************************/
 std::string Util::HomePath()
 {
     std::string homedir;
@@ -194,13 +205,13 @@ bool Util::FileExists(const std::string &fileName)
  * @param fileName
  * @return -1 means file not found
  */
-std::int64_t Util::FileSize(const std::string &fileName)
+std::uint64_t Util::FileSize(const std::string &fileName)
 {
-    std::int64_t size = -1;
+    std::uint64_t size = 0;
     struct stat st;
     if (::stat(fileName.c_str(), &st) == 0)
     {
-        size = st.st_size;
+        size = static_cast<std::uint64_t>(st.st_size);
     }
     return size;
 }
@@ -216,6 +227,13 @@ std::string Util::GetFileName(const std::string &path)
 {
     unsigned found = path.find_last_of("/\\");
     return path.substr(found+1);
+}
+/*****************************************************************************/
+std::string Util::GetFileExtension(const std::string &FileName)
+{
+    if(FileName.find_last_of(".") != std::string::npos)
+        return FileName.substr(FileName.find_last_of(".")+1);
+    return "";
 }
 /*****************************************************************************/
 std::string Util::GetDirectoryPath(const std::string &path)
@@ -432,7 +450,9 @@ std::uint32_t Util::Exec(
 
     std::array<char, 128> buffer;
 
-    std::shared_ptr<FILE> pipe(popen(cmd, "r"), pclose);
+    std::string cmd = exePath + " " + params;
+
+    std::shared_ptr<FILE> pipe(popen(cmd.c_str(), "r"), pclose);
     if (pipe)
     {
         while (!feof(pipe.get())) {
@@ -440,12 +460,8 @@ std::uint32_t Util::Exec(
                 ListStdOut += buffer.data();
         }
     }
-    else
-    {
-        std::cout << "PIPE open failed!" << std::endl;
-    }
 
-    return 0
+    return 0;
 #endif
 }
 /*****************************************************************************/

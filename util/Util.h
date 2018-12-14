@@ -43,6 +43,7 @@ public:
 
     static std::string CurrentDateTime(const std::string &format);
     static std::string ExecutablePath();
+    static std::string GetCurrentDirectory();
     static std::string HomePath();
     static bool FolderExists(const std::string &foldername);
     static bool FileExists(const std::string &fileName);
@@ -54,8 +55,9 @@ public:
     static std::int32_t GetCurrentMemoryUsage();
     static std::int32_t GetMaximumMemoryUsage();
     static std::string GetFileName(const std::string &path);
+    static std::string GetFileExtension(const std::string& FileName);
     static std::string GetDirectoryPath(const std::string &path);
-    static std::int64_t FileSize(const std::string &fileName);
+    static std::uint64_t FileSize(const std::string &fileName);
     static std::string ToUpper(const std::string &input);
     static inline bool EndsWith(std::string const & value, std::string const & ending)
     {
