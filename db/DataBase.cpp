@@ -35,7 +35,7 @@ static const std::string cDbFileName = "tcds.sqlite";
 
 /*****************************************************************************/
 DataBase::DataBase()
-    : mDb(NULL)
+    : mDb(nullptr)
 {
 
 }
@@ -47,10 +47,10 @@ DataBase::~DataBase()
 /*****************************************************************************/
 void DataBase::Close()
 {
-    if (mDb != NULL)
+    if (mDb != nullptr)
     {
         sqlite3_close(mDb);
-        mDb = NULL;
+        mDb = nullptr;
     }
 }
 /*****************************************************************************/
