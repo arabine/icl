@@ -46,6 +46,77 @@ std::string mime_type(const std::string &ext)
     return "application/text";
 }
 
+bool BasicFileHandler::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
+{
+ //   std::string request = "GET /index.asp?param1=hello&param2=128 HTTP/1.1";
+
+    // separate the 3 main parts
+    std::istringstream iss(conn.payload);
+
+    if(!(iss >> request.method >> request.query >> request.protocol))
+    {
+        TLogError("HTTP parse error");
+        return false;
+    }
+
+    // reset the std::istringstream with the query string
+/*
+    iss.clear();
+    iss.str(query);
+
+    std::string url;
+
+    if(!std::getline(iss, url, '?')) // remove the URL part
+    {
+        std::cout << "ERROR: parsing request url\n";
+        return 1;
+    }
+
+    // store query key/value pairs in a map
+    std::string keyval, key, val;
+
+    while(std::getline(iss, keyval, '&')) // split each term
+    {
+        std::istringstream iss(keyval);
+
+        // split key/value pairs
+        if(std::getline(std::getline(iss, key, '='), val))
+            params[key] = val;
+    }
+    */
+
+    std::string line;
+    std::string::size_type index;
+    iss.clear();
+    iss.str(conn.payload);
+
+    while (std::getline(iss, line) && line != "\r")
+    {
+        line.pop_back();
+        index = line.find(':', 0);
+        if(index != std::string::npos)
+        {
+            request.headers.insert(std::make_pair(line.substr(0, index), line.substr(index + 1)));
+        }
+    }
+
+    uint32_t body_start = iss.tellg();
+    if (body_start < conn.payload.length())
+    {
+        request.body = conn.payload.substr(body_start);
+    }
+    std::cout << request.body << std::endl;
+/*
+    for(auto& kv: m) {
+        std::cout << "KEY: `" << kv.first << "`, VALUE: `" << kv.second << '`' << std::endl;
+    }
+
+    std::cout << "protocol: " << header.protocol << '\n';
+    std::cout << "method  : " << header.method << '\n';
+    std::cout << "query   : " << header.query << '\n';
+*/
+    return true;
+}
 
 
 void BasicFileHandler::ReadData(const tcp::Conn &conn)
@@ -60,6 +131,9 @@ void BasicFileHandler::ReadData(const tcp::Conn &conn)
         WsReadData(conn);
         return;
     }
+
+    HttpRequest header;
+    ParseHeader(conn, header);
 
     std::string resource = Match(conn.payload, "GET (.*) HTTP");
 
@@ -86,8 +160,7 @@ void BasicFileHandler::ReadData(const tcp::Conn &conn)
 
             ss << "HTTP/1.1 200 OK\r\n";
             ss << "Content-type: " << std::string(mime) << "\r\n";
-
-
+         //   ss << "Access-Control-Allow-Origin: *\r\n";
 
 //            tcp::TcpSocket::SendToSocket(ss.str(), conn.peer);
 
@@ -140,20 +213,20 @@ void BasicFileHandler::ReadData(const tcp::Conn &conn)
         }
         else
         {
-            Send404(conn, resource);
+            Send404(conn, header);
         }
     }
     else
     {
-        // It is a path, handle it (FIXME)
-        ReadDataPath(conn, resource);
+        // It is a path, handle it
+        ReadDataPath(conn, header);
     }
 }
 
-void BasicFileHandler::Send404(const tcp::Conn &conn, const std::string &resource)
+void BasicFileHandler::Send404(const tcp::Conn &conn, const HttpRequest &header)
 {
     std::stringstream ss;
-    std::string html = "<html><head><title>Not Found: " + resource + "</title></head><body>404</body><html>";
+    std::string html = "<html><head><title>Not Found: " + header.query + "</title></head><body>404</body><html>";
 
     ss << "HTTP/1.1 404 Not Found\r\n";
     ss << "Content-type: text/html\r\n";
@@ -162,7 +235,7 @@ void BasicFileHandler::Send404(const tcp::Conn &conn, const std::string &resourc
 
     tcp::TcpSocket::SendToSocket(ss.str(), conn.peer);
 
-    TLogWarning("Resource not found: " + resource);
+    TLogWarning("Resource not found: " + header.query);
 }
 
 void BasicFileHandler::ClientClosed(const tcp::Conn &conn)
@@ -181,10 +254,10 @@ void BasicFileHandler::WsReadData(const tcp::Conn &conn)
     // do nothing in this default implementation
 }
 
-void BasicFileHandler::ReadDataPath(const tcp::Conn &conn, const std::string &resource)
+void BasicFileHandler::ReadDataPath(const tcp::Conn &conn, const HttpRequest &header)
 {
     (void) conn;
-    Send404(conn, resource);
+    Send404(conn, header);
 }
 
 std::string BasicFileHandler::Match(const std::string &msg, const std::string &patternString)
