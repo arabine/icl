@@ -32,15 +32,17 @@ public:
     virtual void ServerTerminated(tcp::TcpServer::IEvent::CloseType type);
 
     virtual void WsReadData(const tcp::Conn &conn);
-    virtual void ReadDataPath(const tcp::Conn &conn, const HttpRequest &header);
+    virtual bool ReadDataPath(const tcp::Conn &conn, const HttpRequest &header);
 
     std::string Match(const std::string &msg, const std::string &patternString);
     void Send404(const tcp::Conn &conn, const HttpRequest &header);
 
+    void SendHttpJson(const tcp::Conn &conn, const std::string &data);
 private:
     std::string mRootDir;
 
     bool ParseHeader(const tcp::Conn &conn, HttpRequest &request);
+    bool GetFile(const tcp::Conn &conn, HttpRequest &request);
 };
 
 #endif

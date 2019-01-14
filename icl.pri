@@ -58,22 +58,23 @@ SOURCES += Http.cpp HttpFileServer.cpp
 # ------------------------------------------------------------------------------
 
 icl_database {
-    HEADERS += CouchDb.h \
-                DataBase.h
+    HEADERS += DataBase.h
 
-    SOURCES += CouchDb.cpp \
-                DataBase.cpp \
-                sqlite3.c
+    SOURCES += DataBase.cpp sqlite3.c
+}
+
+icl_couchdb {
+    HEADERS += CouchDb.h
+
+    SOURCES += CouchDb.cpp
 }
 
 # ------------------------------------------------------------------------------
 # Security files
 # ------------------------------------------------------------------------------
-HEADERS += Base64.h \
-    Sha1.h
+HEADERS += Base64.h Sha1.h Sha256.h
 
-SOURCES += Base64.cpp \
-    Sha1.cpp
+SOURCES += Base64.cpp Sha1.cpp Sha256.cpp
 
 # ------------------------------------------------------------------------------
 # ZIP files

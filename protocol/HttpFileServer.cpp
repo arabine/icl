@@ -118,24 +118,10 @@ bool BasicFileHandler::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
     return true;
 }
 
-
-void BasicFileHandler::ReadData(const tcp::Conn &conn)
+bool BasicFileHandler::GetFile(const tcp::Conn &conn, HttpRequest &request)
 {
-    if (conn.payload.size() == 0)
-    {
-        return;
-    }
-
-    if (conn.peer.isWebSocket)
-    {
-        WsReadData(conn);
-        return;
-    }
-
-    HttpRequest header;
-    ParseHeader(conn, header);
-
-    std::string resource = Match(conn.payload, "GET (.*) HTTP");
+    bool success = false;
+    std::string resource = request.query;
 
   //  std::cout << "Get file: " << resource << std::endl;
     if (resource == "/")
@@ -145,7 +131,7 @@ void BasicFileHandler::ReadData(const tcp::Conn &conn)
 
     std::string ext = Util::GetFileExtension(resource);
 
-    if (ext.size())
+    if (ext.size() && (request.method == "GET"))
     {
         // it is a file
         std::string fullFilepath = mRootDir + resource;
@@ -192,6 +178,7 @@ void BasicFileHandler::ReadData(const tcp::Conn &conn)
                 tcp::TcpSocket::SendToSocket(ss.str() + std::string(output, compressed_size), conn.peer);
             }
             delete[] output;
+            success = true;
 
 /*
             std::ifstream fin(fullFilepath, std::ifstream::binary);
@@ -211,15 +198,49 @@ void BasicFileHandler::ReadData(const tcp::Conn &conn)
             }
 */
         }
-        else
-        {
-            Send404(conn, header);
-        }
+
     }
-    else
+    return success;
+}
+
+void BasicFileHandler::SendHttpJson(const tcp::Conn &conn, const std::string &data)
+{
+    std::stringstream ss;
+
+    ss << "HTTP/1.1 200 OK\r\n";
+    ss << "Content-type: application/json\r\n";
+    ss << "Content-length: " << data.size() << "\r\n\r\n";
+    ss << data;
+
+    tcp::TcpSocket::SendToSocket(ss.str(), conn.peer);
+}
+
+
+void BasicFileHandler::ReadData(const tcp::Conn &conn)
+{
+    if (conn.payload.size() == 0)
     {
-        // It is a path, handle it
-        ReadDataPath(conn, header);
+        return;
+    }
+
+    if (conn.peer.isWebSocket)
+    {
+        WsReadData(conn);
+        return;
+    }
+
+    HttpRequest request;
+    ParseHeader(conn, request);
+
+    // First, try REST API
+    if (ReadDataPath(conn, request))
+    {
+        // Else, serve files
+        if (!GetFile(conn, request))
+        {
+            // Found nothing, send error
+            Send404(conn, request);
+        }
     }
 }
 
@@ -254,10 +275,11 @@ void BasicFileHandler::WsReadData(const tcp::Conn &conn)
     // do nothing in this default implementation
 }
 
-void BasicFileHandler::ReadDataPath(const tcp::Conn &conn, const HttpRequest &header)
+bool BasicFileHandler::ReadDataPath(const tcp::Conn &conn, const HttpRequest &request)
 {
     (void) conn;
-    Send404(conn, header);
+    (void) request;
+    return true;
 }
 
 std::string BasicFileHandler::Match(const std::string &msg, const std::string &patternString)

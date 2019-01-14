@@ -65,10 +65,10 @@ bool DataBase::Open(const std::string &fileName)
     return valid;
 }
 /*****************************************************************************/
-std::vector<std::vector<Value> > DataBase::Query(const std::string &query)
+std::string DataBase::Query(const std::string &query, std::vector<std::vector<Value> > &results)
 {
     sqlite3_stmt *statement;
-    std::vector<std::vector<Value> > results;
+    std::string error;
 
     if (sqlite3_prepare_v2(mDb, query.c_str(), -1, &statement, 0) == SQLITE_OK)
     {
@@ -112,13 +112,13 @@ std::vector<std::vector<Value> > DataBase::Query(const std::string &query)
         }
         sqlite3_finalize(statement);
     }
-    std::string error = sqlite3_errmsg(mDb);
-    if (error != "not an error")
+    std::string errmsg = sqlite3_errmsg(mDb);
+    if (errmsg != "not an error")
     {
-        std::cout << query << " " << error << std::endl;
+        error = query + " " + errmsg;
     }
 
-    return results;
+    return error;
 }
 
 

@@ -40,7 +40,7 @@ public:
     // Local SQLite Database Helpers
     bool Open(const std::string &fileName);
     void Close();
-    std::vector<std::vector<Value> > Query(const std::string &query);
+    std::string Query(const std::string &query, std::vector<std::vector<Value> > &results);
 
 private:
     sqlite3 *mDb;
