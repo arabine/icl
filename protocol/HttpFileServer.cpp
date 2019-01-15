@@ -105,7 +105,7 @@ bool BasicFileHandler::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
     {
         request.body = conn.payload.substr(body_start);
     }
-    std::cout << request.body << std::endl;
+   // std::cout << request.body << std::endl;
 /*
     for(auto& kv: m) {
         std::cout << "KEY: `" << kv.first << "`, VALUE: `" << kv.second << '`' << std::endl;
