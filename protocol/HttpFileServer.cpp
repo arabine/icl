@@ -41,7 +41,7 @@ std::string mime_type(const std::string &ext)
     if(ext == "svg")  return "image/svg+xml";
     if(ext == "svgz") return "image/svg+xml";
     if(ext == "woff2") return "font/woff2";
-
+    if(ext == "pdf")  return "application/pdf";
 
     return "application/text";
 }
@@ -146,6 +146,12 @@ bool BasicFileHandler::GetFile(const tcp::Conn &conn, HttpRequest &request)
 
             ss << "HTTP/1.1 200 OK\r\n";
             ss << "Content-type: " << std::string(mime) << "\r\n";
+
+            if (ext == "pdf")
+            {
+                ss << "Content-Disposition: inline; filename=\"" <<  Util::GetFileName(fullFilepath) + "\"" + "\r\n";
+            }
+
          //   ss << "Access-Control-Allow-Origin: *\r\n";
 
 //            tcp::TcpSocket::SendToSocket(ss.str(), conn.peer);
