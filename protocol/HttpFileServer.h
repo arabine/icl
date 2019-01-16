@@ -20,11 +20,11 @@ struct HttpRequest
 };
 
 
-class BasicFileHandler : public tcp::TcpServer::IEvent
+class HttpFileServer : public tcp::TcpServer::IEvent
 {
 
 public:
-    BasicFileHandler(const std::string &rootDir);
+    HttpFileServer(const std::string &rootDir);
 
     virtual void NewConnection(const tcp::Conn &conn);
     virtual void ReadData(const tcp::Conn &conn);
@@ -38,8 +38,11 @@ public:
     void Send404(const tcp::Conn &conn, const HttpRequest &header);
 
     void SendHttpJson(const tcp::Conn &conn, const std::string &data);
+    std::string GenerateJWT(int32_t level);
+
 private:
     std::string mRootDir;
+    std::string mSessionSecret;
 
     bool ParseHeader(const tcp::Conn &conn, HttpRequest &request);
     bool GetFile(const tcp::Conn &conn, HttpRequest &request);

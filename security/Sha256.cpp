@@ -30,6 +30,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+
+/* MBEDTLS_ERR_SHA256_HW_ACCEL_FAILED is deprecated and should not be used. */
+#define MBEDTLS_ERR_SHA256_HW_ACCEL_FAILED                -0x0037  /**< SHA-256 hardware accelerator failed */
+#define MBEDTLS_ERR_SHA256_BAD_INPUT_DATA                 -0x0074  /**< SHA-256 input data was malformed. */
+
+
+
+
 #define mbedtls_printf printf
 #define mbedtls_calloc    calloc
 #define mbedtls_free       free
@@ -46,7 +55,6 @@ void mbedtls_platform_zeroize( void *buf, size_t len )
     memset(buf, 0, len);
 }
 
-#if !defined(MBEDTLS_SHA256_ALT)
 
 /*
  * 32-bit integer manipulation macros (big endian)
@@ -136,15 +144,7 @@ int mbedtls_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 )
     return( 0 );
 }
 
-#if !defined(MBEDTLS_DEPRECATED_REMOVED)
-void mbedtls_sha256_starts( mbedtls_sha256_context *ctx,
-                            int is224 )
-{
-    mbedtls_sha256_starts_ret( ctx, is224 );
-}
-#endif
 
-#if !defined(MBEDTLS_SHA256_PROCESS_ALT)
 static const uint32_t K[] =
 {
     0x428A2F98, 0x71374491, 0xB5C0FBCF, 0xE9B5DBA5,
@@ -189,6 +189,95 @@ static const uint32_t K[] =
     temp2 = S2(a) + F0(a,b,c);                  \
     d += temp1; h = temp1 + temp2;              \
 }
+
+
+
+/**
+ * \brief          This function initializes a SHA-256 context.
+ *
+ * \param ctx      The SHA-256 context to initialize. This must not be \c NULL.
+ */
+void mbedtls_sha256_init( mbedtls_sha256_context *ctx );
+
+/**
+ * \brief          This function clears a SHA-256 context.
+ *
+ * \param ctx      The SHA-256 context to clear. This may be \c NULL, in which
+ *                 case this function returns immediately. If it is not \c NULL,
+ *                 it must point to an initialized SHA-256 context.
+ */
+void mbedtls_sha256_free( mbedtls_sha256_context *ctx );
+
+/**
+ * \brief          This function clones the state of a SHA-256 context.
+ *
+ * \param dst      The destination context. This must be initialized.
+ * \param src      The context to clone. This must be initialized.
+ */
+void mbedtls_sha256_clone( mbedtls_sha256_context *dst,
+                           const mbedtls_sha256_context *src );
+
+/**
+ * \brief          This function starts a SHA-224 or SHA-256 checksum
+ *                 calculation.
+ *
+ * \param ctx      The context to use. This must be initialized.
+ * \param is224    This determines which function to use. This must be
+ *                 either \c 0 for SHA-256, or \c 1 for SHA-224.
+ *
+ * \return         \c 0 on success.
+ * \return         A negative error code on failure.
+ */
+int mbedtls_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 );
+
+/**
+ * \brief          This function feeds an input buffer into an ongoing
+ *                 SHA-256 checksum calculation.
+ *
+ * \param ctx      The SHA-256 context. This must be initialized
+ *                 and have a hash operation started.
+ * \param input    The buffer holding the data. This must be a readable
+ *                 buffer of length \p ilen Bytes.
+ * \param ilen     The length of the input data in Bytes.
+ *
+ * \return         \c 0 on success.
+ * \return         A negative error code on failure.
+ */
+int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx,
+                               const unsigned char *input,
+                               size_t ilen );
+
+/**
+ * \brief          This function finishes the SHA-256 operation, and writes
+ *                 the result to the output buffer.
+ *
+ * \param ctx      The SHA-256 context. This must be initialized
+ *                 and have a hash operation started.
+ * \param output   The SHA-224 or SHA-256 checksum result.
+ *                 This must be a writable buffer of length \c 32 Bytes.
+ *
+ * \return         \c 0 on success.
+ * \return         A negative error code on failure.
+ */
+int mbedtls_sha256_finish_ret( mbedtls_sha256_context *ctx,
+                               unsigned char output[32] );
+
+/**
+ * \brief          This function processes a single data block within
+ *                 the ongoing SHA-256 computation. This function is for
+ *                 internal use only.
+ *
+ * \param ctx      The SHA-256 context. This must be initialized.
+ * \param data     The buffer holding one block of data. This must
+ *                 be a readable buffer of length \c 64 Bytes.
+ *
+ * \return         \c 0 on success.
+ * \return         A negative error code on failure.
+ */
+int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx,
+                                     const unsigned char data[64] );
+
+
 
 int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx,
                                 const unsigned char data[64] )
@@ -251,14 +340,6 @@ int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx,
     return( 0 );
 }
 
-#if !defined(MBEDTLS_DEPRECATED_REMOVED)
-void mbedtls_sha256_process( mbedtls_sha256_context *ctx,
-                             const unsigned char data[64] )
-{
-    mbedtls_internal_sha256_process( ctx, data );
-}
-#endif
-#endif /* !MBEDTLS_SHA256_PROCESS_ALT */
 
 /*
  * SHA-256 process buffer
@@ -313,14 +394,6 @@ int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx,
     return( 0 );
 }
 
-#if !defined(MBEDTLS_DEPRECATED_REMOVED)
-void mbedtls_sha256_update( mbedtls_sha256_context *ctx,
-                            const unsigned char *input,
-                            size_t ilen )
-{
-    mbedtls_sha256_update_ret( ctx, input, ilen );
-}
-#endif
 
 /*
  * SHA-256 final digest
@@ -388,15 +461,6 @@ int mbedtls_sha256_finish_ret( mbedtls_sha256_context *ctx,
     return( 0 );
 }
 
-#if !defined(MBEDTLS_DEPRECATED_REMOVED)
-void mbedtls_sha256_finish( mbedtls_sha256_context *ctx,
-                            unsigned char output[32] )
-{
-    mbedtls_sha256_finish_ret( ctx, output );
-}
-#endif
-
-#endif /* !MBEDTLS_SHA256_ALT */
 
 /*
  * output = SHA-256( input buffer )
@@ -430,149 +494,70 @@ exit:
     return( ret );
 }
 
-#if !defined(MBEDTLS_DEPRECATED_REMOVED)
-void mbedtls_sha256( const unsigned char *input,
-                     size_t ilen,
-                     unsigned char output[32],
-                     int is224 )
+bool Sha256::Update(const std::string &s)
 {
-    mbedtls_sha256_ret( input, ilen, output, is224 );
+    int ret = mbedtls_sha256_update_ret( &mCtx, reinterpret_cast<const unsigned char*>(s.data()), s.size());
+    return (ret == 0);
 }
-#endif
 
-#if defined(MBEDTLS_SELF_TEST)
-/*
- * FIPS-180-2 test vectors
- */
-static const unsigned char sha256_test_buf[3][57] =
+bool Sha256::Final(std::string &hmac)
 {
-    { "abc" },
-    { "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq" },
-    { "" }
-};
-
-static const size_t sha256_test_buflen[3] =
-{
-    3, 56, 1000
-};
-
-static const unsigned char sha256_test_sum[6][32] =
-{
-    /*
-     * SHA-224 test vectors
-     */
-    { 0x23, 0x09, 0x7D, 0x22, 0x34, 0x05, 0xD8, 0x22,
-      0x86, 0x42, 0xA4, 0x77, 0xBD, 0xA2, 0x55, 0xB3,
-      0x2A, 0xAD, 0xBC, 0xE4, 0xBD, 0xA0, 0xB3, 0xF7,
-      0xE3, 0x6C, 0x9D, 0xA7 },
-    { 0x75, 0x38, 0x8B, 0x16, 0x51, 0x27, 0x76, 0xCC,
-      0x5D, 0xBA, 0x5D, 0xA1, 0xFD, 0x89, 0x01, 0x50,
-      0xB0, 0xC6, 0x45, 0x5C, 0xB4, 0xF5, 0x8B, 0x19,
-      0x52, 0x52, 0x25, 0x25 },
-    { 0x20, 0x79, 0x46, 0x55, 0x98, 0x0C, 0x91, 0xD8,
-      0xBB, 0xB4, 0xC1, 0xEA, 0x97, 0x61, 0x8A, 0x4B,
-      0xF0, 0x3F, 0x42, 0x58, 0x19, 0x48, 0xB2, 0xEE,
-      0x4E, 0xE7, 0xAD, 0x67 },
-
-    /*
-     * SHA-256 test vectors
-     */
-    { 0xBA, 0x78, 0x16, 0xBF, 0x8F, 0x01, 0xCF, 0xEA,
-      0x41, 0x41, 0x40, 0xDE, 0x5D, 0xAE, 0x22, 0x23,
-      0xB0, 0x03, 0x61, 0xA3, 0x96, 0x17, 0x7A, 0x9C,
-      0xB4, 0x10, 0xFF, 0x61, 0xF2, 0x00, 0x15, 0xAD },
-    { 0x24, 0x8D, 0x6A, 0x61, 0xD2, 0x06, 0x38, 0xB8,
-      0xE5, 0xC0, 0x26, 0x93, 0x0C, 0x3E, 0x60, 0x39,
-      0xA3, 0x3C, 0xE4, 0x59, 0x64, 0xFF, 0x21, 0x67,
-      0xF6, 0xEC, 0xED, 0xD4, 0x19, 0xDB, 0x06, 0xC1 },
-    { 0xCD, 0xC7, 0x6E, 0x5C, 0x99, 0x14, 0xFB, 0x92,
-      0x81, 0xA1, 0xC7, 0xE2, 0x84, 0xD7, 0x3E, 0x67,
-      0xF1, 0x80, 0x9A, 0x48, 0xA4, 0x97, 0x20, 0x0E,
-      0x04, 0x6D, 0x39, 0xCC, 0xC7, 0x11, 0x2C, 0xD0 }
-};
-
-/*
- * Checkup routine
- */
-int mbedtls_sha256_self_test( int verbose )
-{
-    int i, j, k, buflen, ret = 0;
-    unsigned char *buf;
     unsigned char sha256sum[32];
-    mbedtls_sha256_context ctx;
+    int ret = mbedtls_sha256_finish_ret( &mCtx, sha256sum );
 
-    buf = mbedtls_calloc( 1024, sizeof(unsigned char) );
-    if( nullptr == buf )
-    {
-        if( verbose != 0 )
-            mbedtls_printf( "Buffer allocation failed\n" );
-
-        return( 1 );
-    }
-
-    mbedtls_sha256_init( &ctx );
-
-    for( i = 0; i < 6; i++ )
-    {
-        j = i % 3;
-        k = i < 3;
-
-        if( verbose != 0 )
-            mbedtls_printf( "  SHA-%d test #%d: ", 256 - k * 32, j + 1 );
-
-        if( ( ret = mbedtls_sha256_starts_ret( &ctx, k ) ) != 0 )
-            goto fail;
-
-        if( j == 2 )
-        {
-            memset( buf, 'a', buflen = 1000 );
-
-            for( j = 0; j < 1000; j++ )
-            {
-                ret = mbedtls_sha256_update_ret( &ctx, buf, buflen );
-                if( ret != 0 )
-                    goto fail;
-            }
-
-        }
-        else
-        {
-            ret = mbedtls_sha256_update_ret( &ctx, sha256_test_buf[j],
-                                             sha256_test_buflen[j] );
-            if( ret != 0 )
-                 goto fail;
-        }
-
-        if( ( ret = mbedtls_sha256_finish_ret( &ctx, sha256sum ) ) != 0 )
-            goto fail;
-
-
-        if( memcmp( sha256sum, sha256_test_sum[i], 32 - k * 4 ) != 0 )
-        {
-            ret = 1;
-            goto fail;
-        }
-
-        if( verbose != 0 )
-            mbedtls_printf( "passed\n" );
-    }
-
-    if( verbose != 0 )
-        mbedtls_printf( "\n" );
-
-    goto exit;
-
-fail:
-    if( verbose != 0 )
-        mbedtls_printf( "failed\n" );
-
-exit:
-    mbedtls_sha256_free( &ctx );
-    mbedtls_free( buf );
-
-    return( ret );
+    hmac = std::string(reinterpret_cast<const char*>(sha256sum), 32);
+    return (ret == 0);
 }
 
-#endif /* MBEDTLS_SELF_TEST */
+Sha256::Sha256()
+{
+     mbedtls_sha256_init( &mCtx );
+     mbedtls_sha256_starts_ret(&mCtx, 0);
+}
 
+Sha256::~Sha256()
+{
+    mbedtls_sha256_free( &mCtx );
+}
 
+std::string hmac_compute(const std::string &key, const std::string &message)
+{
+    static const uint32_t block_size = 64;
+    std::string copy_key = key;
+    unsigned char ipad[block_size];
+    unsigned char opad[block_size];
+
+    memset( ipad, 0x36, block_size );
+    memset( opad, 0x5C, block_size );
+
+    if (key.size() > block_size)
+    {
+        Sha256 sha;
+        sha.Update(key);
+        sha.Final(copy_key);
+    }
+
+    for(uint32_t i = 0; i < copy_key.size(); i++ )
+    {
+        ipad[i] = static_cast<unsigned char>( ipad[i] ^ copy_key[i] );
+        opad[i] = static_cast<unsigned char>( opad[i] ^ copy_key[i] );
+    }
+
+    std::string hmac;
+    std::string first_digest;
+
+    {
+        Sha256 sha;
+        sha.Update(std::string(reinterpret_cast<char*>(ipad), block_size));
+        sha.Update(message);
+        sha.Final(first_digest);
+    }
+
+    Sha256 sha;
+    sha.Update(std::string(reinterpret_cast<char*>(opad), block_size));
+    sha.Update(first_digest);
+    sha.Final(hmac);
+
+    // return hash(opad || hash(ipad || message)) // Where || is concatenation
+    return hmac;
+}

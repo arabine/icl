@@ -29,12 +29,7 @@
 
 #include <stddef.h>
 #include <cstdint>
-
-/* MBEDTLS_ERR_SHA256_HW_ACCEL_FAILED is deprecated and should not be used. */
-#define MBEDTLS_ERR_SHA256_HW_ACCEL_FAILED                -0x0037  /**< SHA-256 hardware accelerator failed */
-#define MBEDTLS_ERR_SHA256_BAD_INPUT_DATA                 -0x0074  /**< SHA-256 input data was malformed. */
-
-
+#include <string>
 
 /**
  * \brief          The SHA-256 context structure.
@@ -53,93 +48,19 @@ typedef struct mbedtls_sha256_context
 }
 mbedtls_sha256_context;
 
+class Sha256
+{
+public:
+    ~Sha256();
+    Sha256();
 
-/**
- * \brief          This function initializes a SHA-256 context.
- *
- * \param ctx      The SHA-256 context to initialize. This must not be \c NULL.
- */
-void mbedtls_sha256_init( mbedtls_sha256_context *ctx );
+    bool Update(const std::string &s);
+    bool Final(std::string &hmac);
+private:
+    mbedtls_sha256_context mCtx;
+};
 
-/**
- * \brief          This function clears a SHA-256 context.
- *
- * \param ctx      The SHA-256 context to clear. This may be \c NULL, in which
- *                 case this function returns immediately. If it is not \c NULL,
- *                 it must point to an initialized SHA-256 context.
- */
-void mbedtls_sha256_free( mbedtls_sha256_context *ctx );
-
-/**
- * \brief          This function clones the state of a SHA-256 context.
- *
- * \param dst      The destination context. This must be initialized.
- * \param src      The context to clone. This must be initialized.
- */
-void mbedtls_sha256_clone( mbedtls_sha256_context *dst,
-                           const mbedtls_sha256_context *src );
-
-/**
- * \brief          This function starts a SHA-224 or SHA-256 checksum
- *                 calculation.
- *
- * \param ctx      The context to use. This must be initialized.
- * \param is224    This determines which function to use. This must be
- *                 either \c 0 for SHA-256, or \c 1 for SHA-224.
- *
- * \return         \c 0 on success.
- * \return         A negative error code on failure.
- */
-int mbedtls_sha256_starts_ret( mbedtls_sha256_context *ctx, int is224 );
-
-/**
- * \brief          This function feeds an input buffer into an ongoing
- *                 SHA-256 checksum calculation.
- *
- * \param ctx      The SHA-256 context. This must be initialized
- *                 and have a hash operation started.
- * \param input    The buffer holding the data. This must be a readable
- *                 buffer of length \p ilen Bytes.
- * \param ilen     The length of the input data in Bytes.
- *
- * \return         \c 0 on success.
- * \return         A negative error code on failure.
- */
-int mbedtls_sha256_update_ret( mbedtls_sha256_context *ctx,
-                               const unsigned char *input,
-                               size_t ilen );
-
-/**
- * \brief          This function finishes the SHA-256 operation, and writes
- *                 the result to the output buffer.
- *
- * \param ctx      The SHA-256 context. This must be initialized
- *                 and have a hash operation started.
- * \param output   The SHA-224 or SHA-256 checksum result.
- *                 This must be a writable buffer of length \c 32 Bytes.
- *
- * \return         \c 0 on success.
- * \return         A negative error code on failure.
- */
-int mbedtls_sha256_finish_ret( mbedtls_sha256_context *ctx,
-                               unsigned char output[32] );
-
-/**
- * \brief          This function processes a single data block within
- *                 the ongoing SHA-256 computation. This function is for
- *                 internal use only.
- *
- * \param ctx      The SHA-256 context. This must be initialized.
- * \param data     The buffer holding one block of data. This must
- *                 be a readable buffer of length \c 64 Bytes.
- *
- * \return         \c 0 on success.
- * \return         A negative error code on failure.
- */
-int mbedtls_internal_sha256_process( mbedtls_sha256_context *ctx,
-                                     const unsigned char data[64] );
-
-
+std::string hmac_compute(const std::string &key, const std::string &message);
 
 
 #endif /* mbedtls_sha256.h */

@@ -4,15 +4,21 @@
 #include "Util.h"
 #include "Log.h"
 #include "Zip.h"
-#include <sys/sendfile.h>
+#include "Sha256.h"
+#include "Base64.h"
 
-BasicFileHandler::BasicFileHandler(const std::string &rootDir)
+#ifdef USE_UNIX_OS
+#include <sys/sendfile.h>
+#endif
+
+HttpFileServer::HttpFileServer(const std::string &rootDir)
     : mRootDir(rootDir)
 {
-
+    mSessionSecret = Util::GenerateRandomString(60);
+    TLogInfo("[HTTP] Current session secret key: " + mSessionSecret);
 }
 
-void BasicFileHandler::NewConnection(const tcp::Conn &conn) {
+void HttpFileServer::NewConnection(const tcp::Conn &conn) {
     (void) conn;
 }
 
@@ -46,7 +52,33 @@ std::string mime_type(const std::string &ext)
     return "application/text";
 }
 
-bool BasicFileHandler::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
+/*
+Signature = HMAC-SHA256( encodeBase64Url(header) + '.' + encodeBase64Url(payload), secret )
+const token = encodeBase64Url(header) + '.' + encodeBase64Url(payload) + '.' + encodeBase64Url(signature)
+
+
+*/
+
+
+std::string HttpFileServer::GenerateJWT(int32_t level)
+{
+    std::string header = R"({"alg":"HS256","typ":"JWT"})";
+    std::string payload = R"({"level":)" + std::to_string(level) + R"(,"iat":)" +
+                            std::to_string(Util::CurrentTimeStamp()) + "}";
+  //  mSessionSecret = "coucou";
+    // Compute signature
+   // TLogInfo("[HTTP] Header: " + header);
+   // TLogInfo("[HTTP] Payload: " + payload);
+    std::string input_signature = Base64::Encode(header) + '.' + Base64::Encode(payload);
+
+  //  TLogInfo("[HTTP] Input signature: " + input_signature);
+    std::string hmac = Base64::Encode(hmac_compute(mSessionSecret, input_signature));
+    //TLogInfo("[HTTP] HMAC-SHA256: " + );
+
+    return input_signature + '.' + hmac;
+}
+
+bool HttpFileServer::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
 {
  //   std::string request = "GET /index.asp?param1=hello&param2=128 HTTP/1.1";
 
@@ -118,7 +150,7 @@ bool BasicFileHandler::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
     return true;
 }
 
-bool BasicFileHandler::GetFile(const tcp::Conn &conn, HttpRequest &request)
+bool HttpFileServer::GetFile(const tcp::Conn &conn, HttpRequest &request)
 {
     bool success = false;
     std::string resource = request.query;
@@ -209,7 +241,7 @@ bool BasicFileHandler::GetFile(const tcp::Conn &conn, HttpRequest &request)
     return success;
 }
 
-void BasicFileHandler::SendHttpJson(const tcp::Conn &conn, const std::string &data)
+void HttpFileServer::SendHttpJson(const tcp::Conn &conn, const std::string &data)
 {
     std::stringstream ss;
 
@@ -222,7 +254,7 @@ void BasicFileHandler::SendHttpJson(const tcp::Conn &conn, const std::string &da
 }
 
 
-void BasicFileHandler::ReadData(const tcp::Conn &conn)
+void HttpFileServer::ReadData(const tcp::Conn &conn)
 {
     if (conn.payload.size() == 0)
     {
@@ -250,7 +282,7 @@ void BasicFileHandler::ReadData(const tcp::Conn &conn)
     }
 }
 
-void BasicFileHandler::Send404(const tcp::Conn &conn, const HttpRequest &header)
+void HttpFileServer::Send404(const tcp::Conn &conn, const HttpRequest &header)
 {
     std::stringstream ss;
     std::string html = "<html><head><title>Not Found: " + header.query + "</title></head><body>404</body><html>";
@@ -265,30 +297,30 @@ void BasicFileHandler::Send404(const tcp::Conn &conn, const HttpRequest &header)
     TLogWarning("Resource not found: " + header.query);
 }
 
-void BasicFileHandler::ClientClosed(const tcp::Conn &conn)
+void HttpFileServer::ClientClosed(const tcp::Conn &conn)
 {
     (void) conn;
 }
 
-void BasicFileHandler::ServerTerminated(tcp::TcpServer::IEvent::CloseType type)
+void HttpFileServer::ServerTerminated(tcp::TcpServer::IEvent::CloseType type)
 {
     (void) type;
 }
 
-void BasicFileHandler::WsReadData(const tcp::Conn &conn)
+void HttpFileServer::WsReadData(const tcp::Conn &conn)
 {
     (void) conn;
     // do nothing in this default implementation
 }
 
-bool BasicFileHandler::ReadDataPath(const tcp::Conn &conn, const HttpRequest &request)
+bool HttpFileServer::ReadDataPath(const tcp::Conn &conn, const HttpRequest &request)
 {
     (void) conn;
     (void) request;
     return true;
 }
 
-std::string BasicFileHandler::Match(const std::string &msg, const std::string &patternString)
+std::string HttpFileServer::Match(const std::string &msg, const std::string &patternString)
 {
     std::regex pattern(patternString);
     std::smatch matcher;
