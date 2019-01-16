@@ -63,6 +63,7 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFU
 #include <codecvt>
 #include <algorithm>
 #include <thread>
+#include <random>
 //#include "date.h"
 //#include "tz.h"
 #include "Util.h"
@@ -75,6 +76,34 @@ struct deletable_facet : Facet
 };
 
 /*****************************************************************************/
+std::string Util::GenerateRandomString(uint32_t length)
+{
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz*$=+()_-[]#~&;:,!?{}@";
+    std::string rstr;
+
+    std::mt19937 eng(time(nullptr));
+
+    std::uniform_int_distribution<int> uniform_int(0, (sizeof(alphanum) - 1));
+
+    for (uint32_t i = 0; i < length; ++i)
+    {
+        rstr.push_back(alphanum[uniform_int(eng)]);
+    }
+    return rstr;
+}
+/*****************************************************************************/
+uint32_t Util::CurrentTimeStamp()
+{
+    std::chrono::seconds epoch = std::chrono::duration_cast< std::chrono::seconds >(
+        std::chrono::system_clock::now().time_since_epoch()
+    );
+
+    return static_cast<std::uint32_t>(epoch.count());
+}
+/*****************************************************************************/
 /**
  * @brief Util::CurrentDateTime
  *
@@ -84,6 +113,7 @@ struct deletable_facet : Facet
  * @param format
  * @return
  */
+
 std::string Util::CurrentDateTime(const std::string &format)
 {
     std::stringstream ss;
