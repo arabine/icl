@@ -237,7 +237,8 @@ bool TcpSocket::SendToSocket(const std::string &input, const Peer &peer)
 
     while( size > 0 )
     {
-        int n = ::send(peer.socket, buf, size, 0);
+        int toSend = (size > 1024) ? 1024 : size;
+        int n = ::send(peer.socket, buf, toSend, 0);
         if (n < 0)
         {
             ret = TcpSocket::AnalyzeSocketError("send()");

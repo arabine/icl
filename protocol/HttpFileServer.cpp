@@ -226,7 +226,8 @@ bool HttpFileServer::GetFile(const tcp::Conn &conn, HttpRequest &request)
                  ss << "Content-length: " << compressed_size << "\r\n";
                  ss << "Content-Encoding: deflate\r\n\r\n";
 
-                tcp::TcpSocket::SendToSocket(ss.str() + std::string(output, compressed_size), conn.peer);
+                 tcp::TcpSocket::SendToSocket(ss.str(), conn.peer);
+                tcp::TcpSocket::SendToSocket(std::string(output, compressed_size), conn.peer);
             }
             delete[] output;
             success = true;
