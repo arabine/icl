@@ -1,5 +1,7 @@
 
 #include <fstream>
+#include <locale>
+#include <string>
 #include "HttpFileServer.h"
 #include "Util.h"
 #include "Log.h"
@@ -59,7 +61,7 @@ const token = encodeBase64Url(header) + '.' + encodeBase64Url(payload) + '.' + e
 
 */
 
-
+// FIXME move level in application side
 std::string HttpFileServer::GenerateJWT(int32_t level)
 {
     std::string header = R"({"alg":"HS256","typ":"JWT"})";
@@ -77,6 +79,14 @@ std::string HttpFileServer::GenerateJWT(int32_t level)
 
     return input_signature + '.' + hmac;
 }
+
+bool HttpFileServer::CheckJWT(std::string &header, std::string &payload)
+{
+    bool success = false;
+
+    return success;
+}
+
 
 bool HttpFileServer::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
 {
@@ -128,7 +138,10 @@ bool HttpFileServer::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
         index = line.find(':', 0);
         if(index != std::string::npos)
         {
-            request.headers.insert(std::make_pair(line.substr(0, index), line.substr(index + 1)));
+            // Convert all header options to lower case (header params are case insensitive in the HTTP spec
+            std::string option = line.substr(0, index);
+            std::transform(option.begin(), option.end(), option.begin(), ::tolower);
+            request.headers.insert(std::make_pair(option, line.substr(index + 1)));
         }
     }
 

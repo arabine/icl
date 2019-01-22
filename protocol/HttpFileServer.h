@@ -39,6 +39,7 @@ public:
 
     void SendHttpJson(const tcp::Conn &conn, const std::string &data);
     std::string GenerateJWT(int32_t level);
+    bool CheckJWT(std::string &header, std::string &payload);
 
 private:
     std::string mRootDir;
