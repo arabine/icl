@@ -24,11 +24,7 @@ bool TcpServerBase::CreateServer(std::uint16_t port, bool localHostOnly, std::in
     /* the incoming connections will also be non-blocking since  */
     /* they will inherit that state from the listening socket.   */
     /*************************************************************/
-    if (!SetBlocking(false))
-    {
-        Close();
-        return false;
-    }
+    SetNonBlocking(GetSocket());
 
     /*************************************************************/
     /* Bind the socket                                           */

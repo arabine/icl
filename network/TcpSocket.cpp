@@ -237,8 +237,7 @@ bool TcpSocket::SendToSocket(const std::string &input, const Peer &peer)
 
     while( size > 0 )
     {
-        int toSend = (size > 1024) ? 1024 : size;
-        int n = ::send(peer.socket, buf, toSend, 0);
+        int n = ::send(peer.socket, buf, size, 0);
         if (n < 0)
         {
             ret = TcpSocket::AnalyzeSocketError("send()");
@@ -294,7 +293,7 @@ bool TcpSocket::Recv(std::string &output, const Peer &peer)
     char buff[MAXRECV];
     size_t len = sizeof(buff);
     char *p = buff;
-    int n;
+    long n;
     bool ret = false;
 
     do
@@ -368,12 +367,16 @@ bool TcpSocket::Create()
     if (IsValid())
     {
         std::int32_t on = 1;
+        std::int32_t off = 0;
+ //       int send_buffer = 16*1024;
 
         // Allows the socket to be bound to an address that is already in use.
         // For more information, see bind. Not applicable on ATM sockets.
         if ((setsockopt(mPeer.socket, SOL_SOCKET, SO_REUSEADDR, reinterpret_cast<const char *>(&on), sizeof(on)) == 0) &&
             (setsockopt(mPeer.socket, SOL_SOCKET, SO_KEEPALIVE, reinterpret_cast<const char *>(&on), sizeof(on)) == 0) &&
-            (setsockopt(mPeer.socket, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char *>(&on), sizeof(on)) == 0))
+    //        (setsockopt(mPeer.socket, SOL_SOCKET, SO_SNDBUF, reinterpret_cast<const char *>(&send_buffer), sizeof(send_buffer)) == 0) &&
+            (setsockopt(mPeer.socket, IPPROTO_TCP, TCP_NODELAY, reinterpret_cast<const char *>(&off), sizeof(off)) == 0))
+
         {
             ret = true;
         }
@@ -381,26 +384,15 @@ bool TcpSocket::Create()
     return ret;
 }
 /*****************************************************************************/
-bool TcpSocket::SetBlocking(bool block)
+void TcpSocket::SetNonBlocking(SocketType socket)
 {
+#ifdef _WIN32
     unsigned long on = 1;
-    bool ret = false;
-
-    if (block == true)
-    {
-        on = 0;
-    }
-
-#ifdef USE_UNIX_OS
-    std::int32_t rc = ioctl(mPeer.socket, FIONBIO, (char *)&on);
+    ::ioctlsocket(new_sd, FIONBIO, &on);
 #else
-    std::int32_t rc = ioctlsocket(mPeer.socket, FIONBIO, &on);
+    int flags = ::fcntl(socket, F_GETFL, 0);
+    ::fcntl(socket, F_SETFL, flags | O_NONBLOCK);
 #endif
-    if (rc == 0)
-    {
-        ret = true;
-    }
-    return ret;
 }
 /*****************************************************************************/
 bool TcpSocket::Bind(std::uint16_t port, bool localHostOnly)
@@ -461,22 +453,16 @@ bool TcpSocket::Listen(std::int32_t maxConnections) const
  */
 int TcpSocket::Accept() const
 {
-    int new_sd = ::accept(mPeer.socket, NULL, NULL);
+    int new_sd = ::accept(mPeer.socket, nullptr, nullptr);
 
-#ifdef _WIN32
-    (void) SetHandleInformation((HANDLE) new_sd, HANDLE_FLAG_INHERIT, 0);
-#else
-    ::fcntl(new_sd, F_SETFD, FD_CLOEXEC);
-#endif
+//#ifdef _WIN32
+//    (void) SetHandleInformation((HANDLE) new_sd, HANDLE_FLAG_INHERIT, 0);
+//#else
+//    ::fcntl(new_sd, F_SETFD, FD_CLOEXEC);
+//#endif
 
 
-#ifdef _WIN32
-    unsigned long on = 1;
-    ::ioctlsocket(new_sd, FIONBIO, &on);
-#else
-    int flags = ::fcntl(new_sd, F_GETFL, 0);
-    ::fcntl(new_sd, F_SETFL, flags | O_NONBLOCK);
-#endif
+    SetNonBlocking(new_sd);
 
     return new_sd;
 }
@@ -527,9 +513,9 @@ bool TcpSocket::HostNameToIpAddress(const std::string &address, sockaddr_in &ipv
     hints.ai_family = AF_UNSPEC; // AF_INET or AF_INET6 to force version
     hints.ai_socktype = SOCK_STREAM;
 
-    if (getaddrinfo(address.c_str(), NULL, &hints, &res) == 0)
+    if (getaddrinfo(address.c_str(), nullptr, &hints, &res) == 0)
     {
-        for (p = res; p != NULL; p = p->ai_next)
+        for (p = res; p != nullptr; p = p->ai_next)
         {
             // get the pointer to the address itself,
             // different fields in IPv4 and IPv6:
@@ -725,7 +711,7 @@ const char* inet_ntop(int af, const void* src, char* dst, int cnt){
         std::stringstream ss;
         ss << "WSAAddressToString(): " << rv;
         TLogError(ss.str());
-        return NULL;
+        return nullptr;
     }
     return dst;
 }

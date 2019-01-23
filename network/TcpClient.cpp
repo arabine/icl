@@ -44,10 +44,7 @@ bool TcpClient::Initialize()
         return false;
     }
 
-    if (!SetBlocking(false))
-    {
-        return false;
-    }
+    SetNonBlocking(GetSocket());
 
     return true;
 }

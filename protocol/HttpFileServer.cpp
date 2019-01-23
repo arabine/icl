@@ -196,17 +196,19 @@ bool HttpFileServer::GetFile(const tcp::Conn &conn, HttpRequest &request)
             {
                 ss << "Content-Disposition: inline; filename=\"" <<  Util::GetFileName(fullFilepath) + "\"" + "\r\n";
             }
+/*
+            ss << "Access-Control-Allow-Origin: *\r\n";
+            ss << "Content-length: " << size << "\r\n\r\n";
 
-         //   ss << "Access-Control-Allow-Origin: *\r\n";
+            tcp::TcpSocket::SendToSocket(ss.str(), conn.peer);
 
-//            tcp::TcpSocket::SendToSocket(ss.str(), conn.peer);
-
-//            int fd = open(fullFilepath.c_str(), O_RDONLY);
-//            if (fd >= 0)
-//            {
-//                ::sendfile(conn.peer.socket, fd, nullptr, size);
-//                close(fd);
-//            }
+            int fd = open(fullFilepath.c_str(), O_RDONLY);
+            if (fd >= 0)
+            {
+                ::sendfile(conn.peer.socket, fd, nullptr, size);
+                close(fd);
+            }
+            */
 
 
             std::ifstream t(fullFilepath);
@@ -227,9 +229,11 @@ bool HttpFileServer::GetFile(const tcp::Conn &conn, HttpRequest &request)
                  ss << "Content-Encoding: deflate\r\n\r\n";
 
                  tcp::TcpSocket::SendToSocket(ss.str(), conn.peer);
-                tcp::TcpSocket::SendToSocket(std::string(output, compressed_size), conn.peer);
+                 tcp::TcpSocket::SendToSocket(std::string(output, compressed_size), conn.peer);
             }
             delete[] output;
+
+
             success = true;
 
 /*
