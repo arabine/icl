@@ -264,7 +264,7 @@ std::string JsonValue::ToString(std::uint32_t level) const
 JsonValue::JsonValue(std::int32_t value)
     : mTag(INTEGER)
     , mIntegerValue(value)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mBoolValue(false)
 {
 
@@ -272,8 +272,8 @@ JsonValue::JsonValue(std::int32_t value)
 /*****************************************************************************/
 JsonValue::JsonValue(std::uint32_t value)
     : mTag(INTEGER)
-    , mIntegerValue(value)
-    , mDoubleValue(0.0F)
+    , mIntegerValue(static_cast<std::int32_t>(value))
+    , mDoubleValue(0.0)
     , mBoolValue(false)
 {
 
@@ -281,8 +281,8 @@ JsonValue::JsonValue(std::uint32_t value)
 /*****************************************************************************/
 JsonValue::JsonValue(std::uint16_t value)
     : mTag(INTEGER)
-    , mIntegerValue(value)
-    , mDoubleValue(0.0F)
+    , mIntegerValue(static_cast<std::int32_t>(value))
+    , mDoubleValue(0.0)
     , mBoolValue(false)
 {
 
@@ -290,8 +290,8 @@ JsonValue::JsonValue(std::uint16_t value)
 /*****************************************************************************/
 JsonValue::JsonValue(std::uint8_t value)
     : mTag(INTEGER)
-    , mIntegerValue(value)
-    , mDoubleValue(0.0F)
+    , mIntegerValue(static_cast<std::int32_t>(value))
+    , mDoubleValue(0.0)
     , mBoolValue(false)
 {
 
@@ -309,7 +309,7 @@ JsonValue::JsonValue(double value)
 JsonValue::JsonValue(const char *value)
     : mTag(STRING)
     , mIntegerValue(0)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mStringValue(value)
     , mBoolValue(false)
 {
@@ -319,7 +319,7 @@ JsonValue::JsonValue(const char *value)
 JsonValue::JsonValue(const std::string &value)
     : mTag(STRING)
     , mIntegerValue(0)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mStringValue(value)
     , mBoolValue(false)
 {
@@ -329,7 +329,7 @@ JsonValue::JsonValue(const std::string &value)
 JsonValue::JsonValue(bool value)
     : mTag(BOOLEAN)
     , mIntegerValue(0)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mBoolValue(value)
 {
 
@@ -343,7 +343,7 @@ JsonValue::JsonValue(const JsonValue &value)
 JsonValue::JsonValue(const JsonObject &obj)
     : mTag(OBJECT)
     , mIntegerValue(0)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mBoolValue(false)
 {
     mObject = obj;
@@ -352,7 +352,7 @@ JsonValue::JsonValue(const JsonObject &obj)
 JsonValue::JsonValue(const JsonArray &array)
     : mTag(ARRAY)
     , mIntegerValue(0)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mBoolValue(false)
 {
     mArray = array;
@@ -361,7 +361,7 @@ JsonValue::JsonValue(const JsonArray &array)
 JsonValue::JsonValue()
     : mTag(INVALID)
     , mIntegerValue(0)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mBoolValue(false)
 {
 

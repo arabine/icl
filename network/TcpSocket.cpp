@@ -237,7 +237,8 @@ bool TcpSocket::SendToSocket(const std::string &input, const Peer &peer)
 
     while( size > 0 )
     {
-        int n = ::send(peer.socket, buf, size, 0);
+        //  MSG_NOSIGNAL = Do not generate SIGPIPE
+        int n = ::send(peer.socket, buf, size, MSG_NOSIGNAL);
         if (n < 0)
         {
             ret = TcpSocket::AnalyzeSocketError("send()");
