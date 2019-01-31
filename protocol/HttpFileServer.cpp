@@ -303,10 +303,10 @@ void HttpFileServer::ReadData(const tcp::Conn &conn)
 void HttpFileServer::Send404(const tcp::Conn &conn, const HttpRequest &header)
 {
     std::stringstream ss;
-    std::string html = "<html><head><title>Not Found: " + header.query + "</title></head><body>404</body><html>";
+    std::string html = R"({ "result": false, "message": "404 Not Found" })";
 
     ss << "HTTP/1.1 404 Not Found\r\n";
-    ss << "Content-type: text/html\r\n";
+    ss << "Content-type: application/json\r\n";
     ss << "Content-length: " << html.size() << "\r\n\r\n";
     ss << html << std::flush;
 
