@@ -68,6 +68,7 @@ public:
     std::uint32_t Size() { return static_cast<std::uint32_t>(mArray.size()); }
     void AddValue(const JsonValue &value);
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
+    bool DeleteEntry(std::uint32_t index);
 
     typedef std::vector<JsonValue>::iterator Iterator;
     Iterator Begin() { return mArray.begin(); }

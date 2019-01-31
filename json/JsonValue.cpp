@@ -98,6 +98,17 @@ bool JsonArray::ReplaceValue(const std::string &keyPath, const JsonValue &value)
     return ret;
 }
 /*****************************************************************************/
+bool JsonArray::DeleteEntry(uint32_t index)
+{
+    bool success = false;
+    if (index < mArray.size())
+    {
+        mArray.erase(mArray.begin() + index);
+        success = true;
+    }
+    return success;
+}
+/*****************************************************************************/
 JsonValue JsonArray::GetEntry(std::uint32_t index)
 {
     JsonValue value;
