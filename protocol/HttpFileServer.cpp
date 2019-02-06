@@ -8,6 +8,7 @@
 #include "Zip.h"
 #include "Sha256.h"
 #include "Base64.h"
+#include "JsonReader.h"
 
 #ifdef USE_UNIX_OS
 #include <sys/sendfile.h>
@@ -62,11 +63,10 @@ const token = encodeBase64Url(header) + '.' + encodeBase64Url(payload) + '.' + e
 */
 
 // FIXME move level in application side
-std::string HttpFileServer::GenerateJWT(int32_t level)
+std::string HttpFileServer::GenerateJWT(const std::string &payload)
 {
     std::string header = R"({"alg":"HS256","typ":"JWT"})";
-    std::string payload = R"({"level":)" + std::to_string(level) + R"(,"iat":)" +
-                            std::to_string(Util::CurrentTimeStamp()) + "}";
+
   //  mSessionSecret = "coucou";
     // Compute signature
    // TLogInfo("[HTTP] Header: " + header);
@@ -80,9 +80,47 @@ std::string HttpFileServer::GenerateJWT(int32_t level)
     return input_signature + '.' + hmac;
 }
 
-bool HttpFileServer::CheckJWT(std::string &header, std::string &payload)
+bool HttpFileServer::CheckJWT(const std::string &header, const std::string &payload, const std::string &hash, JsonValue &json)
 {
     bool success = false;
+
+    // First, verify signature
+    std::string input_signature = header + '.' + payload;
+
+    std::string hmac = Base64::Encode(hmac_compute(mSessionSecret, input_signature));
+
+    if (hmac == hash)
+    {
+        // Now, check expiration
+        std::string decoded = Base64::Decode(payload);
+        JsonReader reader;
+        if (reader.ParseString(json, decoded))
+        {
+            if (json.IsObject())
+            {
+                uint32_t now = Util::CurrentTimeStamp();
+                uint32_t exp = static_cast<uint32_t>(json.GetObj().GetValue("exp").GetInteger());
+
+                if (now < exp)
+                {
+                    TLogInfo("[JWT] Authentication still valid for: " + std::to_string(exp - now) + " seconds");
+                    success = true;
+                }
+            }
+            else
+            {
+                TLogError("[JWT] Not an object");
+            }
+        }
+        else
+        {
+            TLogError("[JWT] Json parse failure");
+        }
+    }
+    else
+    {
+        TLogError("[JWT] Bad signature");
+    }
 
     return success;
 }

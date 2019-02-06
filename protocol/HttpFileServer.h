@@ -8,6 +8,7 @@
 
 #include "TcpSocket.h"
 #include "TcpServer.h"
+#include "JsonValue.h"
 
 struct HttpRequest
 {
@@ -38,8 +39,8 @@ public:
     void Send404(const tcp::Conn &conn, const HttpRequest &header);
 
     void SendHttpJson(const tcp::Conn &conn, const std::string &data);
-    std::string GenerateJWT(int32_t level);
-    bool CheckJWT(std::string &header, std::string &payload);
+    std::string GenerateJWT(const std::string &payload);
+    bool CheckJWT(const std::string &header, const std::string &payload, const std::string &hash, JsonValue &json);
 
 private:
     std::string mRootDir;
