@@ -41,6 +41,10 @@ bool TcpSocket::mOneTimeInit = false;
 
 #ifdef USE_WINDOWS_OS
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 const char* GetWinsockErrorString( int err )
 {
     switch( err)
@@ -389,7 +393,7 @@ void TcpSocket::SetNonBlocking(SocketType socket)
 {
 #ifdef _WIN32
     unsigned long on = 1;
-    ::ioctlsocket(new_sd, FIONBIO, &on);
+    ::ioctlsocket(socket, FIONBIO, &on);
 #else
     int flags = ::fcntl(socket, F_GETFL, 0);
     ::fcntl(socket, F_SETFL, flags | O_NONBLOCK);
