@@ -41,6 +41,10 @@ bool TcpSocket::mOneTimeInit = false;
 
 #ifdef USE_WINDOWS_OS
 
+#ifndef MSG_NOSIGNAL
+#define MSG_NOSIGNAL 0
+#endif
+
 const char* GetWinsockErrorString( int err )
 {
     switch( err)
