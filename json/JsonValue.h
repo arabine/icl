@@ -43,7 +43,7 @@ public:
     JsonObject() {}
     JsonObject(const JsonObject &obj);
 
-    std::string ToString(std::uint32_t level) const;
+    std::string ToString(std::int32_t level = -1) const;
     bool HasValue(const std::string &key);
     JsonValue GetValue(const std::string &key) const;
     void Clear();
@@ -61,7 +61,7 @@ private:
 class JsonArray
 {
 public:
-    std::string ToString(std::uint32_t level) const;
+    std::string ToString(int32_t level = -1) const;
     void Clear();
     // JsonArray
     JsonValue GetEntry(std::uint32_t index);
@@ -113,7 +113,7 @@ public:
         return mTag;
     }
 
-    std::string ToString(std::uint32_t level) const;
+    std::string ToString(int32_t level) const;
     void Clear();
 
     JsonValue &operator = (JsonValue const &rhs);

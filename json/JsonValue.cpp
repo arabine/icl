@@ -30,35 +30,43 @@
 
 /*****************************************************************************/
 // Helper function
-static std::string CreateIndent(std::uint32_t level)
+static std::string CreateIndent(std::int32_t level)
 {
     std::string indent;
 
-    for (std::uint32_t i = 0U; i < (4U * level); i++)
+    for (std::int32_t i = 0; i < (4 * level); i++)
     {
         indent += " ";
     }
     return indent;
 }
 /*****************************************************************************/
-std::string JsonArray::ToString(std::uint32_t level) const
+std::string JsonArray::ToString(std::int32_t level) const
 {
-    std::string text = "[\n";
-    std::string indent = CreateIndent(level + 1U);
+    std::string crlf;
+    std::string indent;
+    std::int32_t nextLevel = -1;
+
+    if (level >= 0)
+    {
+        crlf = "\n";
+        indent = CreateIndent(level + 1);
+        nextLevel = level + 1;
+    }
+    std::string text = "[" + crlf;
 
     std::uint32_t index = 0U;
     for (std::vector<JsonValue>::const_iterator iter = mArray.begin(); iter != mArray.end(); ++iter)
     {
-        text += indent + iter->ToString(level + 1U);
+        text += indent + iter->ToString(nextLevel);
         index++;
         if (index < mArray.size())
         {
-            text += ",\n";
+            text += "," + crlf;
         }
     }
 
-    indent = CreateIndent(level);
-    text += "\n" + indent + "]";
+    text += crlf + indent + "]";
     return text;
 }
 /*****************************************************************************/
@@ -140,24 +148,33 @@ JsonObject &JsonObject::operator = (JsonObject const &rhs)
     return *this;
 }
 /*****************************************************************************/
-std::string JsonObject::ToString(std::uint32_t level) const
+std::string JsonObject::ToString(int32_t level) const
 {
-    std::string text = "{\n";
-    std::string indent = CreateIndent(level + 1U);
+    std::string crlf;
+    std::string indent;
+    std::int32_t nextLevel = -1;
 
+    if (level >= 0)
+    {
+        crlf = "\n";
+        indent = CreateIndent(level + 1);
+        nextLevel = level + 1;
+    }
+
+    std::string text = "{" + crlf;
     std::uint32_t index = 0U;
 
     for (std::map<std::string, JsonValue>::const_iterator it = mObject.begin(); it != mObject.end(); ++it)
     {
-        text += indent + "\"" + it->first + "\": " + it->second.ToString(level + 1U);
+        text += indent + "\"" + it->first + "\": " + it->second.ToString(nextLevel);
         index++;
         if (index < mObject.size())
         {
-            text += ",\n";
+            text += "," + crlf;
         }
     }
-    indent = CreateIndent(level);
-    text += "\n" + indent + "}";
+
+    text += crlf + indent + "}";
     return text;
 }
 /*****************************************************************************/
@@ -224,7 +241,7 @@ JsonValue JsonObject::GetValue(const std::string &key) const
 //          *                          *                                  *
 
 /*****************************************************************************/
-std::string JsonValue::ToString(std::uint32_t level) const
+std::string JsonValue::ToString(std::int32_t level) const
 {
     std::string text;
     std::stringstream ss;
