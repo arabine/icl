@@ -121,6 +121,11 @@ std::string DataBase::Query(const std::string &query, std::vector<std::vector<Va
     return error;
 }
 
+void DataBase::Vacuum()
+{
+    (void) sqlite3_exec(mDb, "VACUUM;", nullptr, nullptr, nullptr);
+}
+
 
 //=============================================================================
 // End of file DataBase.cpp
