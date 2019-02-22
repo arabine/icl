@@ -166,7 +166,7 @@ std::string JsonObject::ToString(int32_t level) const
 
     for (std::map<std::string, JsonValue>::const_iterator it = mObject.begin(); it != mObject.end(); ++it)
     {
-        text += indent + "\"" + it->first + "\": " + it->second.ToString(nextLevel);
+        text += indent + "\"" + it->first + "\":" + it->second.ToString(nextLevel);
         index++;
         if (index < mObject.size())
         {
