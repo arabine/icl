@@ -94,6 +94,7 @@ public:
     };
 
     // From Value class
+    JsonValue(std::int64_t value);
     JsonValue(std::int32_t value);
     JsonValue(std::uint32_t value);
     JsonValue(std::uint16_t value);
@@ -130,7 +131,8 @@ public:
     JsonObject &GetObj() { return mObject; }
     JsonArray &GetArray() { return mArray; }
 
-    std::int32_t    GetInteger() const   { return mIntegerValue; }
+    std::int32_t    GetInteger() const   { return static_cast<int32_t>(mIntegerValue); }
+    std::int64_t    GetInteger64() const { return mIntegerValue; }
     double          GetDouble() const    { return mDoubleValue; }
     bool            GetBool() const      { return mBoolValue; }
     std::string     GetString() const    { return mStringValue; }
@@ -159,7 +161,7 @@ private:
     Tag mTag;
     JsonObject mObject;
     JsonArray mArray;
-    std::int32_t mIntegerValue;
+    std::int64_t mIntegerValue;
     double mDoubleValue;
     std::string mStringValue;
     bool mBoolValue;
