@@ -42,6 +42,8 @@ public:
 #endif
 
     static std::uint32_t CurrentTimeStamp();
+    static int64_t CurrentTimeStamp64();
+    static std::string TimestampToString(const std::string &format, uint32_t timestamp);
     static std::string CurrentDateTime(const std::string &format);
     static std::string ExecutablePath();
     static std::string GetCurrentDirectory();
@@ -92,6 +94,7 @@ public:
     }
 
     static std::string GenerateRandomString(uint32_t length);
+
 };
 
 #endif // ICL_UTIL_H

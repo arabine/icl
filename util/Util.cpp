@@ -104,6 +104,12 @@ uint32_t Util::CurrentTimeStamp()
     return static_cast<std::uint32_t>(epoch.count());
 }
 /*****************************************************************************/
+int64_t Util::CurrentTimeStamp64()
+{
+    std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(std::chrono::system_clock::now().time_since_epoch());
+    return ms.count();
+}
+/*****************************************************************************/
 /**
  * @brief Util::CurrentDateTime
  *
@@ -118,6 +124,15 @@ std::string Util::CurrentDateTime(const std::string &format)
 {
     std::stringstream ss;
     auto time = std::time(nullptr);
+    ss << std::put_time(std::localtime(&time), format.c_str());
+
+    return ss.str();
+}
+/*****************************************************************************/
+std::string Util::TimestampToString(const std::string &format, uint32_t timestamp)
+{
+    std::stringstream ss;
+    time_t time = timestamp;
     ss << std::put_time(std::localtime(&time), format.c_str());
 
     return ss.str();
