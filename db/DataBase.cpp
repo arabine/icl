@@ -29,9 +29,7 @@
 #include <sstream>
 #include "Util.h"
 #include "DataBase.h"
-#include "CouchDb.h"
 
-static const std::string cDbFileName = "tcds.sqlite";
 
 /*****************************************************************************/
 DataBase::DataBase()
@@ -93,8 +91,13 @@ std::string DataBase::Query(const std::string &query, std::vector<std::vector<Va
                     }
                     else if (type == SQLITE_TEXT)
                     {
-                        std::string strVal((char *)sqlite3_column_text(statement, col));
+                        std::string strVal(reinterpret_cast<const char *>(sqlite3_column_text(statement, col)));
                         values.push_back(strVal);
+                    }
+                    else if (type == SQLITE_FLOAT)
+                    {
+                        double dblVal = sqlite3_column_double(statement, col);
+                        values.push_back(dblVal);
                     }
                     else
                     {
