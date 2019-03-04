@@ -12,7 +12,7 @@ public:
 
     typedef std::function<void (Event)> CallBack;
 
-    ~IEventLoop() {}
+    virtual ~IEventLoop();
 
     virtual void AddTimer(std::uint32_t period, CallBack callBack) = 0;
     virtual void Register(Event event, CallBack callBack) = 0;
@@ -21,3 +21,5 @@ public:
 
 
 #endif // I_EVENT_LOOP_H
+
+

@@ -178,6 +178,11 @@ std::string JsonObject::ToString(int32_t level) const
     return text;
 }
 /*****************************************************************************/
+std::string JsonObject::ToCBor() const
+{
+    return "";
+}
+/*****************************************************************************/
 void JsonObject::AddValue(const std::string &name, const JsonValue &value)
 {
     mObject[name] = value;

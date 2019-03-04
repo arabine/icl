@@ -642,7 +642,7 @@ bool TcpSocket::DecodeWsData(Conn &conn)
     else if (opcode == TcpSocket::WEBSOCKET_OPCODE_CONNECTION_CLOSE)
     {
         conn.payload.clear();
-        conn.state = Conn::cStateClosed;
+        conn.state = Conn::cStateDeleteLater;
     }
     else
     {

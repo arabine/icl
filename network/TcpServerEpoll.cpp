@@ -212,13 +212,18 @@ void TcpServer::Run()
         {
             for (int i = 0; i < n; i++)
             {
-                if ((events[i].events & EPOLLERR) ||
-                    (events[i].events & EPOLLHUP) ||
-                    (!(events[i].events & EPOLLIN)))
+                if (events[i].events & EPOLLERR)
                 {
                     /* An error has occured on this fd, or the socket is not
                     * ready for reading (why were we notified then?) */
                     fprintf (stderr, "epoll error. events=%u\n", events[i].events);
+                    int       error = 0;
+                    socklen_t errlen = sizeof(error);
+                    if (getsockopt(events[i].data.fd, SOL_SOCKET, SO_ERROR, (void *)&error, &errlen) == 0)
+                    {
+                        printf("error = %s\n", strerror(error));
+                    }
+
                     close (events[i].data.fd);
                     continue;
                 }
@@ -448,8 +453,15 @@ void TcpServer::UpdateClients()
                 {
                     mEventHandler.ClientClosed(conn);
                 }
-                conn.payload.clear();
-                conn.state = Conn::cStateClosed;
+
+                // Remove the socket from epoll
+                if (epoll_ctl(mEpollFd, EPOLL_CTL_DEL, conn.peer.socket, nullptr) == -1)
+                {
+                    perror("Cannot remove socket from epoll");
+                }
+
+                // Finally close it
+                TcpSocket::Close(conn.peer);
 
                 haveDeleted = true;
                 break; // we have modified the array so we can't continue, leave the loop!!

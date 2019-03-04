@@ -30,11 +30,27 @@
 #include <vector>
 #include <map>
 #include <cstdint>
+#include <variant>
 
 // Forward declarations to resolve inter-dependency between Array and Object
 class JsonArray;
 class JsonObject;
 class JsonValue;
+
+namespace CBor {
+
+enum Major {
+    UnsignedIntegerType = 0U,
+    NegativeIntegerType = 1U,
+    ByteStringType = 2U,
+    TextStringType = 3U,
+    ArrayType = 4U,
+    MapType = 5U,           /* a.k.a. object */
+    TagType = 6U,
+    SimpleTypesType = 7U
+};
+
+}
 
 /*****************************************************************************/
 class JsonObject
@@ -44,6 +60,7 @@ public:
     JsonObject(const JsonObject &obj);
 
     std::string ToString(std::int32_t level = -1) const;
+    std::string ToCBor() const;
     bool HasValue(const std::string &key);
     JsonValue GetValue(const std::string &key) const;
     void Clear();
@@ -161,6 +178,8 @@ private:
     Tag mTag;
     JsonObject mObject;
     JsonArray mArray;
+
+    //std::variant<std::int64_t, double, bool> mScaler;
     std::int64_t mIntegerValue;
     double mDoubleValue;
     std::string mStringValue;
