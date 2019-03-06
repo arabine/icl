@@ -19,6 +19,7 @@ public:
     virtual void SendEvent(Event event) = 0;
 };
 
+IEventLoop::~IEventLoop() {}
 
 #endif // I_EVENT_LOOP_H
 

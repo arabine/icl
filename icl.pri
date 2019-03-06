@@ -12,16 +12,14 @@ HEADERS += Log.h \
     Console.h \
     IEventLoop.h \
     EventLoop.h \
-    DurationTimer.h \
-    $$PWD/json/CBor.h
+    DurationTimer.h
 
 SOURCES += Log.cpp \
     Util.cpp \
     Value.cpp \
     UniqueId.cpp \
     Console.cpp \
-    EventLoop.cpp \
-    $$PWD/json/CBor.cpp
+    EventLoop.cpp
 
 # ------------------------------------------------------------------------------
 # I/O files
