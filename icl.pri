@@ -10,7 +10,6 @@ HEADERS += Log.h \
     UniqueId.h \
     Semaphore.h \
     Console.h \
-    IEventLoop.h \
     EventLoop.h \
     DurationTimer.h
 
