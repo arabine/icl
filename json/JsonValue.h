@@ -30,7 +30,6 @@
 #include <vector>
 #include <map>
 #include <cstdint>
-#include <variant>
 
 // Forward declarations to resolve inter-dependency between Array and Object
 class JsonArray;
