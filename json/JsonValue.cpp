@@ -117,7 +117,7 @@ bool JsonArray::DeleteEntry(uint32_t index)
     return success;
 }
 /*****************************************************************************/
-JsonValue JsonArray::GetEntry(std::uint32_t index)
+JsonValue JsonArray::GetEntry(std::uint32_t index) const
 {
     JsonValue value;
 
@@ -126,6 +126,11 @@ JsonValue JsonArray::GetEntry(std::uint32_t index)
         value = mArray[index];
     }
     return value;
+}
+
+uint32_t JsonArray::Size() const
+{
+    return static_cast<std::uint32_t>(mArray.size());
 }
 /*****************************************************************************/
 

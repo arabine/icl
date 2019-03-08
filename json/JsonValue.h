@@ -80,8 +80,8 @@ public:
     std::string ToString(int32_t level = -1) const;
     void Clear();
     // JsonArray
-    JsonValue GetEntry(std::uint32_t index);
-    std::uint32_t Size() { return static_cast<std::uint32_t>(mArray.size()); }
+    JsonValue GetEntry(std::uint32_t index) const;
+    std::uint32_t Size() const;
     void AddValue(const JsonValue &value);
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
     bool DeleteEntry(std::uint32_t index);
