@@ -30,6 +30,7 @@
 #include <vector>
 #include <cstdint>
 #include <sstream>
+#include <random>
 
 /*****************************************************************************/
 class Util
@@ -75,6 +76,16 @@ public:
     static std::string GetModifiedFileDateTime(const std::string &fileName);
     static std::string ToLeadingZeros(const int value, const int precision);
     static uint32_t Exec(std::string exePath, std::string params, std::string& ListStdOut, std::string& ListStdErr, int32_t& RetCode);
+
+    template<typename T>
+    static T GenerateRandom(T min, T max)
+    {
+        std::default_random_engine rng(std::random_device{}());
+        std::uniform_int_distribution<T> dist(min, max);  //(min, max)
+
+        //get one
+        return dist(rng);
+    }
 
     template<typename T>
     static std::string ToString(const T& v)

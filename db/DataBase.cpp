@@ -68,7 +68,7 @@ std::string DataBase::Query(const std::string &query, std::vector<std::vector<Va
     sqlite3_stmt *statement;
     std::string error;
 
-    if (sqlite3_prepare_v2(mDb, query.c_str(), -1, &statement, 0) == SQLITE_OK)
+    if (sqlite3_prepare_v2(mDb, query.c_str(), -1, &statement, nullptr) == SQLITE_OK)
     {
         int cols = sqlite3_column_count(statement);
 
@@ -122,6 +122,24 @@ std::string DataBase::Query(const std::string &query, std::vector<std::vector<Va
     }
 
     return error;
+}
+
+void DataBase::BeginTransaction()
+{
+    // 'db' is the pointer you got from sqlite3_open*
+    sqlite3_exec(mDb, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
+
+}
+
+void DataBase::Rollback()
+{
+    sqlite3_exec(mDb, "ROLLBACK TRANSACTION;", nullptr, nullptr, nullptr);
+}
+
+void DataBase::EndTransaction()
+{
+    // Any (modifying) SQL commands executed here are not committed until at the you call:
+    sqlite3_exec(mDb, "END TRANSACTION;", nullptr, nullptr, nullptr);
 }
 
 void DataBase::Vacuum()
