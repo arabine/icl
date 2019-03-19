@@ -132,7 +132,7 @@ bool TcpSocket::AnalyzeSocketError(const char* context)
     e = errno;
     const char* msg = strerror( e );
     if ((e == EAGAIN) // equals EWOULDBLOCK
-        || (e == EINPROGRESS))
+        || (e == EINPROGRESS) || EINTR)
     {
         ok = true;
     }
@@ -396,6 +396,12 @@ void TcpSocket::SetNonBlocking(SocketType socket)
     ::ioctlsocket(socket, FIONBIO, &on);
 #else
     int flags = ::fcntl(socket, F_GETFL, 0);
+
+    if (flags < 0)
+    {
+        flags = 0;
+    }
+
     ::fcntl(socket, F_SETFL, flags | O_NONBLOCK);
 #endif
 }
@@ -636,7 +642,7 @@ bool TcpSocket::DecodeWsData(Conn &conn)
     else if (opcode == TcpSocket::WEBSOCKET_OPCODE_CONNECTION_CLOSE)
     {
         conn.payload.clear();
-        conn.state = Conn::cStateClosed;
+        conn.state = Conn::cStateDeleteLater;
     }
     else
     {

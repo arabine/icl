@@ -10,8 +10,8 @@ HEADERS += Log.h \
     UniqueId.h \
     Semaphore.h \
     Console.h \
-    IEventLoop.h \
-    EventLoop.h
+    EventLoop.h \
+    DurationTimer.h
 
 SOURCES += Log.cpp \
     Util.cpp \
@@ -41,10 +41,18 @@ HEADERS += TcpSocket.h \
     TcpServerBase.h
 
 SOURCES += TcpSocket.cpp \
-    TcpServer.cpp \
+    TcpServerBase.cpp \
     TcpClient.cpp \
-    WebSocket.cpp \
-    TcpServerBase.cpp
+    WebSocket.cpp
+
+
+linux {
+    SOURCES += TcpServerEpoll.cpp
+}
+
+windows {
+    SOURCES += TcpServer.cpp
+}
 
 # ------------------------------------------------------------------------------
 # Protocol files

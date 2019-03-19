@@ -1,9 +1,9 @@
 #include "EventLoop.h"
-#include "IEventLoop.h"
 
-static time_t Next(time_t current, std::uint32_t period)
+static long Next(long p)
 {
-    return ((current / period) * period) + period;
+    long tp = std::chrono::steady_clock::now().time_since_epoch().count();
+    return ((tp / p) * p) + p;
 }
 
 /*****************************************************************************/
@@ -20,91 +20,55 @@ EventLoop::~EventLoop()
 /*****************************************************************************/
 void EventLoop::Stop()
 {
-    mQueue.Push(EvStop);
+    mAccessGuard.lock();
+    mStopRequested = true;
+    mAccessGuard.unlock();
     mThread.join();
 }
 /*****************************************************************************/
 void EventLoop::AddTimer(uint32_t period, CallBack callBack)
 {
     Timer tm;
-    time_t rawtime;
-
-    time(&rawtime);
 
     tm.period = period;
     tm.callBack = callBack;
-    tm.next = Next(rawtime, period);
+    tm.next = Next(period);
 
+    mAccessGuard.lock();
     mTimers.push_back(tm);
-}
-/*****************************************************************************/
-void EventLoop::Register(Event event, IEventLoop::CallBack callBack)
-{
-    (void) event;
-    (void) callBack;
-}
-/*****************************************************************************/
-void EventLoop::SendEvent(Event event)
-{
-    mQueue.Push(event);
+    mAccessGuard.unlock();
 }
 /*****************************************************************************/
 void EventLoop::Run()
 {
-    mThread = std::thread(EventLoop::EntryPoint, this);
+   // mThread = std::thread(&EventLoop::Loop, this);
+    mStopRequested = false;
+    bool stop = false;
 
-    // Main loop, can be called in main() thread
-    while(!mStopRequested)
+    while(!stop)
     {
-        std::this_thread::sleep_for(std::chrono::seconds(1U));
-        mQueue.Push(EvTimer);
+        std::this_thread::sleep_for(std::chrono::seconds(1));
+
+        mAccessGuard.lock();
+        UpdateTimers();
+        stop = mStopRequested;
+        mAccessGuard.unlock();
     }
-}
-/*****************************************************************************/
-void EventLoop::EntryPoint(void *pthis)
-{
-    EventLoop *pt = static_cast<EventLoop *>(pthis);
-    pt->Loop();
 }
 /*****************************************************************************/
 void EventLoop::UpdateTimers()
 {
-    time_t rawtime;
+    std::chrono::system_clock::time_point time_now = std::chrono::system_clock::now();
+    std::time_t epoch_time = std::chrono::system_clock::to_time_t(time_now);
 
-    time(&rawtime);
-
+    int i = 0;
     for (auto &t : mTimers)
     {
-        if (rawtime >= t.next)
+        if (!(epoch_time % t.period))
         {
-            t.next = Next(rawtime, t.period);
-            t.callBack(EvTimer);
+            t.next = Next(t.period);
+            t.callBack();
         }
-    }
-}
-/*****************************************************************************/
-void EventLoop::Loop()
-{
-    while(!mStopRequested)
-    {
-        std::uint32_t ev;
-        mQueue.WaitAndPop(ev);
-
-        if (ev == EvTimer)
-        {
-            UpdateTimers();
-        }
-        else if (ev == EvStop)
-        {
-            mStopRequested = true;
-        }
-        else if (ev >= EvUser)
-        {
-            //ev.callBack(ev.type);
-        }
-        else
-        {
-            // Nothing, forget this event
-        }
+        i++;
     }
 }

@@ -30,6 +30,7 @@
 #include <vector>
 #include <cstdint>
 #include <sstream>
+#include <random>
 
 /*****************************************************************************/
 class Util
@@ -42,6 +43,8 @@ public:
 #endif
 
     static std::uint32_t CurrentTimeStamp();
+    static int64_t CurrentTimeStamp64();
+    static std::string TimestampToString(const std::string &format, uint32_t timestamp);
     static std::string CurrentDateTime(const std::string &format);
     static std::string ExecutablePath();
     static std::string GetCurrentDirectory();
@@ -75,6 +78,16 @@ public:
     static uint32_t Exec(std::string exePath, std::string params, std::string& ListStdOut, std::string& ListStdErr, int32_t& RetCode);
 
     template<typename T>
+    static T GenerateRandom(T min, T max)
+    {
+        std::default_random_engine rng(std::random_device{}());
+        std::uniform_int_distribution<T> dist(min, max);  //(min, max)
+
+        //get one
+        return dist(rng);
+    }
+
+    template<typename T>
     static std::string ToString(const T& v)
     {
         std::ostringstream ss;
@@ -92,6 +105,8 @@ public:
     }
 
     static std::string GenerateRandomString(uint32_t length);
+    static void ByteToHex(const char byte, char *out);
+    static void PrintHex(const char *buf, int size);
 };
 
 #endif // ICL_UTIL_H

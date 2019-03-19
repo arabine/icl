@@ -41,7 +41,10 @@ public:
     bool Open(const std::string &fileName);
     void Close();
     std::string Query(const std::string &query, std::vector<std::vector<Value> > &results);
-
+    void BeginTransaction();
+    void Rollback();
+    void EndTransaction();
+    void Vacuum();
 private:
     sqlite3 *mDb;
 };

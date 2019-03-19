@@ -152,7 +152,7 @@ struct Conn
         {
             if (peer.isWebSocket)
             {
-                if (state == cStateConnected)
+                if (state != cStateClosed)
                 {
                     connected = true;
                 }

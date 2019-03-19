@@ -104,6 +104,12 @@ uint32_t Util::CurrentTimeStamp()
     return static_cast<std::uint32_t>(epoch.count());
 }
 /*****************************************************************************/
+int64_t Util::CurrentTimeStamp64()
+{
+    std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(std::chrono::system_clock::now().time_since_epoch());
+    return ms.count();
+}
+/*****************************************************************************/
 /**
  * @brief Util::CurrentDateTime
  *
@@ -118,6 +124,15 @@ std::string Util::CurrentDateTime(const std::string &format)
 {
     std::stringstream ss;
     auto time = std::time(nullptr);
+    ss << std::put_time(std::localtime(&time), format.c_str());
+
+    return ss.str();
+}
+/*****************************************************************************/
+std::string Util::TimestampToString(const std::string &format, uint32_t timestamp)
+{
+    std::stringstream ss;
+    time_t time = timestamp;
     ss << std::put_time(std::localtime(&time), format.c_str());
 
     return ss.str();
@@ -300,8 +315,10 @@ std::uint32_t Util::Exec(
         std::string&    ListStdErr, //Return List of StdErr
         int32_t&        RetCode)    //Return Exit Code
 {
-    std::uint32_t status = 0;
+
 #ifdef USE_WINDOWS_OS
+
+     std::uint32_t status = 0;
 
     int                  Success;
     SECURITY_ATTRIBUTES  security_attributes;
@@ -477,6 +494,9 @@ std::uint32_t Util::Exec(
     return status;
 
 #else
+
+    (void) ListStdErr; // FIXME: update this on linux
+    RetCode = 0; // FIXME: update this on linux
 
     std::array<char, 128> buffer;
 
@@ -774,7 +794,7 @@ std::string Util::HexDump(const char *desc, const void *addr, int len)
             ss <<  " " << std::setfill('0') << std::setw(4) << std::hex  << i;
         }
 
-        // Now the hex code for the specific character.
+        // Now the hex byte_to_hexcode for the specific character.
         ss <<  " " << std::setfill('0') << std::setw(2) << std::hex  << static_cast<int>(pc[i]) << ", ";
 
         // And store a printable ASCII character for later.
@@ -794,6 +814,32 @@ std::string Util::HexDump(const char *desc, const void *addr, int len)
     // And print the final ASCII bit.
     ss << "  "<< buff << "\n";
     return ss.str();
+}
+
+void Util::ByteToHex(const char byte, char *out)
+{
+    int i = 0U;
+    static const char binHex[] = "0123456789ABCDEF";
+
+    out[2*i] = binHex[(byte >> 4) & 0x0F];
+    out[2*i + 1] = binHex[byte & 0x0F];
+}
+
+
+void Util::PrintHex(const char *buf, int size)
+{
+    int i = 0U;
+    char out[2];
+
+    for (i = 0U; i < size; i++)
+    {
+        ByteToHex(buf[i], &out[0]);
+
+        printf("%c", out[0]);
+        printf("%c", out[1]);
+    }
+
+    fflush(stdout);
 }
 
 //=============================================================================

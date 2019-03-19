@@ -34,7 +34,7 @@
 #include "Observer.h"
 #include "ThreadQueue.h"
 #include "WebSocket.h"
-
+#include <sys/epoll.h>
 
 namespace tcp
 {
@@ -61,7 +61,7 @@ public:
             CLOSED
         };
 
-        virtual ~IEvent() {}
+        virtual ~IEvent();
 
         /**
          * @brief NewConnection
@@ -94,7 +94,7 @@ public:
 
     TcpServer(IEvent &handler);
 
-    virtual ~TcpServer(void) { Stop(); }
+    virtual ~TcpServer(void);
 
     /**
      * @brief Start the Tcp thread server, with an optional WebSocket port to listen at
@@ -114,12 +114,12 @@ private:
     TcpServerBase   mTcpServer;
     TcpServerBase   mWsServer;
     std::thread mThread;
-    SocketType  mMaxSd;
-    fd_set mMasterSet;
     std::vector<Conn> mClients;
     std::mutex mMutex; // To protect mClients
     bool mInitialized;
     IEvent     &mEventHandler;
+
+    int mEpollFd;
 
     // Pipes on Linux to properly close the socket and quit select()
     int mReceiveFd;
@@ -128,11 +128,12 @@ private:
     void Run();
     void IncommingConnection(bool isWebSocket);
     void IncommingData(Conn &conn);
-    void UpdateMaxSocket();
     void DeliverWsData(Conn &conn, std::string &buf);
     std::string WsOpcodeToString(std::uint8_t opcode);
     void UpdateClients();
 };
+
+
 
 } // namespace tcp
 
