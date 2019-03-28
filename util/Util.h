@@ -106,7 +106,7 @@ public:
 
     static std::string GenerateRandomString(uint32_t length);
     static void ByteToHex(const char byte, char *out);
-    static void PrintHex(const char *buf, int size);
+    static std::string ToHex(const char *buf, size_t size);
 };
 
 #endif // ICL_UTIL_H
