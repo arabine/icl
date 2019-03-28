@@ -826,20 +826,20 @@ void Util::ByteToHex(const char byte, char *out)
 }
 
 
-void Util::PrintHex(const char *buf, int size)
+std::string Util::ToHex(const char *buf, size_t size)
 {
-    int i = 0U;
     char out[2];
+    std::string hexstr;
 
-    for (i = 0U; i < size; i++)
+    for (size_t i = 0U; i < size; i++)
     {
         ByteToHex(buf[i], &out[0]);
 
-        printf("%c", out[0]);
-        printf("%c", out[1]);
+        hexstr += out[0];
+        hexstr += out[1];
     }
 
-    fflush(stdout);
+    return hexstr;
 }
 
 //=============================================================================
