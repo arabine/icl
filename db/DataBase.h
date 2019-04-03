@@ -41,10 +41,11 @@ public:
     bool Open(const std::string &fileName);
     void Close();
     std::string Query(const std::string &query, std::vector<std::vector<Value> > &results);
-    void BeginTransaction();
-    void Rollback();
-    void EndTransaction();
-    void Vacuum();
+    bool Exec(const std::string &query);
+    bool BeginTransaction();
+    bool Rollback();
+    bool EndTransaction();
+    bool Vacuum();
 private:
     sqlite3 *mDb;
 };

@@ -124,27 +124,31 @@ std::string DataBase::Query(const std::string &query, std::vector<std::vector<Va
     return error;
 }
 
-void DataBase::BeginTransaction()
+bool DataBase::Exec(const std::string &query)
+{
+    return sqlite3_exec(mDb, query.c_str(), nullptr, nullptr, nullptr) == SQLITE_OK;
+}
+
+bool DataBase::BeginTransaction()
 {
     // 'db' is the pointer you got from sqlite3_open*
-    sqlite3_exec(mDb, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr);
-
+    return sqlite3_exec(mDb, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr) == SQLITE_OK;
 }
 
-void DataBase::Rollback()
+bool DataBase::Rollback()
 {
-    sqlite3_exec(mDb, "ROLLBACK TRANSACTION;", nullptr, nullptr, nullptr);
+    return sqlite3_exec(mDb, "ROLLBACK TRANSACTION;", nullptr, nullptr, nullptr) == SQLITE_OK;
 }
 
-void DataBase::EndTransaction()
+bool DataBase::EndTransaction()
 {
     // Any (modifying) SQL commands executed here are not committed until at the you call:
-    sqlite3_exec(mDb, "END TRANSACTION;", nullptr, nullptr, nullptr);
+    return sqlite3_exec(mDb, "END TRANSACTION;", nullptr, nullptr, nullptr) == SQLITE_OK;
 }
 
-void DataBase::Vacuum()
+bool DataBase::Vacuum()
 {
-    (void) sqlite3_exec(mDb, "VACUUM;", nullptr, nullptr, nullptr);
+    return sqlite3_exec(mDb, "VACUUM;", nullptr, nullptr, nullptr) == SQLITE_OK;
 }
 
 
