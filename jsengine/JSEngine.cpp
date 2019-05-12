@@ -24,9 +24,18 @@
  */
 
 #include "JSEngine.h"
-#include "Log.h"
+
 #include <fstream>
 #include <sstream>
+#include <iostream>
+#include <cstdio>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <array>
+#include <chrono>
+#include <map>
+#include <thread>
 
 #define DUKTAPE_DEBUG
 
@@ -34,6 +43,99 @@ static const char *gIdName = "ctx_id";
 static std::mutex gListenersMutex;
 static std::uint32_t gIdCounter = 1U; // global counter to deliver an ID to each script instance
 static std::map<std::uint32_t, IScriptEngine::IPrinter*> gPrintList;
+
+// Same thing for user defined functions
+static std::mutex gFunctionsMutex;
+static std::uint32_t gMagicIdCounter = 1U;
+static std::map<std::int32_t, IScriptEngine::IFunction*> gFunctionList;
+
+
+static duk_ret_t GenericCallback(duk_context *ctx)
+{
+    duk_ret_t dukRet = DUK_ERR_NONE;
+
+    duk_idx_t nargs = duk_get_top(ctx);
+    std::vector<Value> args;
+
+    for (int i = 0; i < nargs; i++)
+    {
+        if (duk_is_string(ctx, i))
+        {
+            std::string value = duk_get_string(ctx, i);
+            args.push_back(Value(value));
+        }
+        else if (duk_is_number(ctx, i))
+        {
+            double value = duk_get_number(ctx, i);
+            args.push_back(Value(value));
+        }
+        else if (duk_is_object(ctx, i))
+        {
+            std::string value = duk_json_encode(ctx, i);
+            Value argVal = Value(value);
+            argVal.SetJsonString(true);
+            args.push_back(argVal);
+        }
+        else if (duk_is_boolean(ctx, i))
+        {
+            bool boolVal = duk_get_boolean(ctx, i);
+            args.push_back(Value(boolVal));
+        }
+    }
+
+    // Get the id associated to this function
+    duk_int_t id = duk_get_current_magic(ctx);
+
+    bool isOk = false;
+    gFunctionsMutex.lock();
+    // Call the listener of that id, if it exists
+    if (gFunctionList.count(id) > 0)
+    {
+        Value retVal;
+        isOk = gFunctionList[id]->Execute(args, retVal);
+
+        Value::Type typeOfRetValue = retVal.GetType();
+        if (isOk && (typeOfRetValue != Value::INVALID))
+        {
+            if (typeOfRetValue == Value::BOOLEAN)
+            {
+                duk_push_boolean(ctx, retVal.GetBool());
+            }
+            else if (typeOfRetValue == Value::DOUBLE)
+            {
+                duk_push_number(ctx, retVal.GetDouble());
+            }
+            else if (typeOfRetValue == Value::INTEGER)
+            {
+                duk_push_int(ctx, retVal.GetInteger());
+            }
+            else if (typeOfRetValue == Value::STRING)
+            {
+                std::string str = retVal.GetString();
+                duk_push_lstring(ctx, str.c_str(), str.size());
+                if (retVal.IsJsonString())
+                {
+                    // Transform it into JS object
+                    duk_json_decode(ctx, -1);
+                }
+            }
+            else
+            {
+                duk_push_null(ctx);
+            }
+            dukRet = 1; // This function returns one value
+        }
+    }
+    gFunctionsMutex.unlock();
+
+    if (!isOk)
+    {
+        dukRet = DUK_RET_ERROR;
+    }
+
+    return dukRet;
+}
+
 
 static duk_ret_t SystemPrint(duk_context *ctx)
 {
@@ -50,7 +152,7 @@ static duk_ret_t SystemPrint(duk_context *ctx)
     if (nargs == 1 && duk_is_buffer(ctx, 0))
     {
         duk_size_t sz_buf;
-        const char *buf = (const char *) duk_get_buffer(ctx, 0, &sz_buf);
+        const char *buf = static_cast<const char *>(duk_get_buffer(ctx, 0, &sz_buf));
         msg.assign(buf, sz_buf);
     }
     else
@@ -81,10 +183,46 @@ static duk_ret_t SystemPrint(duk_context *ctx)
     return 0;
 }
 
+/**
+ * @brief WriteFile
+ * @param ctx
+ *         arg 1: filename (string)
+ *         arg 2: contents (string)
+ * @return
+ */
+static duk_ret_t WriteToFile(duk_context *ctx)
+{
+    duk_idx_t nargs = duk_get_top(ctx);
+
+    if ((nargs == 2) && duk_is_string(ctx, 0) && duk_is_string(ctx, 1))
+    {
+        std::string fileName = duk_get_string(ctx, 0);
+        std::string fileData = duk_get_string(ctx, 1);
+        std::ofstream outputFile;
+        outputFile.open(fileName, std::ofstream::out);
+        outputFile << fileData << std::endl;
+        outputFile.close();
+    }
+
+    return 0;
+}
+
+static duk_ret_t DelayMs(duk_context *ctx)
+{
+    duk_idx_t nargs = duk_get_top(ctx);
+    if ((nargs == 1) && duk_is_number(ctx, 0))
+    {
+        uint32_t delay = static_cast<uint32_t>(duk_get_int(ctx, 0));
+        std::this_thread::sleep_for(std::chrono::milliseconds(delay));
+    }
+    return 0;
+}
+
 static void fatal_handler(void *udata, const char *msg)
 {
     (void) udata;
-    TLogError("JS engine fatal error: " + std::string(msg));
+
+    std::cout << "Fatal error from Javascript engine: " << msg << std::endl;
 }
 
 static duk_ret_t tostring_raw(duk_context *ctx, void *udata)
@@ -102,12 +240,12 @@ static int eval_string_raw(duk_context *ctx, void *udata)
     return 1;
 }
 
-
 /*****************************************************************************/
 JSEngine::JSEngine()
-    : mCtx(NULL)
+    : mCtx(nullptr)
     , mValidContext(false)
     , mId(0U)
+    , mHasError(false)
 {
 
 
@@ -121,18 +259,25 @@ JSEngine::~JSEngine()
 void JSEngine::Initialize()
 {
     Close();
-    mCtx = duk_create_heap(NULL /*duk_alloc_function alloc_func*/,
-                           NULL/*duk_realloc_function realloc_func*/,
-                           NULL/*duk_free_function free_func*/,
-                           NULL/*void *heap_udata*/,
+    mLastError = "";
+    mCtx = duk_create_heap(nullptr /*duk_alloc_function alloc_func*/,
+                           nullptr/*duk_realloc_function realloc_func*/,
+                           nullptr/*duk_free_function free_func*/,
+                           nullptr/*void *heap_udata*/,
                            fatal_handler);
-    if (mCtx != NULL)
+    if (mCtx != nullptr)
     {
         // Register our custom print function
-        duk_push_global_object(mCtx);
         duk_push_c_function(mCtx, SystemPrint, DUK_VARARGS);
-        duk_put_prop_string(mCtx, -2 /*idx:global*/, "systemPrint");
-        duk_pop(mCtx);  /* pop global */
+        duk_put_global_string(mCtx, "printConsole");
+
+        // Register basic file write function
+        duk_push_c_function(mCtx, WriteToFile, DUK_VARARGS);
+        duk_put_global_string(mCtx, "writeToFile");
+
+        // OS delay in milliseconds
+        duk_push_c_function(mCtx, DelayMs, DUK_VARARGS);
+        duk_put_global_string(mCtx, "delayMs");        
 
         // Generate an id for that context
         gListenersMutex.lock();
@@ -145,10 +290,12 @@ void JSEngine::Initialize()
         (void) duk_put_global_string(mCtx, "ctx_id");
 
         mValidContext = true;
+
+        ClearError();
     }
     else
     {
-        TLogScript("Cannot initialize script context");
+        SetError("Cannot initialize script context");
     }
 }
 /*****************************************************************************/
@@ -162,11 +309,50 @@ void JSEngine::RegisterPrinter(IScriptEngine::IPrinter *printer)
     }
 }
 /*****************************************************************************/
+void JSEngine::RegisterFunction(const std::string &name, IScriptEngine::IFunction *function)
+{
+    if (function != nullptr)
+    {
+        gFunctionsMutex.lock();
+
+        duk_push_c_function(mCtx, GenericCallback, DUK_VARARGS);
+        duk_set_magic(mCtx, -1, gMagicIdCounter);
+        duk_put_global_string(mCtx, name.c_str());
+        gFunctionList[gMagicIdCounter] = function;
+        gMagicIdCounter++;
+
+        gFunctionsMutex.unlock();
+    }
+}
+/*****************************************************************************/
+bool JSEngine::HasError()
+{
+    return mHasError;
+}
+/*****************************************************************************/
+std::string JSEngine::GetLastError()
+{
+    return mLastError;
+}
+/*****************************************************************************/
+void JSEngine::ClearError()
+{
+    mHasError = false;
+    mLastError.clear();
+}
+/*****************************************************************************/
+void JSEngine::SetError(const std::string &error)
+{
+    mHasError = true;
+    mLastError = error;
+}
+/*****************************************************************************/
 bool JSEngine::EvaluateFile(const std::string &fileName)
 {
     bool ret = false;
     if (mValidContext)
     {
+        ClearError();
         // Test if the file exists, try to open it!
         std::ifstream in;
         in.open(fileName, std::ios_base::in | std::ios::binary);
@@ -194,9 +380,11 @@ bool JSEngine::EvaluateString(const std::string &contents, std::string &output)
     bool ret = false;
     if (mValidContext)
     {
+        ClearError();
+
         duk_push_string(mCtx, contents.c_str());
-        int rc = duk_safe_call(mCtx, eval_string_raw, NULL /*udata*/, 1 /*nargs*/, 1 /*nrets*/);
-        (void) duk_safe_call(mCtx, tostring_raw /*udata*/, NULL, 1 /*nargs*/, 1 /*nrets*/);
+        int rc = duk_safe_call(mCtx, eval_string_raw, nullptr /*udata*/, 1 /*nargs*/, 1 /*nrets*/);
+        (void) duk_safe_call(mCtx, tostring_raw /*udata*/, nullptr, 1 /*nargs*/, 1 /*nrets*/);
         output = duk_get_string(mCtx, -1);
 
         if (rc == DUK_EXEC_SUCCESS)
@@ -205,7 +393,7 @@ bool JSEngine::EvaluateString(const std::string &contents, std::string &output)
         }
         else
         {
-            output = "Compile failed: " + output;
+            SetError("Compile failed: " + output);
         }
     }
     return ret;
@@ -217,9 +405,10 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
 
     if (!mValidContext)
     {
-        TLogError("Cannot call script function without a valid context.");
+        SetError("Cannot call script function without a valid context.");
         return retval;
     }
+    ClearError();
 
     // Push the Ecmascript global object to the value stack
     duk_push_global_object(mCtx);
@@ -240,8 +429,7 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
         int rc = duk_pcall(mCtx, args.size() /*nargs*/);
         if (rc != DUK_EXEC_SUCCESS)
         {
-            TLogError(std::string("JS engine script call failed for function: ") + function);
-            PrintError();
+            SetError("Call to function " + function + " failed: " + duk_safe_to_string(mCtx, -1));
         }
         else
         {
@@ -259,6 +447,12 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
                 }
                 retval = Value(value);
             }
+            else if (duk_check_type(mCtx, -1, DUK_TYPE_OBJECT))
+            {
+                std::string value = duk_json_encode(mCtx, -1);
+                retval = Value(value);
+                retval.SetJsonString(true);
+            }
             else
             {
                 duk_int_t ret = duk_get_type(mCtx, -1);
@@ -267,7 +461,7 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
                 {
                     std::stringstream ss;
                     ss << "Unsupported value type returned: " << ret;
-                    TLogError(ss.str());
+                    SetError(ss.str());
                 }
             }
         }
@@ -284,44 +478,12 @@ Value JSEngine::Call(const std::string &function, const IScriptEngine::StringLis
 /*****************************************************************************/
 void JSEngine::Close()
 {
-    if (mCtx != NULL)
+    if (mCtx != nullptr)
     {
         duk_destroy_heap(mCtx);
-        mCtx = NULL;
+        mCtx = nullptr;
     }
     mValidContext = false;
-}
-/*****************************************************************************/
-/**
- * @brief PrintError
- *
- * Print and pop error.
- *
- */
-void JSEngine::PrintError() const
-{
-
-#ifdef DUKTAPE_DEBUG
-    if (duk_is_object(mCtx, -1) && duk_has_prop_string(mCtx, -1, "stack"))
-    {
-        /* FIXME: print error objects specially */
-        /* FIXME: pcall the string coercion */
-        duk_get_prop_string(mCtx, -1, "stack");
-        if (duk_is_string(mCtx, -1))
-        {
-            std::cout << duk_get_string(mCtx, -1) << std::endl;
-            duk_pop_2(mCtx);
-            return;
-        }
-        else
-        {
-            duk_pop(mCtx);
-        }
-    }
-    duk_to_string(mCtx, -1);
-    std::cout << duk_get_string(mCtx, -1) << std::endl;
-    duk_pop(mCtx);
-#endif
 }
 /*****************************************************************************/
 /**

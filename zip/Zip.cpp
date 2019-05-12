@@ -28,10 +28,13 @@
 #include "Zip.h"
 #include <fstream>
 #include <cstring>
+#include <functional>
+#include <memory>
 
 /*****************************************************************************/
 Zip::Zip()
     : mIsValid(false)
+    , mCompressedData(nullptr)
     , mNumberOfFiles(0U)
 {
     std::memset(&mZipArchive, 0, sizeof(mZipArchive));
@@ -91,6 +94,47 @@ void Zip::Close()
     {
         mz_zip_reader_end(&mZipArchive);
     }
+}
+
+class Callback
+{
+public:
+    static mz_bool DeflateCallback(const void *pBuf, int len, void *pUser)
+    {
+        std::memcpy(output + offset, pBuf, len);
+        offset += len;
+        (void) len;
+        (void) pUser;
+        return MZ_TRUE;
+    }
+
+    static char *output;
+    static int offset;
+};
+
+char * Callback::output;
+int Callback::offset;
+
+/*****************************************************************************/
+int Zip::CompressBuffer(const char *input, size_t input_size, char *output)
+{
+    int finalsize = -1;
+    tdefl_compressor Comp;
+
+
+    Callback::offset = 0U;
+    Callback::output = output;
+
+    if (tdefl_init(&Comp, &Callback::DeflateCallback, nullptr, 0) == TDEFL_STATUS_OKAY)
+    {
+        if(tdefl_compress_buffer(&Comp, input, input_size, TDEFL_FINISH) == TDEFL_STATUS_DONE)
+        {
+            finalsize = Callback::offset;
+        }
+    }
+
+
+    return finalsize;
 }
 /*****************************************************************************/
 bool Zip::GetFile(const std::string &fileName, std::string &contents)

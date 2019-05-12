@@ -29,8 +29,8 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include <chrono>
-#include "date.h"
+#include <sstream>
+#include <random>
 
 /*****************************************************************************/
 class Util
@@ -42,7 +42,9 @@ public:
     static const char DIR_SEPARATOR = '/';
 #endif
 
-    // DATE-TIME UTILITIES
+    static std::uint32_t CurrentTimeStamp();
+    static int64_t CurrentTimeStamp64();
+    static std::string TimestampToString(const std::string &format, uint32_t timestamp);
     static std::string CurrentDateTime(const std::string &format);
     static std::string ToISODateTime(const std::chrono::system_clock::time_point &tp);
     static std::chrono::system_clock::time_point FromISODateTime(const std::string &str);
@@ -50,20 +52,22 @@ public:
     static int GetYear(const std::chrono::system_clock::time_point &tp);
 
     static std::string ExecutablePath();
+    static std::string GetCurrentDirectory();
     static std::string HomePath();
     static bool FolderExists(const std::string &foldername);
     static bool FileExists(const std::string &fileName);
     static bool Mkdir(const std::string &fullPath);
     static void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
+    static std::string EscapeChar(const std::string &str);
     static std::vector<std::string> Split(const std::string &theString, const std::string &delimiter);
     static std::string Join(const std::vector<std::string> &tokens, const std::string &delimiter);
     static std::int32_t GetCurrentMemoryUsage();
     static std::int32_t GetMaximumMemoryUsage();
     static std::string GetFileName(const std::string &path);
+    static std::string GetFileExtension(const std::string& FileName);
     static std::string GetDirectoryPath(const std::string &path);
-    static std::int64_t FileSize(const std::string &fileName);
-
-    // STRING UTILITIES
+    static std::uint64_t FileSize(const std::string &fileName);
+    static std::string ToUpper(const std::string &input);
     static std::string ToLower(const std::string &text);
     static inline bool EndsWith(std::string const & value, std::string const & ending)
     {
@@ -73,7 +77,42 @@ public:
     // Case insensitive version
     static bool Compare(const std::string &a, const std::string &b);
     static std::wstring ToWString(const std::string &str);
+    static std::string ToString(const std::wstring &wstr);
     static std::string HexDump(const char *desc, const void *addr, int len);
+    static std::string GetModifiedFileDateTime(const std::string &fileName);
+    static std::string ToLeadingZeros(const int value, const int precision);
+    static uint32_t Exec(std::string exePath, std::string params, std::string& ListStdOut, std::string& ListStdErr, int32_t& RetCode);
+
+    template<typename T>
+    static T GenerateRandom(T min, T max)
+    {
+        std::default_random_engine rng(std::random_device{}());
+        std::uniform_int_distribution<T> dist(min, max);  //(min, max)
+
+        //get one
+        return dist(rng);
+    }
+
+    template<typename T>
+    static std::string ToString(const T& v)
+    {
+        std::ostringstream ss;
+        ss << v;
+        return ss.str();
+    }
+
+    template<typename T>
+    static T FromString(const std::string& str)
+    {
+        std::istringstream ss(str);
+        T ret;
+        ss >> ret;
+        return ret;
+    }
+
+    static std::string GenerateRandomString(uint32_t length);
+    static void ByteToHex(const char byte, char *out);
+    static std::string ToHex(const char *buf, size_t size);
 };
 
 #endif // ICL_UTIL_H

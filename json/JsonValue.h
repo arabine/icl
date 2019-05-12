@@ -36,6 +36,21 @@ class JsonArray;
 class JsonObject;
 class JsonValue;
 
+namespace CBor {
+
+enum Major {
+    UnsignedIntegerType = 0U,
+    NegativeIntegerType = 1U,
+    ByteStringType = 2U,
+    TextStringType = 3U,
+    ArrayType = 4U,
+    MapType = 5U,           /* a.k.a. object */
+    TagType = 6U,
+    SimpleTypesType = 7U
+};
+
+}
+
 /*****************************************************************************/
 class JsonObject
 {
@@ -43,7 +58,8 @@ public:
     JsonObject() {}
     JsonObject(const JsonObject &obj);
 
-    std::string ToString(std::uint32_t level) const;
+    std::string ToString(std::int32_t level = -1) const;
+    std::string ToCBor() const;
     bool HasValue(const std::string &key);
     JsonValue GetValue(const std::string &key) const;
     void Clear();
@@ -61,13 +77,14 @@ private:
 class JsonArray
 {
 public:
-    std::string ToString(std::uint32_t level) const;
+    std::string ToString(int32_t level = -1) const;
     void Clear();
     // JsonArray
-    JsonValue GetEntry(std::uint32_t index);
-    std::uint32_t Size() { return static_cast<std::uint32_t>(mArray.size()); }
+    JsonValue GetEntry(std::uint32_t index) const;
+    std::uint32_t Size() const;
     void AddValue(const JsonValue &value);
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
+    bool DeleteEntry(std::uint32_t index);
 
     typedef std::vector<JsonValue>::iterator Iterator;
     Iterator Begin() { return mArray.begin(); }
@@ -93,6 +110,7 @@ public:
     };
 
     // From Value class
+    JsonValue(std::int64_t value);
     JsonValue(std::int32_t value);
     JsonValue(std::uint32_t value);
     JsonValue(std::uint16_t value);
@@ -112,7 +130,7 @@ public:
         return mTag;
     }
 
-    std::string ToString(std::uint32_t level) const;
+    std::string ToString(int32_t level) const;
     void Clear();
 
     JsonValue &operator = (JsonValue const &rhs);
@@ -129,7 +147,8 @@ public:
     JsonObject &GetObj() { return mObject; }
     JsonArray &GetArray() { return mArray; }
 
-    std::int32_t    GetInteger() const   { return mIntegerValue; }
+    std::int32_t    GetInteger() const   { return static_cast<int32_t>(mIntegerValue); }
+    std::int64_t    GetInteger64() const { return mIntegerValue; }
     double          GetDouble() const    { return mDoubleValue; }
     bool            GetBool() const      { return mBoolValue; }
     std::string     GetString() const    { return mStringValue; }
@@ -158,7 +177,9 @@ private:
     Tag mTag;
     JsonObject mObject;
     JsonArray mArray;
-    std::int32_t mIntegerValue;
+
+    //std::variant<std::int64_t, double, bool> mScaler;
+    std::int64_t mIntegerValue;
     double mDoubleValue;
     std::string mStringValue;
     bool mBoolValue;

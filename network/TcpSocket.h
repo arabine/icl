@@ -59,7 +59,7 @@ static const std::int32_t cSocketInvalid = -1;
 #endif
 
 #include <ws2tcpip.h>
-#include <Windows.h>
+#include <windows.h>
 
 #ifdef __MINGW32__
 #include <unistd.h>
@@ -152,7 +152,7 @@ struct Conn
         {
             if (peer.isWebSocket)
             {
-                if (state == cStateConnected)
+                if (state != cStateClosed)
                 {
                     connected = true;
                 }
@@ -203,7 +203,7 @@ public:
     static const std::uint8_t WEBSOCKET_OPCODE_PONG             = 0x0AU;
 
     // Larger values will read larger chunks of data at one time (without fragmentation)
-    static const std::int32_t MAXRECV = 1024;
+    static const std::int32_t MAXRECV = 16*1024;
 
     TcpSocket();
     TcpSocket(const Peer &peer);
@@ -222,9 +222,6 @@ public:
     {
         return mPort;
     }
-
-    // Setters
-    bool SetBlocking(bool block);
 
     // Helpers
     bool IsValid() const
@@ -250,6 +247,7 @@ public:
     static bool Initialize();
     // return true if socket has data waiting to be read
     static bool AnalyzeSocketError(const char* context);
+    static void SetNonBlocking(SocketType socket);
     static bool Send(const std::string &input, const Peer &peer);
     static void Close(Peer &peer);
     static std::string BuildWsFrame(std::uint8_t opcode, const std::string &data);

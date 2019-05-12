@@ -46,6 +46,7 @@ void Console::Write(const std::wstring &s)
 void Console::SetCursor(bool enable)
 {
 #ifdef USE_WINDOWS_OS
+   (void) enable;
    CONSOLE_CURSOR_INFO info;
    info.dwSize = 100;
    info.bVisible = FALSE;

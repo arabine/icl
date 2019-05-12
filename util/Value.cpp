@@ -29,17 +29,19 @@
 Value::Value(std::int32_t value)
     : mType(INTEGER)
     , mIntegerValue(value)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mBoolValue(false)
+    , mJsonString(false)
 {
 
 }
 /*****************************************************************************/
 Value::Value(double value)
     : mType(DOUBLE)
-    , mIntegerValue(0)
+    , mIntegerValue(static_cast<std::int32_t>(value))
     , mDoubleValue(value)
     , mBoolValue(false)
+    , mJsonString(false)
 {
 
 }
@@ -47,9 +49,10 @@ Value::Value(double value)
 Value::Value(const char *value)
     : mType(STRING)
     , mIntegerValue(0)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mStringValue(value)
     , mBoolValue(false)
+    , mJsonString(false)
 {
 
 }
@@ -57,9 +60,10 @@ Value::Value(const char *value)
 Value::Value(const std::string &value)
     : mType(STRING)
     , mIntegerValue(0)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mStringValue(value)
     , mBoolValue(false)
+    , mJsonString(false)
 {
 
 }
@@ -67,8 +71,9 @@ Value::Value(const std::string &value)
 Value::Value(bool value)
     : mType(BOOLEAN)
     , mIntegerValue(0)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mBoolValue(value)
+    , mJsonString(false)
 {
 
 }
@@ -81,8 +86,9 @@ Value::Value(const Value &value)
 Value::Value()
     : mType(INVALID)
     , mIntegerValue(0)
-    , mDoubleValue(0.0F)
+    , mDoubleValue(0.0)
     , mBoolValue(false)
+    , mJsonString(false)
 {
 
 }
@@ -99,6 +105,7 @@ Value &Value::operator =(const Value &rhs)
     mDoubleValue = rhs.mDoubleValue;
     mStringValue = rhs.mStringValue;
     mBoolValue = rhs.mBoolValue;
+    mJsonString = rhs.mJsonString;
     return *this;
 }
 

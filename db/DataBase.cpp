@@ -29,13 +29,11 @@
 #include <sstream>
 #include "Util.h"
 #include "DataBase.h"
-#include "CouchDb.h"
 
-static const std::string cDbFileName = "tcds.sqlite";
 
 /*****************************************************************************/
 DataBase::DataBase()
-    : mDb(NULL)
+    : mDb(nullptr)
 {
 
 }
@@ -47,10 +45,10 @@ DataBase::~DataBase()
 /*****************************************************************************/
 void DataBase::Close()
 {
-    if (mDb != NULL)
+    if (mDb != nullptr)
     {
         sqlite3_close(mDb);
-        mDb = NULL;
+        mDb = nullptr;
     }
 }
 /*****************************************************************************/
@@ -65,12 +63,12 @@ bool DataBase::Open(const std::string &fileName)
     return valid;
 }
 /*****************************************************************************/
-std::vector<std::vector<Value> > DataBase::Query(const std::string &query)
+std::string DataBase::Query(const std::string &query, std::vector<std::vector<Value> > &results)
 {
     sqlite3_stmt *statement;
-    std::vector<std::vector<Value> > results;
+    std::string error;
 
-    if (sqlite3_prepare_v2(mDb, query.c_str(), -1, &statement, 0) == SQLITE_OK)
+    if (sqlite3_prepare_v2(mDb, query.c_str(), -1, &statement, nullptr) == SQLITE_OK)
     {
         int cols = sqlite3_column_count(statement);
 
@@ -93,8 +91,13 @@ std::vector<std::vector<Value> > DataBase::Query(const std::string &query)
                     }
                     else if (type == SQLITE_TEXT)
                     {
-                        std::string strVal((char *)sqlite3_column_text(statement, col));
+                        std::string strVal(reinterpret_cast<const char *>(sqlite3_column_text(statement, col)));
                         values.push_back(strVal);
+                    }
+                    else if (type == SQLITE_FLOAT)
+                    {
+                        double dblVal = sqlite3_column_double(statement, col);
+                        values.push_back(dblVal);
                     }
                     else
                     {
@@ -112,13 +115,40 @@ std::vector<std::vector<Value> > DataBase::Query(const std::string &query)
         }
         sqlite3_finalize(statement);
     }
-    std::string error = sqlite3_errmsg(mDb);
-    if (error != "not an error")
+    std::string errmsg = sqlite3_errmsg(mDb);
+    if (errmsg != "not an error")
     {
-        std::cout << query << " " << error << std::endl;
+        error = query + " " + errmsg;
     }
 
-    return results;
+    return error;
+}
+
+bool DataBase::Exec(const std::string &query)
+{
+    return sqlite3_exec(mDb, query.c_str(), nullptr, nullptr, nullptr) == SQLITE_OK;
+}
+
+bool DataBase::BeginTransaction()
+{
+    // 'db' is the pointer you got from sqlite3_open*
+    return sqlite3_exec(mDb, "BEGIN TRANSACTION;", nullptr, nullptr, nullptr) == SQLITE_OK;
+}
+
+bool DataBase::Rollback()
+{
+    return sqlite3_exec(mDb, "ROLLBACK TRANSACTION;", nullptr, nullptr, nullptr) == SQLITE_OK;
+}
+
+bool DataBase::EndTransaction()
+{
+    // Any (modifying) SQL commands executed here are not committed until at the you call:
+    return sqlite3_exec(mDb, "END TRANSACTION;", nullptr, nullptr, nullptr) == SQLITE_OK;
+}
+
+bool DataBase::Vacuum()
+{
+    return sqlite3_exec(mDb, "VACUUM;", nullptr, nullptr, nullptr) == SQLITE_OK;
 }
 
 

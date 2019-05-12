@@ -33,20 +33,26 @@
 #include "Util.h"
 
 std::mutex Log::mMutex;
-Subject<std::string> Log::mSubject;
+Subject<Log::Infos> Log::mSubject;
 std::string Log::mLogPath;
+std::string Log::mLogFileName;
+std::vector<Log::Infos> Log::mHistory;
+
 bool Log::mEnableFileOutput = true;
+bool Log::mEnableSourceInfo = true;
+bool Log::mEnableHistory = false;
+
 
 const std::uint8_t Log::Error   = 1U;
 const std::uint8_t Log::Info    = 2U;
 const std::uint8_t Log::Network = 4U;
 const std::uint8_t Log::Script  = 8U;
 const std::uint8_t Log::Server  = 16U;
-const std::uint8_t Log::All     = Log::Error | Log::Info | Log::Network | Log::Script | Log::Server;
+const std::uint8_t Log::Warning  = 32U;
+const std::uint8_t Log::All     = Log::Error | Log::Info | Log::Network | Log::Script | Log::Server | Log::Warning;
 
 static std::map<std::uint8_t, std::string> LogInit();
 static std::map<std::uint8_t, std::string> eventString = LogInit();
-
 
 /*****************************************************************************/
 /**
@@ -62,27 +68,48 @@ std::map<uint8_t, std::string> LogInit()
     evt[Log::Network]    = "Network";
     evt[Log::Script]     = "Script";
     evt[Log::Server]     = "Server";
+    evt[Log::Warning]    = "Warning";
 
     return evt;
 }
-
 /*****************************************************************************/
-Log::Log()
-{
-}
-/*****************************************************************************/
-void Log::RegisterListener(Observer<std::string> &listener)
+void Log::RegisterListener(Observer<Infos> &listener)
 {
     mMutex.lock();
     mSubject.Attach(listener);
     mMutex.unlock();
 }
 /*****************************************************************************/
-void Log::RemoveListener(Observer<std::string> &listener)
+void Log::RemoveListener(Observer<Infos> &listener)
 {
     mMutex.lock();
     mSubject.Detach(listener);
     mMutex.unlock();
+}
+/*****************************************************************************/
+void Log::SetLogPath(const std::string &path)
+{
+    mLogPath = path;
+}
+/*****************************************************************************/
+void Log::SetLogFileName(const std::string &fileName)
+{
+    mLogFileName = fileName;
+}
+/*****************************************************************************/
+std::string Log::GetLogFileName()
+{
+    return mLogFileName;
+}
+/*****************************************************************************/
+void Log::ClearHistory()
+{
+    mHistory.clear();
+}
+/*****************************************************************************/
+std::vector<Log::Infos> Log::GetHistory()
+{
+    return mHistory;
 }
 /*****************************************************************************/
 void Log::Clear()
@@ -94,29 +121,25 @@ void Log::Clear()
 /*****************************************************************************/
 void Log::AddEntry(uint8_t event, const std::string &file, const int line, const std::string &message)
 {
-    std::stringstream ss;
-
-    ss << eventString[event] << ", " <<
-       Util::CurrentDateTime("%Y-%m-%d.%X") << ", " <<
-       file << ", " <<
-       line << ", " <<
-       message;
+    Infos infos;
+    infos.event = event;
+    infos.file = file;
+    infos.line = line;
+    infos.message = message;
 
     mMutex.lock();
-    mSubject.Notify(ss.str(), event);    // send message to all the listeners
+    mSubject.Notify(infos, event);    // send message to all the listeners
     mMutex.unlock();
+
+    if (mEnableHistory)
+    {
+        mHistory.push_back(infos);
+    }
 
     if (mEnableFileOutput)
     {
-        Save(ss.str());                     // save message to a file
+        Save(infos.ToString());                     // save message to a file
     }
-}
-/*****************************************************************************/
-void Log::Print(const std::string &message)
-{
-    mMutex.lock();
-    mSubject.Notify(message, Log::All);    // send message to all the listeners
-    mMutex.unlock();
 }
 /*****************************************************************************/
 void Log::Save(const std::string &line)
@@ -124,10 +147,22 @@ void Log::Save(const std::string &line)
     std::fstream f;
     std::string fileName;
 
-    mMutex.lock();
-    // One log file per day should be enough!
+    Util::Mkdir(mLogPath); // Make sure path exists
 
-    fileName = mLogPath + "/log_" + Util::CurrentDateTime("%Y-%m-%d") + ".csv";
+    if (mLogFileName.size() > 0)
+    {
+        // Use specified file name
+        fileName = mLogFileName;
+    }
+    else
+    {
+        // One log file per day should be enough!
+        fileName = "log_" + Util::CurrentDateTime("%Y-%m-%d") + ".csv";
+    }
+
+    fileName = mLogPath + Util::DIR_SEPARATOR + fileName;
+
+    mMutex.lock();
 
     // Avoid generating too much log for the server
     if (Util::FileSize(fileName) < SizeLimit)
@@ -142,7 +177,24 @@ void Log::Save(const std::string &line)
     }
     mMutex.unlock();
 }
+/*****************************************************************************/
+std::string Log::Infos::ToString() const
+{
+    std::stringstream ss;
+
+    ss << eventString[event] << ", " << Util::CurrentDateTime("%Y-%m-%d.%X") << ", ";
+
+    if (Log::mEnableSourceInfo)
+    {
+        ss <<  file << ", " << line << ", ";
+    }
+
+    ss << message;
+
+    return ss.str();
+}
 
 //=============================================================================
 // End of file Log.cpp
 //=============================================================================
+

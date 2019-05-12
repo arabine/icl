@@ -34,6 +34,11 @@
 #include <windows.h>
 #include <psapi.h>
 
+static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFUL);
+
+#define popen _popen
+#define pclose _pclose
+
 #endif
 
 #ifdef USE_UNIX_OS
@@ -57,7 +62,11 @@
 #include <chrono>
 #include <locale>
 #include <codecvt>
-#include "date.h"
+#include <algorithm>
+#include <thread>
+#include <random>
+//#include "date.h"
+//#include "tz.h"
 #include "Util.h"
 
 // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
@@ -68,6 +77,40 @@ struct deletable_facet : Facet
 };
 
 /*****************************************************************************/
+std::string Util::GenerateRandomString(uint32_t length)
+{
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz*$=+()_-[]#~&;:,!?{}@";
+    std::string rstr;
+
+    std::mt19937 eng(time(nullptr));
+
+    std::uniform_int_distribution<int> uniform_int(0, (sizeof(alphanum) - 1));
+
+    for (uint32_t i = 0; i < length; ++i)
+    {
+        rstr.push_back(alphanum[uniform_int(eng)]);
+    }
+    return rstr;
+}
+/*****************************************************************************/
+uint32_t Util::CurrentTimeStamp()
+{
+    std::chrono::seconds epoch = std::chrono::duration_cast< std::chrono::seconds >(
+        std::chrono::system_clock::now().time_since_epoch()
+    );
+
+    return static_cast<std::uint32_t>(epoch.count());
+}
+/*****************************************************************************/
+int64_t Util::CurrentTimeStamp64()
+{
+    std::chrono::milliseconds ms = std::chrono::duration_cast< std::chrono::milliseconds >(std::chrono::system_clock::now().time_since_epoch());
+    return ms.count();
+}
+/*****************************************************************************/
 /**
  * @brief Util::CurrentDateTime
  *
@@ -77,43 +120,23 @@ struct deletable_facet : Facet
  * @param format
  * @return
  */
+
 std::string Util::CurrentDateTime(const std::string &format)
 {
-	auto time_point = std::chrono::system_clock::now();
-    std::string s = date::format(format, time_point);
+    std::stringstream ss;
+    auto time = std::time(nullptr);
+    ss << std::put_time(std::localtime(&time), format.c_str());
 
-    return s;
+    return ss.str();
 }
 /*****************************************************************************/
-std::string Util::DateTimeFormat(const std::chrono::system_clock::time_point &tp, const std::string &format)
+std::string Util::TimestampToString(const std::string &format, uint32_t timestamp)
 {
-    return date::format(format, tp);
-}
-/*****************************************************************************/
-int Util::GetYear(const std::chrono::system_clock::time_point &tp)
-{
-    auto dp = date::floor<date::days>(tp);
-    auto ymd = date::year_month_day{dp};
-    return (int)ymd.year();
-}
-/*****************************************************************************/
-std::string Util::ToISODateTime(const std::chrono::system_clock::time_point &tp)
-{
-    return  date::format("%FT%TZ", tp);
-}
-/*****************************************************************************/
-std::chrono::system_clock::time_point Util::FromISODateTime(const std::string &str)
-{
-    std::istringstream in(str);
-    date::sys_seconds tp;
-    in >> date::parse("%FT%TZ", tp);
-    if (in.fail())
-    {
-        in.clear();
-        in.str(str);
-        in >> date::parse("%FT%T%z", tp);
-    }
-    return tp;
+    std::stringstream ss;
+    time_t time = timestamp;
+    ss << std::put_time(std::localtime(&time), format.c_str());
+
+    return ss.str();
 }
 /*****************************************************************************/
 std::string Util::ExecutablePath()
@@ -124,8 +147,8 @@ std::string Util::ExecutablePath()
     wchar_t buf[MAX_PATH];
 
     // Will contain exe path
-    HMODULE hModule = GetModuleHandle(NULL);
-    if (hModule != NULL)
+    HMODULE hModule = GetModuleHandle(nullptr);
+    if (hModule != nullptr)
     {
         // When passing NULL to GetModuleHandle, it returns handle of exe itself
         GetModuleFileName(hModule, buf, MAX_PATH);
@@ -143,6 +166,17 @@ std::string Util::ExecutablePath()
 #error "A portable code is needed here"
 #endif
     return (GetDirectoryPath(path));
+}
+/*****************************************************************************/
+std::string Util::Util::GetCurrentDirectory()
+{
+    std::string currentDir;
+    char cwd[4096];
+    if (getcwd(cwd, sizeof(cwd)) != nullptr)
+    {
+       currentDir.append(cwd);
+    }
+    return currentDir;
 }
 /*****************************************************************************/
 std::string Util::HomePath()
@@ -217,38 +251,276 @@ bool Util::FileExists(const std::string &fileName)
  * @param fileName
  * @return -1 means file not found
  */
-std::int64_t Util::FileSize(const std::string &fileName)
+std::uint64_t Util::FileSize(const std::string &fileName)
 {
-    std::int64_t size = -1;
+    std::uint64_t size = 0;
     struct stat st;
     if (::stat(fileName.c_str(), &st) == 0)
     {
-        size = st.st_size;
+        size = static_cast<std::uint64_t>(st.st_size);
     }
     return size;
 }
 /*****************************************************************************/
+std::string Util::ToUpper(const std::string &input)
+{
+    std::string str = input;
+    std::transform(str.begin(), str.end(), str.begin(), ::toupper);
+    return str;
+}
+/*****************************************************************************/
 std::string Util::ToLower(const std::string &text)
 {
-    std::string data = text;
     std::transform(data.begin(), data.end(), data.begin(), ::tolower);
+    std::string data = text;
     return data;
 }
 /*****************************************************************************/
 std::string Util::GetFileName(const std::string &path)
 {
-    return path.substr( path.find_last_of(DIR_SEPARATOR) + 1 );
+    unsigned found = path.find_last_of("/\\");
+    return path.substr(found+1);
+}
+/*****************************************************************************/
+std::string Util::GetFileExtension(const std::string &FileName)
+{
+    if(FileName.find_last_of(".") != std::string::npos)
+        return FileName.substr(FileName.find_last_of(".")+1);
+    return "";
 }
 /*****************************************************************************/
 std::string Util::GetDirectoryPath(const std::string &path)
 {
-    std::string directory = path;
-    // transform into native path
-#ifdef USE_WINDOWS_OS
-    ReplaceCharacter(directory, "/", "\\");
-#endif
+    unsigned found = path.find_last_of("/\\");
+    return path.substr(0,found);
+}
+/*****************************************************************************/
+std::string Util::GetModifiedFileDateTime(const std::string &fileName)
+{
+    struct stat result;
+    std::string dateTime;
 
-    return directory.substr(0, directory.find_last_of(DIR_SEPARATOR));
+    if (::stat(fileName.c_str(), &result)==0)
+    {
+        struct tm * timeinfo = std::localtime(&result.st_mtime); // or gmtime() depending on what you want
+        dateTime = asctime(timeinfo);
+    }
+
+    return dateTime;
+}
+/*****************************************************************************/
+std::string Util::ToLeadingZeros(const int value, const int precision)
+{
+    std::ostringstream oss;
+    oss << std::setw(precision) << std::setfill('0') << value;
+    return oss.str();
+}
+/*****************************************************************************/
+std::uint32_t Util::Exec(
+        std::string     exePath,    //Command Line
+        std::string     params,  //set to '.' for current directory
+        std::string&    ListStdOut, //Return List of StdOut
+        std::string&    ListStdErr, //Return List of StdErr
+        int32_t&        RetCode)    //Return Exit Code
+{
+
+#ifdef USE_WINDOWS_OS
+
+     std::uint32_t status = 0;
+
+    int                  Success;
+    SECURITY_ATTRIBUTES  security_attributes;
+    HANDLE               stdout_rd = WIN_INVALID_HND_VALUE;
+    HANDLE               stdout_wr = WIN_INVALID_HND_VALUE;
+    HANDLE               stderr_rd = WIN_INVALID_HND_VALUE;
+    HANDLE               stderr_wr = WIN_INVALID_HND_VALUE;
+    PROCESS_INFORMATION  process_info;
+    STARTUPINFO          startup_info;
+    std::thread               stdout_thread;
+    std::thread               stderr_thread;
+
+    security_attributes.nLength              = sizeof(SECURITY_ATTRIBUTES);
+    security_attributes.bInheritHandle       = TRUE;
+    security_attributes.lpSecurityDescriptor = nullptr;
+
+    if (!CreatePipe(&stdout_rd, &stdout_wr, &security_attributes, 0) ||
+            !SetHandleInformation(stdout_rd, HANDLE_FLAG_INHERIT, 0))
+    {
+        status = GetLastError();
+        return status;
+    }
+
+    if (!CreatePipe(&stderr_rd, &stderr_wr, &security_attributes, 0) ||
+            !SetHandleInformation(stderr_rd, HANDLE_FLAG_INHERIT, 0))
+    {
+        if (stdout_rd != WIN_INVALID_HND_VALUE) CloseHandle(stdout_rd);
+        if (stdout_wr != WIN_INVALID_HND_VALUE) CloseHandle(stdout_wr);
+        status = GetLastError();
+        return status;
+    }
+
+    ZeroMemory(&process_info, sizeof(PROCESS_INFORMATION));
+    ZeroMemory(&startup_info, sizeof(STARTUPINFO));
+
+    startup_info.cb         = sizeof(STARTUPINFO);
+    startup_info.hStdInput  = nullptr;
+    startup_info.hStdOutput = stdout_wr;
+    startup_info.hStdError  = stderr_wr;
+
+    if(stdout_rd || stderr_rd)
+    {
+        startup_info.dwFlags |= STARTF_USESTDHANDLES;
+    }
+
+    std::wstring FullPathToExe = L"\"" + Util::ToWString(exePath) +  L"\"";
+    FullPathToExe += L' ' + Util::ToWString(params);
+
+    std::wstring sTempStr = L"";
+
+     /* CreateProcessW can modify Parameters thus we allocate needed memory */
+    wchar_t * pwszParam = new wchar_t[FullPathToExe.size() + 1];
+    if (pwszParam == nullptr)
+    {
+        return 1;
+    }
+    const wchar_t* pchrTemp = FullPathToExe.c_str();
+    wcscpy_s(pwszParam, FullPathToExe.size() + 1, pchrTemp);
+
+    Success = CreateProcess(
+        nullptr,
+        pwszParam,
+        nullptr,
+        nullptr,
+        TRUE,
+        CREATE_NO_WINDOW,
+        nullptr,
+        nullptr,
+        &startup_info,
+        &process_info
+    );
+    CloseHandle(stdout_wr);
+    CloseHandle(stderr_wr);
+
+    if(!Success)
+    {
+        CloseHandle(process_info.hProcess);
+        CloseHandle(process_info.hThread);
+        CloseHandle(stdout_rd);
+        CloseHandle(stderr_rd);
+        status = GetLastError();
+    }
+    else
+    {
+        CloseHandle(process_info.hThread);
+
+        if(stdout_rd)
+        {
+            stdout_thread = std::thread([&]()
+            {
+                DWORD  n;
+                const size_t bufsize = 1000;
+                char         buffer [bufsize];
+                for(;;) {
+                    n = 0;
+                    int Success = ReadFile(
+                        stdout_rd,
+                        buffer,
+                        static_cast<DWORD>(bufsize),
+                        &n,
+                        nullptr
+                    );
+    //                printf("STDERR: Success:%d n:%d\n", Success, static_cast<int>(n));
+                    if(!Success || n == 0)
+                        break;
+                    std::string s(buffer, n);
+    //                printf("STDOUT:(%s)\n", s.c_str());
+                    ListStdOut += s;
+                }
+    //            printf("STDOUT:BREAK!\n");
+            });
+        }
+
+        if(stderr_rd)
+        {
+            stderr_thread=std::thread([&]()
+            {
+                DWORD        n;
+                const size_t bufsize = 1000;
+                char         buffer [bufsize];
+                for(;;) {
+                    n = 0;
+                    int Success = ReadFile(
+                        stderr_rd,
+                        buffer,
+                        static_cast<DWORD>(bufsize),
+                        &n,
+                        nullptr
+                    );
+    //                printf("STDERR: Success:%d n:%d\n", Success, static_cast<int>(n));
+                    if(!Success || n == 0)
+                        break;
+                    std::string s(buffer, n);
+    //                printf("STDERR:(%s)\n", s.c_str());
+                    ListStdErr += s;
+                }
+    //            printf("STDERR:BREAK!\n");
+            });
+        }
+    }
+
+    WaitForSingleObject(process_info.hProcess, INFINITE);
+    if(!GetExitCodeProcess(process_info.hProcess, reinterpret_cast<DWORD*>(&RetCode)))
+    {
+         status = GetLastError();
+    }
+
+    /* Free memory */
+    delete[]pwszParam;
+    pwszParam = nullptr;
+
+    CloseHandle(process_info.hProcess);
+
+    if(stdout_thread.joinable())
+    {
+        stdout_thread.join();
+    }
+
+    if(stderr_thread.joinable())
+    {
+        stderr_thread.join();
+    }
+
+    if (stdout_rd)
+    {
+        CloseHandle(stdout_rd);
+    }
+    if (stderr_rd)
+    {
+        CloseHandle(stderr_rd);
+    }
+
+    return status;
+
+#else
+
+    (void) ListStdErr; // FIXME: update this on linux
+    RetCode = 0; // FIXME: update this on linux
+
+    std::array<char, 128> buffer;
+
+    std::string cmd = exePath + " " + params;
+
+    std::shared_ptr<FILE> pipe(popen(cmd.c_str(), "r"), pclose);
+    if (pipe)
+    {
+        while (!feof(pipe.get())) {
+            if (fgets(buffer.data(), 128, pipe.get()) != nullptr)
+                ListStdOut += buffer.data();
+        }
+    }
+
+    return 0;
+#endif
 }
 /*****************************************************************************/
 /**
@@ -348,6 +620,17 @@ std::vector<std::string> Util::Split(const std::string &theString, const std::st
     return theStringVector;
 }
 /*****************************************************************************/
+std::string Util::EscapeChar(const std::string &str)
+{
+    std::string escaped = str;
+    ReplaceCharacter(escaped, "\\", "/");
+    ReplaceCharacter(escaped, "\r\n", "\\n");
+    ReplaceCharacter(escaped, "\n", "\\n");
+    ReplaceCharacter(escaped, "\t", "\\t");
+
+    return escaped;
+}
+/*****************************************************************************/
 std::string Util::Join(const std::vector<std::string> &tokens, const std::string &delimiter)
 {
     std::stringstream ss;
@@ -388,6 +671,14 @@ std::wstring Util::ToWString(const std::string &str)
     return conv.from_bytes(str);
 }
 /*****************************************************************************/
+std::string Util::ToString(const std::wstring &wstr)
+{
+    using convert_typeX = std::codecvt_utf8<wchar_t>;
+    std::wstring_convert<convert_typeX, wchar_t> converterX;
+
+    return converterX.to_bytes(wstr);
+}
+/*****************************************************************************/
 /**
  * @brief Util::GetCurrentMemoryUsage
  *
@@ -401,7 +692,7 @@ std::int32_t Util::GetCurrentMemoryUsage()
     /* Windows -------------------------------------------------- */
     PROCESS_MEMORY_COUNTERS info;
     GetProcessMemoryInfo( GetCurrentProcess( ), &info, sizeof(info) );
-    return (size_t)info.WorkingSetSize;
+    return static_cast<std::int32_t>(info.WorkingSetSize);
 
 #elif defined(__APPLE__) && defined(__MACH__)
     /* OSX ------------------------------------------------------ */
@@ -444,7 +735,7 @@ std::int32_t Util::GetMaximumMemoryUsage()
     /* Windows -------------------------------------------------- */
     PROCESS_MEMORY_COUNTERS info;
     GetProcessMemoryInfo( GetCurrentProcess( ), &info, sizeof(info) );
-    return (size_t)info.PeakWorkingSetSize;
+    return static_cast<std::int32_t>(info.PeakWorkingSetSize);
 
 #elif (defined(_AIX) || defined(__TOS__AIX__)) || (defined(__sun__) || defined(__sun) || defined(sun) && (defined(__SVR4) || defined(__svr4__)))
     /* AIX and Solaris ------------------------------------------ */
@@ -480,11 +771,11 @@ std::string Util::HexDump(const char *desc, const void *addr, int len)
 {
     int i;
     unsigned char buff[17];
-    unsigned char *pc = (unsigned char*)addr;
+    const unsigned char *pc = static_cast<const unsigned char*>(addr);
     std::stringstream ss;
 
     // Output description if given.
-    if (desc != NULL)
+    if (desc != nullptr)
     {
         ss << desc << ":\n";
     }
@@ -511,8 +802,8 @@ std::string Util::HexDump(const char *desc, const void *addr, int len)
             ss <<  " " << std::setfill('0') << std::setw(4) << std::hex  << i;
         }
 
-        // Now the hex code for the specific character.
-        ss <<  " " << std::setfill('0') << std::setw(2) << std::hex  << (int)pc[i] << ", ";
+        // Now the hex byte_to_hexcode for the specific character.
+        ss <<  " " << std::setfill('0') << std::setw(2) << std::hex  << static_cast<int>(pc[i]) << ", ";
 
         // And store a printable ASCII character for later.
         if ((pc[i] < 0x20) || (pc[i] > 0x7e))
@@ -531,6 +822,32 @@ std::string Util::HexDump(const char *desc, const void *addr, int len)
     // And print the final ASCII bit.
     ss << "  "<< buff << "\n";
     return ss.str();
+}
+
+void Util::ByteToHex(const char byte, char *out)
+{
+    int i = 0U;
+    static const char binHex[] = "0123456789ABCDEF";
+
+    out[2*i] = binHex[(byte >> 4) & 0x0F];
+    out[2*i + 1] = binHex[byte & 0x0F];
+}
+
+
+std::string Util::ToHex(const char *buf, size_t size)
+{
+    char out[2];
+    std::string hexstr;
+
+    for (size_t i = 0U; i < size; i++)
+    {
+        ByteToHex(buf[i], &out[0]);
+
+        hexstr += out[0];
+        hexstr += out[1];
+    }
+
+    return hexstr;
 }
 
 //=============================================================================

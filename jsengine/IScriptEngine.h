@@ -37,14 +37,22 @@ public:
     class IPrinter
     {
     public:
-        ~IPrinter() {}
+        virtual ~IPrinter() {}
 
         virtual void Print(const std::string &msg) = 0;
     };
 
+    class IFunction
+    {
+    public:
+        virtual ~IFunction() {}
+
+        virtual bool Execute(const std::vector<Value> &val, Value &ret) = 0;
+    };
+
     typedef std::vector<std::string> StringList;
 
-    virtual ~IScriptEngine() { /* Nothing to do */ }
+    virtual ~IScriptEngine() {}
 
     virtual void Initialize() = 0;
     virtual void RegisterPrinter(IScriptEngine::IPrinter *printer) = 0;
@@ -52,6 +60,10 @@ public:
     virtual bool EvaluateString(const std::string &contents, std::string &output) = 0;
     virtual Value Call(const std::string &function, const StringList &args) = 0;
     virtual void Close() = 0;
+    virtual void RegisterFunction(const std::string &name, IScriptEngine::IFunction *function) = 0;
+    virtual bool HasError() = 0;
+    virtual std::string GetLastError() = 0;
+    virtual void ClearError() = 0;
 };
 
 #endif // I_SCRIPT_ENGINE_H

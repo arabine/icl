@@ -24,6 +24,7 @@
  */
 
 #include "WebSocket.h"
+#include "Sha1.h"
 
 /*****************************************************************************/
 void WebSocketRequest::Parse(const std::string &msg)

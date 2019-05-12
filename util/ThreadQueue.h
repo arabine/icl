@@ -77,6 +77,22 @@ public:
         mQueue.pop();
     }
 
+    bool WaitAndPop(Data &popped_value, uint32_t milliseconds)
+    {
+        std::unique_lock<std::mutex> lock(mMutex);
+        while (mQueue.empty())
+        {
+            if (mCondVar.wait_for(lock, std::chrono::milliseconds(milliseconds)) ==  std::cv_status::timeout)
+            {
+                return false;
+            }
+        }
+
+        popped_value = mQueue.front();
+        mQueue.pop();
+        return true;
+    }
+
     std::uint32_t Size()
     {
         std::unique_lock<std::mutex> lock(mMutex);

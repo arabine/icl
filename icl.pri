@@ -10,8 +10,8 @@ HEADERS += Log.h \
     UniqueId.h \
     Semaphore.h \
     Console.h \
-    IEventLoop.h \
-    EventLoop.h
+    EventLoop.h \
+    DurationTimer.h
 
 SOURCES += Log.cpp \
     Util.cpp \
@@ -41,39 +41,48 @@ HEADERS += TcpSocket.h \
     TcpServerBase.h
 
 SOURCES += TcpSocket.cpp \
-    TcpServer.cpp \
+    TcpServerBase.cpp \
     TcpClient.cpp \
-    WebSocket.cpp \
-    TcpServerBase.cpp
+    WebSocket.cpp
+
+
+linux {
+    SOURCES += TcpServerEpoll.cpp
+}
+
+windows {
+    SOURCES += TcpServer.cpp
+}
 
 # ------------------------------------------------------------------------------
 # Protocol files
 # ------------------------------------------------------------------------------
-HEADERS += Http.h
+HEADERS += Http.h HttpFileServer.h
 
-SOURCES += Http.cpp
+SOURCES += Http.cpp HttpFileServer.cpp
 
 # ------------------------------------------------------------------------------
 # Database files
 # ------------------------------------------------------------------------------
 
 icl_database {
-    HEADERS += CouchDb.h \
-                DataBase.h
+    HEADERS += DataBase.h
 
-    SOURCES += CouchDb.cpp \
-                DataBase.cpp \
-                sqlite3.c
+    SOURCES += DataBase.cpp sqlite3.c
+}
+
+icl_couchdb {
+    HEADERS += CouchDb.h
+
+    SOURCES += CouchDb.cpp
 }
 
 # ------------------------------------------------------------------------------
 # Security files
 # ------------------------------------------------------------------------------
-HEADERS += Base64.h \
-    Sha1.h
+HEADERS += Base64.h Sha1.h Sha256.h
 
-SOURCES += Base64.cpp \
-    Sha1.cpp
+SOURCES += Base64.cpp Sha1.cpp Sha256.cpp
 
 # ------------------------------------------------------------------------------
 # ZIP files
@@ -104,11 +113,11 @@ HEADERS += duktape.h duk_config.h \
 SOURCES += duktape.c \
     JSEngine.cpp
 
-CONFIG(debug, debug|release) {
-    win32 {
-        SOURCES += duk_trans_socket_windows.c
-    }
-}
+#CONFIG(debug, debug|release) {
+#    win32 {
+#        SOURCES += duk_trans_socket_windows.c
+#    }
+#}
 
 VPATH += $$ICL_DIR/network
 VPATH += $$ICL_DIR/util
@@ -119,6 +128,7 @@ VPATH += $$ICL_DIR/protocol
 VPATH += $$ICL_DIR/json
 VPATH += $$ICL_DIR/io
 VPATH += $$ICL_DIR/db
+VPATH += $$ICL_DIR/date
 
 INCLUDEPATH += $$ICL_DIR/network
 INCLUDEPATH += $$ICL_DIR/util
@@ -129,5 +139,5 @@ INCLUDEPATH += $$ICL_DIR/protocol
 INCLUDEPATH += $$ICL_DIR/json
 INCLUDEPATH += $$ICL_DIR/io
 INCLUDEPATH += $$ICL_DIR/db
-
-
+INCLUDEPATH += $$ICL_DIR/date
+INCLUDEPATH += $$ICL_DIR
