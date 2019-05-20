@@ -269,11 +269,11 @@ std::string Util::ToUpper(const std::string &input)
     return str;
 }
 /*****************************************************************************/
-std::string Util::ToLower(const std::string &text)
+std::string Util::ToLower(const std::string &input)
 {
-    std::transform(data.begin(), data.end(), data.begin(), ::tolower);
-    std::string data = text;
-    return data;
+    std::string str = input;
+    std::transform(str.begin(), str.end(), str.begin(), ::tolower);
+    return str;
 }
 /*****************************************************************************/
 std::string Util::GetFileName(const std::string &path)
