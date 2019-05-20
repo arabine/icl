@@ -124,6 +124,7 @@ void TcpServer::Run()
 {
     bool end_server = false;
     struct epoll_event events[MAXEVENTS];
+    struct epoll_event ev;
 
     //************************************************************
     // Initialize the epoll stuff
@@ -135,7 +136,6 @@ void TcpServer::Run()
     }
 
     // Add TCP server
-    struct epoll_event ev;
     ev.data.fd = mTcpServer.GetSocket();
     ev.events = EPOLLIN | EPOLLET;
     if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mTcpServer.GetSocket(), &ev) == -1)
@@ -170,7 +170,7 @@ void TcpServer::Run()
     mSendFd = pipefd[1];
     fcntl(mSendFd, F_SETFL, O_NONBLOCK);
 
-    ev.data.fd = mTcpServer.GetSocket();
+    ev.data.fd = mReceiveFd;
     ev.events = EPOLLIN | EPOLLET;
     if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mReceiveFd, &ev) == -1)
     {

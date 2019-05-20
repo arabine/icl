@@ -51,7 +51,7 @@ linux {
 }
 
 windows {
-    SOURCES += TcpServer.cpp
+  #  SOURCES += TcpServer.cpp
 }
 
 # ------------------------------------------------------------------------------
