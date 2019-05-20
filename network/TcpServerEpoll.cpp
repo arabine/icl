@@ -79,7 +79,7 @@ void TcpServer::Stop()
 #ifdef USE_WINDOWS_OS
         _write(mSendFd, "1", 1);
 #else
-		write(mSendFd, "1", 1);
+        (void) write(mSendFd, "1", 1);
 #endif
     }
     mTcpServer.Close();
@@ -106,10 +106,10 @@ std::string TcpServer::GetPeerName(int s)
     int port = 0;
 
     len = sizeof(addr);
-    int ret = getpeername(s, (struct sockaddr*)&addr, &len);
+    int ret = getpeername(s, reinterpret_cast<struct sockaddr*>(&addr), &len);
     if (ret == 0)
     {
-		ipstr = TcpSocket::ToString((struct sockaddr*)&addr); // point to an internal static buffer
+        ipstr = TcpSocket::ToString(reinterpret_cast<struct sockaddr*>(&addr)); // point to an internal static buffer
         ss << ipstr << ":" << port;
     }
     else
@@ -124,6 +124,7 @@ void TcpServer::Run()
 {
     bool end_server = false;
     struct epoll_event events[MAXEVENTS];
+    struct epoll_event ev;
 
     //************************************************************
     // Initialize the epoll stuff
@@ -135,7 +136,6 @@ void TcpServer::Run()
     }
 
     // Add TCP server
-    struct epoll_event ev;
     ev.data.fd = mTcpServer.GetSocket();
     ev.events = EPOLLIN | EPOLLET;
     if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mTcpServer.GetSocket(), &ev) == -1)
@@ -170,7 +170,7 @@ void TcpServer::Run()
     mSendFd = pipefd[1];
     fcntl(mSendFd, F_SETFL, O_NONBLOCK);
 
-    ev.data.fd = mTcpServer.GetSocket();
+    ev.data.fd = mReceiveFd;
     ev.events = EPOLLIN | EPOLLET;
     if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mReceiveFd, &ev) == -1)
     {
@@ -225,6 +225,11 @@ void TcpServer::Run()
                     }
 
                     close (events[i].data.fd);
+                    continue;
+                }
+                else if (events[i].events & EPOLLRDHUP)
+                {
+                    std::cout << "EPOLLRDHUP on " << events[i].data.fd << std::endl;
                     continue;
                 }
                 else if (mReceiveFd == events[i].data.fd)

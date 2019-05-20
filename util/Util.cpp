@@ -158,7 +158,7 @@ std::string Util::ExecutablePath()
 
 #elif defined(USE_UNIX_OS)
     char buf[FILENAME_MAX];
-    readlink("/proc/self/exe", buf, sizeof(buf));
+    (void) readlink("/proc/self/exe", buf, sizeof(buf));
     path = buf;
 #elif defined(USE_APPLE_OS)
     _NSGetExecutablePath(path, &size); // make it compile
@@ -278,7 +278,7 @@ std::string Util::ToLower(const std::string &input)
 /*****************************************************************************/
 std::string Util::GetFileName(const std::string &path)
 {
-    unsigned found = path.find_last_of("/\\");
+    auto found = path.find_last_of("/\\");
     return path.substr(found+1);
 }
 /*****************************************************************************/
@@ -291,7 +291,7 @@ std::string Util::GetFileExtension(const std::string &FileName)
 /*****************************************************************************/
 std::string Util::GetDirectoryPath(const std::string &path)
 {
-    unsigned found = path.find_last_of("/\\");
+    auto found = path.find_last_of("/\\");
     return path.substr(0,found);
 }
 /*****************************************************************************/
@@ -706,16 +706,16 @@ std::int32_t Util::GetCurrentMemoryUsage()
 #elif defined(__linux__) || defined(__linux) || defined(linux) || defined(__gnu_linux__)
     /* Linux ---------------------------------------------------- */
     long rss = 0L;
-    FILE* fp = NULL;
-    if ( (fp = fopen( "/proc/self/statm", "r" )) == NULL )
-        return (size_t)0L;      /* Can't open? */
+    FILE* fp = nullptr;
+    if ( (fp = fopen( "/proc/self/statm", "r" )) == nullptr )
+        return 0;      /* Can't open? */
     if ( fscanf( fp, "%*s%ld", &rss ) != 1 )
     {
         fclose( fp );
-        return (size_t)0L;      /* Can't read? */
+        return 0;      /* Can't read? */
     }
     fclose( fp );
-    return (size_t)rss * (size_t)sysconf( _SC_PAGESIZE);
+    return static_cast<std::int32_t>(rss * sysconf( _SC_PAGESIZE));
 
 #else
     /* AIX, BSD, Solaris, and Unknown OS ------------------------ */
@@ -758,7 +758,7 @@ std::int32_t Util::GetMaximumMemoryUsage()
 #if defined(__APPLE__) && defined(__MACH__)
     return (size_t)rusage.ru_maxrss;
 #else
-    return (size_t)(rusage.ru_maxrss * 1024L);
+    return static_cast<std::int32_t>(rusage.ru_maxrss * 1024L);
 #endif
 
 #else
