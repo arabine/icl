@@ -79,7 +79,7 @@ void TcpServer::Stop()
 #ifdef USE_WINDOWS_OS
         _write(mSendFd, "1", 1);
 #else
-		write(mSendFd, "1", 1);
+        (void) write(mSendFd, "1", 1);
 #endif
     }
     mTcpServer.Close();
@@ -106,10 +106,10 @@ std::string TcpServer::GetPeerName(int s)
     int port = 0;
 
     len = sizeof(addr);
-    int ret = getpeername(s, (struct sockaddr*)&addr, &len);
+    int ret = getpeername(s, reinterpret_cast<struct sockaddr*>(&addr), &len);
     if (ret == 0)
     {
-		ipstr = TcpSocket::ToString((struct sockaddr*)&addr); // point to an internal static buffer
+        ipstr = TcpSocket::ToString(reinterpret_cast<struct sockaddr*>(&addr)); // point to an internal static buffer
         ss << ipstr << ":" << port;
     }
     else
