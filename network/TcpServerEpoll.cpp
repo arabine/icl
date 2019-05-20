@@ -227,6 +227,11 @@ void TcpServer::Run()
                     close (events[i].data.fd);
                     continue;
                 }
+                else if (events[i].events & EPOLLRDHUP)
+                {
+                    std::cout << "EPOLLRDHUP on " << events[i].data.fd << std::endl;
+                    continue;
+                }
                 else if (mReceiveFd == events[i].data.fd)
                 {
                     end_server = true;
