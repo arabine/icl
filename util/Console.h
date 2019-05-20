@@ -47,7 +47,7 @@ private:
     // set it dynamically to detect native window keyboard events or from a compatible terminal
     // using escape sequences
     bool mUseNativeKbEvents;
-    int fd;
+
 };
 
 #endif // CONSOLE_H

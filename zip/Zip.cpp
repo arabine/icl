@@ -34,7 +34,6 @@
 /*****************************************************************************/
 Zip::Zip()
     : mIsValid(false)
-    , mCompressedData(nullptr)
     , mNumberOfFiles(0U)
 {
     std::memset(&mZipArchive, 0, sizeof(mZipArchive));

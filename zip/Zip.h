@@ -50,12 +50,8 @@ public:
     static int CompressBuffer(const char *input, size_t input_size, char *output);
 
 private:
-    std::int32_t cZipMaxSize = 2 * 1024 * 1024; // 2MB max
-
     mz_zip_archive mZipArchive;
     bool mIsValid;
-    char *mCompressedData;
-    size_t mCompressedDataSize;
     std::uint32_t mNumberOfFiles;
 };
 
