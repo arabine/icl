@@ -144,7 +144,7 @@ bool Zip::GetFile(const std::string &fileName, std::string &contents)
         size_t size;
         char *p = (char *)mz_zip_reader_extract_file_to_heap(&mZipArchive, fileName.c_str(), &size, 0);
 
-        if (p != NULL)
+        if (p != nullptr)
         {
             contents.assign(p, size);
             free(p);

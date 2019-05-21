@@ -34,7 +34,10 @@
 #include "Observer.h"
 #include "ThreadQueue.h"
 #include "WebSocket.h"
+
+#ifdef USE_LINUX_OS
 #include <sys/epoll.h>
+#endif
 
 namespace tcp
 {
@@ -61,7 +64,7 @@ public:
             CLOSED
         };
 
-        virtual ~IEvent();
+        virtual ~IEvent() {}
 
         /**
          * @brief NewConnection

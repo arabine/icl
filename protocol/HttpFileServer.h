@@ -26,6 +26,7 @@ class HttpFileServer : public tcp::TcpServer::IEvent
 
 public:
     HttpFileServer(const std::string &rootDir);
+    ~HttpFileServer();
 
     virtual void NewConnection(const tcp::Conn &conn);
     virtual void ReadData(const tcp::Conn &conn);

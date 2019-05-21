@@ -59,7 +59,7 @@ void EventLoop::Run()
 void EventLoop::UpdateTimers()
 {
     std::chrono::system_clock::time_point time_now = std::chrono::system_clock::now();
-    std::time_t epoch_time = std::chrono::system_clock::to_time_t(time_now);
+    time_t epoch_time = std::chrono::system_clock::to_time_t(time_now);
 
     int i = 0;
     for (auto &t : mTimers)

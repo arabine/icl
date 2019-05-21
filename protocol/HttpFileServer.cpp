@@ -21,6 +21,11 @@ HttpFileServer::HttpFileServer(const std::string &rootDir)
     TLogInfo("[HTTP] Current session secret key: " + mSessionSecret);
 }
 
+HttpFileServer::~HttpFileServer()
+{
+
+}
+
 void HttpFileServer::NewConnection(const tcp::Conn &conn) {
     (void) conn;
 }
