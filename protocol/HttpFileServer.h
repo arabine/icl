@@ -1,3 +1,8 @@
+/**
+ * MIT License
+ * Copyright (c) 2019 Anthony Rabine
+ */
+
 #ifndef HTTP_FILE_SERVER_H
 #define HTTP_FILE_SERVER_H
 

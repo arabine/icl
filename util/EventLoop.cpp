@@ -1,3 +1,8 @@
+/**
+ * MIT License
+ * Copyright (c) 2019 Anthony Rabine
+ */
+
 #include "EventLoop.h"
 
 static long Next(long p)

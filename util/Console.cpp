@@ -1,3 +1,8 @@
+/**
+ * MIT License
+ * Copyright (c) 2019 Anthony Rabine
+ */
+
 #include "Console.h"
 
 #include <stdio.h>

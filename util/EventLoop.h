@@ -1,3 +1,8 @@
+/**
+ * MIT License
+ * Copyright (c) 2019 Anthony Rabine
+ */
+
 #ifndef EVENT_LOOP_H
 #define EVENT_LOOP_H
 

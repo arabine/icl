@@ -1,3 +1,7 @@
+/**
+ * MIT License
+ * Copyright (c) 2019 Anthony Rabine
+ */
 
 #include "CouchDb.h"
 #include "Util.h"

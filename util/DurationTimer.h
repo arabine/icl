@@ -1,3 +1,8 @@
+/**
+ * MIT License
+ * Copyright (c) 2019 Anthony Rabine
+ */
+
 #ifndef DURATION_TIMER_H
 #define DURATION_TIMER_H
 

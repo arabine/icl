@@ -1,3 +1,8 @@
+/**
+ * MIT License
+ * Copyright (c) 2019 Anthony Rabine
+ */
+
 #ifndef TCP_SERVER_BASE_H
 #define TCP_SERVER_BASE_H
 

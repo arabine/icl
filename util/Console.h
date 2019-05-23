@@ -1,3 +1,8 @@
+/**
+ * MIT License
+ * Copyright (c) 2019 Anthony Rabine
+ */
+
 #ifndef CONSOLE_H
 #define CONSOLE_H
 

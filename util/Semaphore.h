@@ -1,6 +1,10 @@
+/**
+ * MIT License
+ * Copyright (c) 2019 Anthony Rabine
+ */
+
 #ifndef SEMAPHORE_H
 #define SEMAPHORE_H
-
 
 #include <mutex>
 #include <condition_variable>
