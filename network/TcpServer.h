@@ -64,7 +64,7 @@ public:
             CLOSED
         };
 
-        virtual ~IEvent() {}
+        virtual ~IEvent() ;
 
         /**
          * @brief NewConnection
