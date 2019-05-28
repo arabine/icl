@@ -36,6 +36,8 @@ TcpServer::~TcpServer()
 /*****************************************************************************/
 bool TcpServer::Start(std::int32_t maxConnections, bool localHostOnly, std::uint16_t tcpPort, std::uint16_t wsPort)
 {
+    Stop();
+
     bool valid = mTcpServer.CreateServer(tcpPort, localHostOnly, maxConnections);
 
     if (valid)
