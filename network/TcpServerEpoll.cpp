@@ -36,19 +36,33 @@ TcpServer::~TcpServer()
 /*****************************************************************************/
 bool TcpServer::Start(std::int32_t maxConnections, bool localHostOnly, std::uint16_t tcpPort, std::uint16_t wsPort)
 {
-    mTcpServer.CreateServer(tcpPort, localHostOnly, maxConnections);
-    if (wsPort > 0U)
-    {
-        mWsServer.CreateServer(wsPort, localHostOnly, maxConnections);
-    }
+    bool valid = mTcpServer.CreateServer(tcpPort, localHostOnly, maxConnections);
 
-    // Create the thread the first time only
-    if (!mInitialized)
+    if (valid)
     {
-        mThread = std::thread(&TcpServer::Run, this);
-        mInitialized = true;
-    }
+        if (wsPort > 0U)
+        {
+            valid = mWsServer.CreateServer(wsPort, localHostOnly, maxConnections);
+        }
 
+        if (valid)
+        {
+            // Create the thread the first time only
+            if (!mInitialized)
+            {
+                mThread = std::thread(&TcpServer::Run, this);
+                mInitialized = true;
+            }
+        }
+        else
+        {
+             std::cerr << "Websocket Server creation failure (port maybe not free)" << std::endl;
+        }
+    }
+    else
+    {
+        std::cerr << "TCP Server creation failure (port maybe not free)" << std::endl;
+    }
     return mInitialized;
 }
 /*****************************************************************************/
