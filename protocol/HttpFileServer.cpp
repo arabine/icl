@@ -30,6 +30,10 @@ HttpFileServer::~HttpFileServer()
 
 }
 
+tcp::TcpServer::IEvent::~IEvent(){
+
+}
+
 void HttpFileServer::NewConnection(const tcp::Conn &conn) {
     (void) conn;
 }
