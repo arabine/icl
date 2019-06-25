@@ -473,7 +473,6 @@ void TcpServer::UpdateClients()
 
 }
 
-TcpServer::IEvent::~IEvent() {}
 
 } // namespace tcp
 
