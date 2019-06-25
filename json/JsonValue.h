@@ -66,9 +66,9 @@ public:
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
     bool DeleteEntry(std::uint32_t index);
 
-    typedef std::vector<JsonValue>::iterator Iterator;
-    Iterator Begin() { return mArray.begin(); }
-    Iterator End() { return mArray.end(); }
+    typedef std::vector<JsonValue>::iterator iterator;
+    iterator begin() { return mArray.begin(); }
+    iterator end() { return mArray.end(); }
 
 private:
     std::vector<JsonValue> mArray;
