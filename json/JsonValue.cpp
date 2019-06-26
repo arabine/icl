@@ -513,7 +513,7 @@ JsonValue JsonValue::FindValue(const std::string &keyPath) const
         }
         else if (temp.IsArray())
         {
-            for (JsonArray::Iterator iter = temp.GetArray().Begin(); iter != temp.GetArray().End(); ++iter)
+            for (JsonArray::iterator iter = temp.GetArray().begin(); iter != temp.GetArray().end(); ++iter)
             {
                 if (iter->IsObject())
                 {
