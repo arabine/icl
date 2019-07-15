@@ -549,10 +549,9 @@ bool TcpSocket::DecodeWsData(Conn &conn)
     bool ret = false;
 
     // Having buf unsigned char * is important, as it is used below in arithmetic
-    size_t i, len, mask_len = 0, header_len = 0, data_len = 0;
+    uint64_t i, len, mask_len = 0, header_len = 0, data_len = 0;
 
-    std::string &buf = mBuff;
-    std::uint32_t buf_len = static_cast<std::uint32_t>(buf.size());
+    std::uint32_t buf_len = static_cast<std::uint32_t>(mBuff.size());
 
     /* Extracted from the RFC 6455 Chapter 5-2
      *
@@ -571,8 +570,8 @@ bool TcpSocket::DecodeWsData(Conn &conn)
     "Application data". */
     if (buf_len >= 2)
     {
-        len = buf[1] & 127;
-        mask_len = buf[1] & 128 ? 4 : 0;
+        len = mBuff[1] & 127;
+        mask_len = mBuff[1] & 128 ? 4 : 0;
         if (len < 126 && buf_len >= mask_len)
         {
             data_len = len;
@@ -581,28 +580,30 @@ bool TcpSocket::DecodeWsData(Conn &conn)
         else if (len == 126 && buf_len >= 4 + mask_len)
         {
             header_len = 4 + mask_len;
-            data_len = ((((size_t) buf[2]) << 8) + buf[3]);
+            uint8_t byte1 = static_cast<uint8_t>(mBuff[2]);
+            uint8_t byte2 = static_cast<uint8_t>(mBuff[3]);
+            data_len = (static_cast<uint64_t>(byte1) << 8) + byte2;
         }
         else if (buf_len >= 10 + mask_len)
         {
             header_len = 10 + mask_len;
-            data_len = (size_t) (((uint64_t) htonl(* (uint32_t *) &buf[2])) << 32) + htonl(* (uint32_t *) &buf[6]);
+            data_len = (uint64_t) (((uint64_t) htonl(* (uint32_t *) &mBuff[2])) << 32) + htonl(* (uint32_t *) &mBuff[6]);
         }
     }
 
     // frame_len = header_len + data_len;
     // Apply mask if necessary
-    char *mask_ptr = (&buf[0] + header_len) - mask_len; // pointer to the mask located in the header
+    char *mask_ptr = (&mBuff[0] + header_len) - mask_len; // pointer to the mask located in the header
     if (mask_len > 0)
     {
         for (i = 0; i < data_len; i++)
         {
-            buf[i + header_len] ^= mask_ptr[i % 4];
+            mBuff[i + header_len] ^= mask_ptr[i % 4];
         }
     }
 
-    std::uint8_t opcode = buf[0] & 0xFU;
-    bool FIN = (buf[0] & 0x80U) == 0x80U;
+    std::uint8_t opcode = static_cast<uint8_t>(mBuff[0]) & 0xFU;
+    bool FIN = (static_cast<uint8_t>(mBuff[0]) & 0x80U) == 0x80U;
     TLogNetwork("received opcode: " + WsOpcodeToString(opcode));
 
     /*
@@ -630,11 +631,11 @@ bool TcpSocket::DecodeWsData(Conn &conn)
             (opcode == TcpSocket::WEBSOCKET_OPCODE_BINARY))
         {
             conn.payload.clear();
-            conn.payload += buf.substr(header_len, data_len);
+            conn.payload += mBuff.substr(header_len, data_len);
         }
         else if(opcode == TcpSocket::WEBSOCKET_OPCODE_CONTINUATION)
         {
-            conn.payload += buf.substr(header_len, data_len);
+            conn.payload += mBuff.substr(header_len, data_len);
         }
 
         if (FIN)
