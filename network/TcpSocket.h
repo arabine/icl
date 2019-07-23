@@ -145,7 +145,7 @@ struct Conn
         return connected;
     }
 
-    inline bool operator ==(const SocketType &rhs)
+    inline bool operator ==(const SocketType &rhs) const
     {
         return (peer.socket == rhs);
     }
@@ -156,14 +156,19 @@ struct Conn
        return *this;
     }
 
-    inline bool operator >(const SocketType &rhs)
+    inline bool operator >(const SocketType &rhs) const
     {
         return (peer.socket > rhs);
     }
 
-    inline bool operator <(const Conn &rhs)
+    inline bool operator <(const Conn &rhs) const
     {
         return (peer.socket < rhs.peer.socket);
+    }
+
+    inline bool operator ==(const Conn &rhs) const
+    {
+        return (peer.socket == rhs.peer.socket);
     }
 
     Peer peer;

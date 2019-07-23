@@ -275,34 +275,37 @@ bool TcpSocket::Recv(std::string &output, const Peer &peer)
     // is very short, we will receive the entire message in
     // a short packet. But it might be a long one.
 
-    char buff[MAXRECV];
-    size_t len = sizeof(buff);
-    char *p = buff;
-    long n;
+    long count = 0;
+    ioctl(peer.socket, FIONREAD, &count);
     bool ret = false;
 
-    do
+    if (count > 0)
     {
-        n = ::recv(peer.socket, p, len, 0);
+        char buff[MAXRECV];
+        long n;
+        do
+        {
+            n = ::recv(peer.socket, &buff[0], sizeof(buff), 0);
 
-        if (n < 0)
-        {
-            // Other value than positive means end of recv, determine the reason
-            ret = TcpSocket::AnalyzeSocketError("recv()");
+            if (n < 0)
+            {
+                // Other value than positive means end of recv, determine the reason
+                ret = TcpSocket::AnalyzeSocketError("recv()");
+            }
+            else if (n > 0)
+            {
+                output.insert(output.size(), &buff[0], static_cast<size_t>(n)); // append data into our procol buffer
+                count -= n;
+                ret = true;
+            }
         }
-        else if (n == 0)
-        {
-            ret = false;
-        }
-        else
-        {
-            output.insert(output.size(), p, n); // append data into our procol buffer
-            p += n;
-            len -= (size_t)n;
-            ret = true;
-        }
+        while ((count > 0) && (n > 0));
+        TLogNetwork("[SOCKET] Rcv size: " + std::to_string(output.size()));
     }
-    while ((len > 0) && (n > 0));
+    else
+    {
+        TLogNetwork("[SOCKET] No data to read from socket.");
+    }
 
     return ret;
 }
