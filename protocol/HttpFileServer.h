@@ -26,6 +26,25 @@ struct HttpRequest
 };
 
 
+struct ChunkedData
+{
+    HttpRequest request;
+    tcp::Conn conn;
+    std::string data;
+    uint32_t current_size;
+    uint32_t total_size;
+    uint32_t counter;
+
+    ChunkedData()
+        : current_size(0U)
+        , total_size(0U)
+        , counter(1U)
+    {
+
+    }
+
+};
+
 class HttpFileServer : public tcp::TcpServer::IEvent
 {
 
@@ -52,8 +71,13 @@ private:
     std::string mRootDir;
     std::string mSessionSecret;
 
+    std::vector<ChunkedData> mPartials;
+
+    void DeletePartialConn(const tcp::Conn &conn);
     bool ParseHeader(const tcp::Conn &conn, HttpRequest &request);
     bool GetFile(const tcp::Conn &conn, HttpRequest &request);
+    void ParseUrlParameters(HttpRequest &request);
 };
+
 
 #endif
