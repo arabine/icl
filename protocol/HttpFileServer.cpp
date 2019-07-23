@@ -138,31 +138,37 @@ bool HttpFileServer::CheckJWT(const std::string &header, const std::string &payl
     return success;
 }
 
-
-bool HttpFileServer::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
+void HttpFileServer::DeletePartialConn(const tcp::Conn &conn)
 {
- //   std::string request = "GET /index.asp?param1=hello&param2=128 HTTP/1.1";
+    int index = -1;
 
-    // separate the 3 main parts
-    std::istringstream iss(conn.payload);
-
-    if(!(iss >> request.method >> request.query >> request.protocol))
+    for (uint32_t i = 0; i < mPartials.size(); i++)
     {
-        TLogError("HTTP parse error");
-        return false;
+        if (mPartials[i].conn == conn)
+        {
+            index = static_cast<int>(i);
+        }
     }
 
-    // reset the std::istringstream with the query string
-/*
-    iss.clear();
-    iss.str(query);
+    if (index >= 0)
+    {
+        TLogNetwork("[HTTP] Deleted chunked");
+        mPartials.erase(mPartials.begin() + index);
+    }
+}
+
+static const std::string cSupportedMethods[] = { "GET", "POST" };
+
+
+void HttpFileServer::ParseUrlParameters(HttpRequest &request)
+{
+    std::istringstream iss(request.query);
 
     std::string url;
 
     if(!std::getline(iss, url, '?')) // remove the URL part
     {
-        std::cout << "ERROR: parsing request url\n";
-        return 1;
+        return;
     }
 
     // store query key/value pairs in a map
@@ -174,44 +180,91 @@ bool HttpFileServer::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
 
         // split key/value pairs
         if(std::getline(std::getline(iss, key, '='), val))
-            params[key] = val;
+        {
+            request.params[key] = val;
+        }
     }
-    */
+}
+
+bool HttpFileServer::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
+{
+ //   std::string request = "GET /index.asp?param1=hello&param2=128 HTTP/1.1";
+    // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
 
     std::string line;
-    std::string::size_type index;
-    iss.clear();
-    iss.str(conn.payload);
+    std::istringstream iss(conn.payload);
 
-    while (std::getline(iss, line) && line != "\r")
+    bool valid = false;
+
+    // separate the first 3 main parts
+    if (std::getline(iss, line))
     {
-        line.pop_back();
-        index = line.find(':', 0);
-        if(index != std::string::npos)
+        line.pop_back(); // remove \r
+        std::vector<std::string> parts = Util::Split(line, " ");
+
+        if (parts.size() == 3)
         {
-            // Convert all header options to lower case (header params are case insensitive in the HTTP spec
-            std::string option = line.substr(0, index);
-            std::transform(option.begin(), option.end(), option.begin(), ::tolower);
-            request.headers.insert(std::make_pair(option, line.substr(index + 1)));
+            request.method = parts[0];
+            request.query = parts[1];
+            request.protocol = parts[2];
+
+
+            for (const auto & s : cSupportedMethods)
+            {
+                if (request.method == s)
+                {
+                    valid = true;
+                }
+            }
         }
     }
 
-    uint32_t body_start = iss.tellg();
-    if (body_start < conn.payload.length())
+    if (valid)
     {
-        request.body = conn.payload.substr(body_start);
-    }
-   // std::cout << request.body << std::endl;
-/*
-    for(auto& kv: m) {
-        std::cout << "KEY: `" << kv.first << "`, VALUE: `" << kv.second << '`' << std::endl;
+        // Parse optional URI parameters
+        ParseUrlParameters(request);
+
+        // Continue parsing the header
+        std::string::size_type index;
+
+        while (std::getline(iss, line))
+        {
+            if (line != "\r")
+            {
+                line.pop_back();
+                index = line.find(':', 0);
+                if(index != std::string::npos)
+                {
+                    // Convert all header options to lower case (header params are case insensitive in the HTTP spec
+                    std::string option = line.substr(0, index);
+                    std::transform(option.begin(), option.end(), option.begin(), ::tolower);
+                    request.headers.insert(std::make_pair(option, line.substr(index + 1)));
+                }
+            }
+            else
+            {
+                break; // detected HTTP separator \r\n between header and body
+            }
+        }
+
+        uint32_t body_start = static_cast<uint32_t>(iss.tellg());
+        if (body_start < conn.payload.length())
+        {
+            request.body = conn.payload.substr(body_start);
+        }
+       // std::cout << request.body << std::endl;
+    /*
+        for(auto& kv: m) {
+            std::cout << "KEY: `" << kv.first << "`, VALUE: `" << kv.second << '`' << std::endl;
+        }
+
+        std::cout << "protocol: " << header.protocol << '\n';
+        std::cout << "method  : " << header.method << '\n';
+        std::cout << "query   : " << header.query << '\n';
+    */
     }
 
-    std::cout << "protocol: " << header.protocol << '\n';
-    std::cout << "method  : " << header.method << '\n';
-    std::cout << "query   : " << header.query << '\n';
-*/
-    return true;
+    return valid;
 }
 
 bool HttpFileServer::GetFile(const tcp::Conn &conn, HttpRequest &request)
@@ -337,16 +390,85 @@ void HttpFileServer::ReadData(const tcp::Conn &conn)
     }
 
     HttpRequest request;
-    ParseHeader(conn, request);
 
-    // First, try REST API
-    if (ReadDataPath(conn, request))
+    bool process = true;
+    bool valid = ParseHeader(conn, request);
+
+    if (valid)
     {
-        // Else, serve files
-        if (!GetFile(conn, request))
+        // Full data or multi-part HTML?
+        if (request.method == "POST")
         {
-            // Found nothing, send error
-            Send404(conn, request);
+            auto result = request.headers.find("content-length");
+            if (result != request.headers.end())
+            {
+                std::uint32_t size = Util::FromString<std::uint32_t>(result->second);
+
+                if (size > request.body.length())
+                {
+                    TLogNetwork("[HTTP] Chunked data detected");
+
+                    ChunkedData chunked;
+
+                    chunked.request = request;
+                    chunked.conn = conn;
+                    chunked.total_size = size;
+                    chunked.data.append(request.body);
+                    chunked.current_size += request.body.length();
+
+                    mPartials.push_back(chunked);
+                    process = false; // wait for full data
+                }
+            }
+        }
+    }
+    else
+    {
+        process = false;
+        bool found = false;
+        for (auto & el: mPartials)
+        {
+            if (el.conn == conn)
+            {
+                found = true;
+                el.data.append(conn.payload);
+                el.current_size += conn.payload.length();
+                el.counter++;
+
+                TLogNetwork("[HTTP] Chunked part: " + std::to_string(el.counter) + " remaining: " + std::to_string(el.total_size - el.current_size));
+
+                if (el.current_size >= el.total_size)
+                {
+                    TLogNetwork("[HTTP] Chunked finished");
+
+                    request = el.request;
+                    request.body = el.data; // finally, all data is here, replace buffer
+
+                    process = true;
+                    // Always remove pending chunked data
+                    DeletePartialConn(conn);
+                }
+            }
+        }
+
+        if (!found)
+        {
+            TLogNetwork("[HTTP] Chunked not found!");
+        }
+    }
+
+
+    if (process)
+    {
+        // First, try REST API
+        if (ReadDataPath(conn, request))
+        {
+            // Else, serve files
+            if (!GetFile(conn, request))
+            {
+                // Found nothing, send error
+                Send404(conn, request);
+            }
         }
     }
 }
@@ -368,7 +490,7 @@ void HttpFileServer::Send404(const tcp::Conn &conn, const HttpRequest &header)
 
 void HttpFileServer::ClientClosed(const tcp::Conn &conn)
 {
-    (void) conn;
+    DeletePartialConn(conn);
 }
 
 void HttpFileServer::ServerTerminated(tcp::TcpServer::IEvent::CloseType type)
