@@ -28,7 +28,11 @@ void EventLoop::Stop()
     mAccessGuard.lock();
     mStopRequested = true;
     mAccessGuard.unlock();
-    mThread.join();
+
+    if (mThread.joinable())
+    {
+        mThread.join();
+    }
 }
 /*****************************************************************************/
 void EventLoop::AddTimer(uint32_t period, CallBack callBack)
