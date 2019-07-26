@@ -48,6 +48,7 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFU
 //#include "date.h"
 //#include "tz.h"
 #include "Util.h"
+#include "Util.h"
 
 // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
 template <typename Facet>
@@ -103,18 +104,62 @@ int64_t Util::CurrentTimeStamp64()
 
 std::string Util::CurrentDateTime(const std::string &format)
 {
-    std::stringstream ss;
-    auto time = std::time(nullptr);
-    ss << std::put_time(std::localtime(&time), format.c_str());
+    std::chrono::high_resolution_clock::time_point p = std::chrono::high_resolution_clock::now();
 
-    return ss.str();
+    return Util::DateTimeFormat(p, format);
 }
 /*****************************************************************************/
-std::string Util::TimestampToString(const std::string &format, uint32_t timestamp)
+std::string Util::ToISODateTime(const std::chrono::system_clock::time_point &tp)
+{
+    return Util::DateTimeFormat(tp, "%Y-%m-%dT%H:%M:%S");
+}
+/*****************************************************************************/
+std::chrono::system_clock::time_point Util::FromISODateTime(const std::string &str)
+{
+    return Util::FromISODateTimeFormat(str, "%Y-%m-%dT%H:%M:%S");
+}
+/*****************************************************************************/
+std::chrono::system_clock::time_point Util::FromISODate(const std::string &str)
+{
+    return Util::FromISODateTimeFormat(str, "%Y-%m-%d");
+}
+/*****************************************************************************/
+std::chrono::system_clock::time_point Util::FromISODateTimeFormat(const std::string &str, const std::string &format)
+{
+    std::istringstream iss{str};
+    std::tm tm{};
+    if (!(iss >> std::get_time(&tm, format.c_str()))) {
+        return std::chrono::high_resolution_clock::now();
+    }
+
+    std::chrono::system_clock::time_point timePoint{std::chrono::seconds(std::mktime(&tm))};
+    if (iss.eof())
+       return timePoint;
+    double zz;
+    if (iss.peek() != '.' || !(iss >> zz)){
+        return std::chrono::high_resolution_clock::now();
+    }
+    using hr_clock = std::chrono::high_resolution_clock;
+    std::size_t zeconds = zz * std::chrono::high_resolution_clock::period::den / std::chrono::high_resolution_clock::period::num;
+    return timePoint += hr_clock::duration(zeconds);
+}
+/*****************************************************************************/
+std::string Util::DateTimeFormat(const std::chrono::system_clock::time_point &tp, const std::string &format)
+{
+    return Util::TimestampToString(std::chrono::system_clock::to_time_t(tp), format);
+}
+/*****************************************************************************/
+int Util::GetYear(const std::chrono::system_clock::time_point &tp)
+{
+    time_t timestamp = std::chrono::system_clock::to_time_t(tp);
+    tm local_tm = *std::localtime(&timestamp);
+    return local_tm.tm_year + 1900;
+}
+/*****************************************************************************/
+std::string Util::TimestampToString(time_t timestamp, const std::string &format)
 {
     std::stringstream ss;
-    time_t time = timestamp;
-    ss << std::put_time(std::localtime(&time), format.c_str());
+    ss << std::put_time(std::localtime(&timestamp), format.c_str());
 
     return ss.str();
 }
