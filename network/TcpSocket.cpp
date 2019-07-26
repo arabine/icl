@@ -300,11 +300,11 @@ bool TcpSocket::Recv(std::string &output, const Peer &peer)
             }
         }
         while ((count > 0) && (n > 0));
-        TLogNetwork("[SOCKET] Rcv size: " + std::to_string(output.size()));
+      //  TLogNetwork("[SOCKET] Rcv size: " + std::to_string(output.size()));
     }
     else
     {
-        TLogNetwork("[SOCKET] No data to read from socket.");
+     //   TLogNetwork("[SOCKET] No data to read from socket.");
     }
 
     return ret;
