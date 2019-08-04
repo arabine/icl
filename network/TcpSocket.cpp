@@ -275,8 +275,13 @@ bool TcpSocket::Recv(std::string &output, const Peer &peer)
     // is very short, we will receive the entire message in
     // a short packet. But it might be a long one.
 
-    long count = 0;
+    unsigned long count = 0;
+
+#ifdef USE_WINDOWS_OS
+    ioctlsocket(peer.socket, FIONREAD, &count);
+#else
     ioctl(peer.socket, FIONREAD, &count);
+#endif
     bool ret = false;
 
     if (count > 0)

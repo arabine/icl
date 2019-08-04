@@ -11,8 +11,21 @@
 
 #include <direct.h>
 #include <sys/stat.h>
+
+#ifdef _MSC_VER
+
+#include <Windows.h>
+#include <Psapi.h>
+
+
+#else
+// MINGW
+
 #include <windows.h>
 #include <psapi.h>
+
+#endif
+
 
 static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFUL);
 
@@ -104,7 +117,7 @@ int64_t Util::CurrentTimeStamp64()
 
 std::string Util::CurrentDateTime(const std::string &format)
 {
-    std::chrono::high_resolution_clock::time_point p = std::chrono::high_resolution_clock::now();
+    std::chrono::system_clock::time_point p = std::chrono::system_clock::now();
 
     return Util::DateTimeFormat(p, format);
 }
@@ -129,7 +142,7 @@ std::chrono::system_clock::time_point Util::FromISODateTimeFormat(const std::str
     std::istringstream iss{str};
     std::tm tm{};
     if (!(iss >> std::get_time(&tm, format.c_str()))) {
-        return std::chrono::high_resolution_clock::now();
+        return std::chrono::system_clock::now();
     }
 
     std::chrono::system_clock::time_point timePoint{std::chrono::seconds(std::mktime(&tm))};
@@ -137,11 +150,12 @@ std::chrono::system_clock::time_point Util::FromISODateTimeFormat(const std::str
        return timePoint;
     double zz;
     if (iss.peek() != '.' || !(iss >> zz)){
-        return std::chrono::high_resolution_clock::now();
+        return std::chrono::system_clock::now();
     }
-    using hr_clock = std::chrono::high_resolution_clock;
-    std::size_t zeconds = zz * std::chrono::high_resolution_clock::period::den / std::chrono::high_resolution_clock::period::num;
-    return timePoint += hr_clock::duration(zeconds);
+    using sys_clock = std::chrono::system_clock;
+    std::size_t zeconds = zz * std::chrono::system_clock::period::den / std::chrono::system_clock::period::num;
+    timePoint += sys_clock::duration(zeconds);
+    return timePoint;
 }
 /*****************************************************************************/
 std::string Util::DateTimeFormat(const std::chrono::system_clock::time_point &tp, const std::string &format)

@@ -5,9 +5,9 @@
 
 #include "EventLoop.h"
 
-static long Next(long p)
+static long long Next(long long p)
 {
-    long tp = std::chrono::steady_clock::now().time_since_epoch().count();
+    long long tp = std::chrono::steady_clock::now().time_since_epoch().count();
     return ((tp / p) * p) + p;
 }
 
