@@ -247,6 +247,7 @@ public:
 
     //Convert a struct sockaddr address to a string, IPv4 and IPv6
 	static std::string ToString(const struct sockaddr *sa);
+    static std::string GetPeerName(int s);
 
 protected:
     std::string mHost;

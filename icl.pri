@@ -51,7 +51,9 @@ linux {
 }
 
 windows {
-  #  SOURCES += TcpServer.cpp
+    SOURCES += TcpServer.cpp
+ #   SOURCES += wepoll.cpp
+ #   HEADERS += wepoll.h
 }
 
 # ------------------------------------------------------------------------------

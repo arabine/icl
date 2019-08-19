@@ -91,7 +91,6 @@ public:
     void Stop();
     void Join();
     bool IsStarted() { return mInitialized; }
-    std::string GetPeerName(int s);
 
 private:
     TcpServerBase   mTcpServer;
@@ -101,6 +100,13 @@ private:
     std::mutex mMutex; // To protect mClients
     bool mInitialized;
     IEvent     &mEventHandler;
+
+#ifdef USE_WINDOWS_OS
+    SocketType  mMaxSd;
+    fd_set mMasterSet;
+    void UpdateMaxSocket();
+
+#endif
 
     int mEpollFd;
 

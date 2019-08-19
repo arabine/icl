@@ -377,6 +377,30 @@ bool TcpSocket::Create()
     return ret;
 }
 /*****************************************************************************/
+// s must be a valid socket, otherwise the returning string is null
+std::string TcpSocket::GetPeerName(int s)
+{
+    std::stringstream ss;
+    socklen_t len;
+    struct sockaddr_storage addr;
+    std::string ipstr;
+    int port = 0;
+
+    len = sizeof(addr);
+    int ret = getpeername(s, (struct sockaddr*)&addr, &len);
+    if (ret == 0)
+    {
+        ipstr = TcpSocket::ToString((struct sockaddr*)&addr); // point to an internal static buffer
+        ss << ipstr << ":" << port;
+    }
+    else
+    {
+        ss << "Cannot get peer name!";
+    }
+
+    return ss.str();
+}
+/*****************************************************************************/
 void TcpSocket::SetNonBlocking(SocketType socket)
 {
 #ifdef _WIN32

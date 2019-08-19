@@ -35,15 +35,19 @@ namespace tcp
 
 /*****************************************************************************/
 TcpServer::TcpServer(IEvent &handler)
-    : mMaxSd(0)
-    , mInitialized(false)
+    : mInitialized(false)
     , mEventHandler(handler)
+    , mMaxSd(0)
     , mReceiveFd(-1)
     , mSendFd(-1)
 {
     FD_ZERO(&mMasterSet);
 }
-
+/*****************************************************************************/
+TcpServer::~TcpServer(void)
+{
+    Stop();
+}
 /*****************************************************************************/
 bool TcpServer::Start(std::int32_t maxConnections, bool localHostOnly, std::uint16_t tcpPort, std::uint16_t wsPort)
 {
@@ -80,35 +84,11 @@ void TcpServer::Stop()
 /*****************************************************************************/
 void TcpServer::Join()
 {
-    if (mInitialized)
+    if (mInitialized && mThread.joinable())
     {
         mThread.join();
         mInitialized = false;
     }
-}
-/*****************************************************************************/
-// s must be a valid socket, otherwise the returning string is null
-std::string TcpServer::GetPeerName(int s)
-{
-    std::stringstream ss;
-    socklen_t len;
-    struct sockaddr_storage addr;
-    std::string ipstr;
-    int port = 0;
-
-    len = sizeof(addr);
-    int ret = getpeername(s, (struct sockaddr*)&addr, &len);
-    if (ret == 0)
-    {
-		ipstr = TcpSocket::ToString((struct sockaddr*)&addr); // point to an internal static buffer
-        ss << ipstr << ":" << port;
-    }
-    else
-    {
-        ss << "Cannot get peer name!";
-    }
-
-    return ss.str();
 }
 /*****************************************************************************/
 void TcpServer::Run()
@@ -174,7 +154,7 @@ void TcpServer::Run()
         /* Call select() and wait N minutes for it to complete.   */
         /**********************************************************/
         //    printf("Waiting on select()...\n");
-        int rc = select(mMaxSd + 1, &working_set, NULL, NULL, NULL); // &timeout);
+        int rc = select(mMaxSd + 1, &working_set, nullptr, nullptr, nullptr); // &timeout);
 
         if (rc < 0)
         {
