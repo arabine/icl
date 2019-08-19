@@ -365,7 +365,10 @@ void TcpServer::IncommingData(Conn &conn)
 
         if (hasData)
         {
-            mEventHandler.ReadData(conn);
+          //  mEventHandler.ReadData(conn);
+            mPool.enqueue_work([=]() {
+                mEventHandler.ReadData(conn);
+            });
         }
     }
     else

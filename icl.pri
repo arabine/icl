@@ -11,7 +11,8 @@ HEADERS += Log.h \
     Semaphore.h \
     Console.h \
     EventLoop.h \
-    DurationTimer.h
+    DurationTimer.h \
+    Pool.h
 
 SOURCES += Log.cpp \
     Util.cpp \

@@ -14,6 +14,7 @@
 #include "Observer.h"
 #include "ThreadQueue.h"
 #include "WebSocket.h"
+#include "Pool.h"
 
 #ifdef USE_LINUX_OS
 #include <sys/epoll.h>
@@ -105,6 +106,7 @@ private:
     SocketType  mMaxSd;
     fd_set mMasterSet;
     void UpdateMaxSocket();
+    thread_pool mPool;
 
 #endif
 
