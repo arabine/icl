@@ -49,6 +49,7 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFU
 #include <algorithm>
 #include <ctime>
 #include <sstream>
+#include <fstream>
 #include <iomanip>
 #include <cstdint>
 #include <cctype>
@@ -61,7 +62,7 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFU
 //#include "date.h"
 //#include "tz.h"
 #include "Util.h"
-#include "Util.h"
+
 
 // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
 template <typename Facet>
@@ -887,6 +888,17 @@ std::string Util::ToHex(const char *buf, size_t size)
     }
 
     return hexstr;
+}
+
+std::string Util::FileToString(const std::string &filePath)
+{
+    std::ifstream inFile(filePath, std::ifstream::in);
+
+    std::stringstream ss;
+    ss << inFile.rdbuf(); //read the file
+    std::string str = ss.str(); //str holds the content of the file
+    inFile.close();
+    return str;
 }
 
 //=============================================================================
