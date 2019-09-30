@@ -14,6 +14,7 @@
 #include "Observer.h"
 #include "ThreadQueue.h"
 #include "WebSocket.h"
+#include "Pool.h"
 
 #ifdef USE_LINUX_OS
 #include <sys/epoll.h>
@@ -91,7 +92,6 @@ public:
     void Stop();
     void Join();
     bool IsStarted() { return mInitialized; }
-    std::string GetPeerName(int s);
 
 private:
     TcpServerBase   mTcpServer;
@@ -101,6 +101,14 @@ private:
     std::mutex mMutex; // To protect mClients
     bool mInitialized;
     IEvent     &mEventHandler;
+
+#ifdef USE_WINDOWS_OS
+    SocketType  mMaxSd;
+    fd_set mMasterSet;
+    void UpdateMaxSocket();
+    thread_pool mPool;
+
+#endif
 
     int mEpollFd;
 

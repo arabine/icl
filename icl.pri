@@ -11,7 +11,8 @@ HEADERS += Log.h \
     Semaphore.h \
     Console.h \
     EventLoop.h \
-    DurationTimer.h
+    DurationTimer.h \
+    Pool.h
 
 SOURCES += Log.cpp \
     Util.cpp \
@@ -45,13 +46,16 @@ SOURCES += TcpSocket.cpp \
     TcpClient.cpp \
     WebSocket.cpp
 
+DEFINES += ASIO_STANDALONE
 
 linux {
     SOURCES += TcpServerEpoll.cpp
 }
 
 windows {
-  #  SOURCES += TcpServer.cpp
+    SOURCES += TcpServer.cpp
+ #   SOURCES += wepoll.cpp
+ #   HEADERS += wepoll.h
 }
 
 # ------------------------------------------------------------------------------
@@ -122,6 +126,7 @@ SOURCES += duktape.c \
 #}
 
 VPATH += $$ICL_DIR/network
+VPATH += $$ICL_DIR/network/asio
 VPATH += $$ICL_DIR/util
 VPATH += $$ICL_DIR/zip
 VPATH += $$ICL_DIR/security
@@ -133,6 +138,7 @@ VPATH += $$ICL_DIR/db
 VPATH += $$ICL_DIR/date
 
 INCLUDEPATH += $$ICL_DIR/network
+INCLUDEPATH += $$ICL_DIR/network/asio
 INCLUDEPATH += $$ICL_DIR/util
 INCLUDEPATH += $$ICL_DIR/zip
 INCLUDEPATH += $$ICL_DIR/security

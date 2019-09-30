@@ -37,7 +37,7 @@ private:
     {
         std::uint32_t period;
         CallBack callBack;
-        long next;
+        long long next;
     };
 
     std::vector<Timer> mTimers;

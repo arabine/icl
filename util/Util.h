@@ -25,10 +25,12 @@ public:
 
     static std::uint32_t CurrentTimeStamp();
     static int64_t CurrentTimeStamp64();
-    static std::string TimestampToString(const std::string &format, uint32_t timestamp);
+    static std::string TimestampToString(time_t timestamp, const std::string &format);
     static std::string CurrentDateTime(const std::string &format);
     static std::string ToISODateTime(const std::chrono::system_clock::time_point &tp);
+    static std::chrono::system_clock::time_point FromISODateTimeFormat(const std::string &str, const std::string &format);
     static std::chrono::system_clock::time_point FromISODateTime(const std::string &str);
+    static std::chrono::system_clock::time_point FromISODate(const std::string &str);
     static std::string DateTimeFormat(const std::chrono::system_clock::time_point &tp, const std::string &format);
     static int GetYear(const std::chrono::system_clock::time_point &tp);
 
@@ -94,6 +96,7 @@ public:
     static std::string GenerateRandomString(uint32_t length);
     static void ByteToHex(const char byte, char *out);
     static std::string ToHex(const char *buf, size_t size);
+    static std::string FileToString(const std::string &filePath);
 };
 
 #endif // ICL_UTIL_H

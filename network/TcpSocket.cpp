@@ -275,8 +275,13 @@ bool TcpSocket::Recv(std::string &output, const Peer &peer)
     // is very short, we will receive the entire message in
     // a short packet. But it might be a long one.
 
-    long count = 0;
+    unsigned long count = 0;
+
+#ifdef USE_WINDOWS_OS
+    ioctlsocket(peer.socket, FIONREAD, &count);
+#else
     ioctl(peer.socket, FIONREAD, &count);
+#endif
     bool ret = false;
 
     if (count > 0)
@@ -370,6 +375,30 @@ bool TcpSocket::Create()
         }
     }
     return ret;
+}
+/*****************************************************************************/
+// s must be a valid socket, otherwise the returning string is null
+std::string TcpSocket::GetPeerName(int s)
+{
+    std::stringstream ss;
+    socklen_t len;
+    struct sockaddr_storage addr;
+    std::string ipstr;
+    int port = 0;
+
+    len = sizeof(addr);
+    int ret = getpeername(s, (struct sockaddr*)&addr, &len);
+    if (ret == 0)
+    {
+        ipstr = TcpSocket::ToString((struct sockaddr*)&addr); // point to an internal static buffer
+        ss << ipstr << ":" << port;
+    }
+    else
+    {
+        ss << "Cannot get peer name!";
+    }
+
+    return ss.str();
 }
 /*****************************************************************************/
 void TcpSocket::SetNonBlocking(SocketType socket)

@@ -36,13 +36,19 @@ static const std::int32_t cSocketInvalid = -1;
 
 #ifdef _MSC_VER
 #include <io.h>
+
+#include <WS2tcpip.h>
+#include <Windows.h>
+#include <WinSock2.h>
+
 #endif
 
-#include <ws2tcpip.h>
-#include <windows.h>
 
 #ifdef __MINGW32__
 #include <unistd.h>
+
+#include <ws2tcpip.h>
+#include <windows.h>
 #endif
 
 typedef SOCKET  SocketType;
@@ -66,7 +72,7 @@ struct Peer
 
     }
 
-    Peer(std::int32_t s, bool ws)
+    Peer(SocketType s, bool ws)
         : socket(s)
         , isWebSocket(ws)
     {
@@ -110,7 +116,7 @@ struct Conn
 
     }
 
-    Conn(std::int32_t s, bool ws)
+    Conn(SocketType s, bool ws)
         : peer(s, ws)
         , state(cStateClosed)
     {
@@ -199,7 +205,7 @@ public:
     {
         return mPeer.socket;
     }
-    int  GetIPAddr() const
+    unsigned long  GetIPAddr() const
     {
         return mAddr.sin_addr.s_addr;
     }
@@ -241,6 +247,7 @@ public:
 
     //Convert a struct sockaddr address to a string, IPv4 and IPv6
 	static std::string ToString(const struct sockaddr *sa);
+    static std::string GetPeerName(int s);
 
 protected:
     std::string mHost;
