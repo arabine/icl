@@ -4,7 +4,7 @@
  */
 
 #define ZIP_CPP_INCLUDED
-#include "miniz.c"
+#include "miniz.h"
 #include "Zip.h"
 #include <fstream>
 #include <cstring>
@@ -122,7 +122,7 @@ bool Zip::GetFile(const std::string &fileName, std::string &contents)
     if (mIsValid)
     {
         size_t size;
-        char *p = (char *)mz_zip_reader_extract_file_to_heap(&mZipArchive, fileName.c_str(), &size, 0);
+        char *p = reinterpret_cast<char *>(mz_zip_reader_extract_file_to_heap(&mZipArchive, fileName.c_str(), &size, 0));
 
         if (p != nullptr)
         {
