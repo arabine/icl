@@ -112,9 +112,15 @@ bool HttpFileServer::CheckJWT(const std::string &header, const std::string &payl
             if (json.IsObject())
             {
                 uint32_t now = Util::CurrentTimeStamp();
+                uint32_t iat = static_cast<uint32_t>(json.GetObj().GetValue("iat").GetInteger());
                 uint32_t exp = static_cast<uint32_t>(json.GetObj().GetValue("exp").GetInteger());
 
-                if (now < exp)
+                if (iat == exp)
+                {
+                    TLogInfo("[JWT] Authentication is valid forever");
+                    success = true;
+                }
+                else if (now < exp)
                 {
                     TLogInfo("[JWT] Authentication still valid for: " + std::to_string(exp - now) + " seconds");
                     success = true;
