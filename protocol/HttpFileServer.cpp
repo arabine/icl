@@ -466,11 +466,11 @@ void HttpFileServer::ReadData(const tcp::Conn &conn)
 
     if (process)
     {
-        // First, try REST API
-        if (ReadDataPath(conn, request))
+        // First, serve local files
+        if (!GetFile(conn, request))
         {
-            // Else, serve files
-            if (!GetFile(conn, request))
+            // Then, try REST API
+            if (ReadDataPath(conn, request))
             {
                 // Found nothing, send error
                 Send404(conn, request);

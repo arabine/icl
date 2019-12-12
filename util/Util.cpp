@@ -548,7 +548,7 @@ std::uint32_t Util::Exec(
 
     std::array<char, 128> buffer;
 
-    std::string cmd = exePath + " " + params;
+    std::string cmd = exePath + " " + params + " 2>&1";
 
     std::shared_ptr<FILE> pipe(popen(cmd.c_str(), "r"), pclose);
     if (pipe)
