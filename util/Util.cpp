@@ -563,6 +563,11 @@ std::uint32_t Util::Exec(
 #endif
 }
 /*****************************************************************************/
+bool Util::Contains(const std::string &str, const std::string &lookfor)
+{
+    return str.find(lookfor) != std::string::npos;
+}
+/*****************************************************************************/
 /**
  * Portable wrapper for mkdir. Internally used by mkdir()
  * @param[in] path the full path of the directory to create.
