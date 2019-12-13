@@ -94,7 +94,7 @@ SOURCES += Base64.cpp Sha1.cpp Sha256.cpp
 
 icl_zip {
 HEADERS += Zip.h
-SOURCES += Zip.cpp
+SOURCES += Zip.cpp miniz.c
 }
 
 # ------------------------------------------------------------------------------
