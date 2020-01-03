@@ -61,9 +61,10 @@ windows {
 # ------------------------------------------------------------------------------
 # Protocol files
 # ------------------------------------------------------------------------------
-HEADERS += Http.h HttpFileServer.h
-
-SOURCES += Http.cpp HttpFileServer.cpp
+icl_http {
+    HEADERS += Http.h HttpFileServer.h
+    SOURCES += Http.cpp HttpFileServer.cpp
+}
 
 # ------------------------------------------------------------------------------
 # Database files
@@ -71,13 +72,11 @@ SOURCES += Http.cpp HttpFileServer.cpp
 
 icl_database {
     HEADERS += DataBase.h
-
     SOURCES += DataBase.cpp sqlite3.c
 }
 
 icl_couchdb {
     HEADERS += CouchDb.h
-
     SOURCES += CouchDb.cpp
 }
 
