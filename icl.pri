@@ -12,7 +12,8 @@ HEADERS += Log.h \
     Console.h \
     EventLoop.h \
     DurationTimer.h \
-    Pool.h
+    Pool.h \
+    libutil.h
 
 SOURCES += Log.cpp \
     Util.cpp \

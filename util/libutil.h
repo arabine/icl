@@ -67,6 +67,13 @@ static inline void beu32_put(uint8_t *buff, uint32_t data)
 }
 
 
+static inline void leu16_put(uint8_t *buff, uint16_t data)
+{
+    buff[0] = data & 0xFFU;
+    buff[1] = (data >> 8U) & 0xFFU;
+}
+
+
 // -----------------------------------------------------------------------------
 // 32-bit data
 // -----------------------------------------------------------------------------
