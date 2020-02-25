@@ -99,6 +99,7 @@ public:
     static void ByteToHex(const char byte, char *out);
     static std::string ToHex(const char *buf, size_t size);
     static std::string FileToString(const std::string &filePath);
+    static bool IsDigitOrAlpha(const std::string &s);
 };
 
 #endif // ICL_UTIL_H

@@ -906,6 +906,13 @@ std::string Util::FileToString(const std::string &filePath)
     return str;
 }
 
+bool Util::IsDigitOrAlpha(const std::string &s)
+{
+    return std::any_of(s.begin(), s.end(), [](char c) {
+        return isdigit(c) || isalpha(c);
+    });
+}
+
 //=============================================================================
 // End of file Util.cpp
 //=============================================================================
