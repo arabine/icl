@@ -58,20 +58,27 @@ static inline void beu16_put(uint8_t *buff, uint16_t data)
     buff[1] = data & 0xFFU;
 }
 
-static inline void beu32_put(uint8_t *buff, uint32_t data)
-{
-    buff[0] = (data >> 24U) & 0xFFU;
-    buff[1] = (data >> 16U) & 0xFFU;
-    buff[2] = (data >> 8U) & 0xFFU;
-    buff[3] = data & 0xFFU;
-}
-
-
 static inline void leu16_put(uint8_t *buff, uint16_t data)
 {
     buff[0] = data & 0xFFU;
     buff[1] = (data >> 8U) & 0xFFU;
 }
+
+static inline uint16_t u16_clr_bit(uint16_t value, uint8_t bit)
+{
+    return value &= ~BIT(bit);
+}
+
+static inline uint16_t u16_set_bit(uint16_t value, uint8_t bit)
+{
+    return value |= BIT(bit);
+}
+
+static inline bool u16_is_bit_set(uint16_t value, uint8_t bit)
+{
+    return ((value & BIT(bit)) == 0U) ? false : true;
+}
+
 
 
 // -----------------------------------------------------------------------------
@@ -86,6 +93,14 @@ static inline uint32_t beu32_get(const uint8_t *a)
     val |= ((uint32_t) a[3]);
     
     return val;
+}
+
+static inline void beu32_put(uint8_t *buff, uint32_t data)
+{
+    buff[0] = (data >> 24U) & 0xFFU;
+    buff[1] = (data >> 16U) & 0xFFU;
+    buff[2] = (data >> 8U) & 0xFFU;
+    buff[3] = data & 0xFFU;
 }
 
 static inline uint32_t u32_set_bit(uint32_t value, uint8_t bit)
