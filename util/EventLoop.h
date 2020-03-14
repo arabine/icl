@@ -19,11 +19,11 @@ public:
     EventLoop();
     ~EventLoop();
 
-
     typedef std::function<void (void)> CallBack;
 
-    void Run();
+    void Loop();
     void Stop();
+    void Start();
 
     // From IEventLoop
     void AddTimer(std::uint32_t period, CallBack callBack);

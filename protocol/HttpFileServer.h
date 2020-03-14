@@ -14,17 +14,7 @@
 #include "TcpSocket.h"
 #include "TcpServer.h"
 #include "JsonValue.h"
-
-struct HttpRequest
-{
-    std::string method;
-    std::string query;
-    std::string protocol;
-    std::map<std::string, std::string> params;
-    std::map<std::string, std::string> headers;
-    std::string body;
-};
-
+#include "HttpProtocol.h"
 
 struct ChunkedData
 {

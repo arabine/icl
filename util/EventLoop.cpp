@@ -48,9 +48,13 @@ void EventLoop::AddTimer(uint32_t period, CallBack callBack)
     mAccessGuard.unlock();
 }
 /*****************************************************************************/
-void EventLoop::Run()
+void EventLoop::Start()
 {
-   // mThread = std::thread(&EventLoop::Loop, this);
+    mThread = std::thread(&EventLoop::Loop, this);
+}
+/*****************************************************************************/
+void EventLoop::Loop()
+{
     mStopRequested = false;
     bool stop = false;
 
