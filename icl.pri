@@ -2,6 +2,7 @@
 # Util files
 # ------------------------------------------------------------------------------
 HEADERS += Log.h \
+    $$PWD/util/ErrorHelper.h \
     Observer.h \
     Util.h \
     ThreadQueue.h \
