@@ -4,12 +4,13 @@
 #include <cstdint>
 #include <string>
 #include <map>
+#include <iomanip>
 #include "libutil.h"
 
 struct ErrorHelper
 {
-    ErrorHelper()
-        : category(0)
+    explicit ErrorHelper(uint8_t cat)
+        : category(cat)
         , flags(0)
     {
 
@@ -17,6 +18,21 @@ struct ErrorHelper
 
     uint8_t category;
     uint8_t flags;
+
+    uint16_t GetErrorCode() const
+    {
+        uint16_t code = category;
+        code <<= 8;
+        code += flags;
+        return (code);
+    }
+
+    std::string GetErrorHexString() const
+    {
+        std::stringstream stream;
+        stream << std::hex << std::setfill ('0') << std::setw(sizeof(uint16_t)*2)  << GetErrorCode();
+        return stream.str();
+    }
 
     void Initialize()
     {
@@ -31,7 +47,8 @@ struct ErrorHelper
         flags = u8_clr_bit(flags, bit);
     }
 
-    bool HasErrors() {
+    bool HasErrors() const
+    {
         return (flags != 0);
     }
 
