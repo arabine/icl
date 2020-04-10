@@ -19,7 +19,7 @@ public:
     TcpClient();
     ~TcpClient() { }
 
-    bool Initialize();
+    bool Initialize(int timeout = 0);
     bool Connect(const std::string &host, const int port);
 
     /**

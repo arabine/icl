@@ -91,6 +91,15 @@ std::string Util::GenerateRandomString(uint32_t length)
     return rstr;
 }
 /*****************************************************************************/
+int32_t Util::GetRandom(int32_t from, int32_t to)
+{
+    std::mt19937 eng(time(nullptr));
+
+    std::uniform_int_distribution<int32_t> uniform_int(from, to);
+
+    return uniform_int(eng);
+}
+/*****************************************************************************/
 uint32_t Util::CurrentTimeStamp()
 {
     std::chrono::seconds epoch = std::chrono::duration_cast< std::chrono::seconds >(

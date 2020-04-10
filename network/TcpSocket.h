@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <netinet/tcp.h>
+#include <poll.h>
 
 typedef std::int32_t  SocketType;
 static const std::int32_t cSocketInvalid = -1;

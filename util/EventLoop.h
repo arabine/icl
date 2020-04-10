@@ -37,10 +37,11 @@ private:
     {
         std::uint32_t period;
         CallBack callBack;
-        long long next;
+        std::chrono::steady_clock::time_point next;
     };
 
     std::vector<Timer> mTimers;
+    uint32_t mWaitDelay;
 
     void UpdateTimers();
 };
