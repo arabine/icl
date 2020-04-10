@@ -36,13 +36,13 @@ void EventLoop::Stop()
     }
 }
 /*****************************************************************************/
-void EventLoop::AddTimer(uint32_t period, CallBack callBack)
+void EventLoop::AddTimer(std::chrono::milliseconds period, CallBack callBack)
 {
     Timer tm;
 
     tm.period = period;
     tm.callBack = callBack;
-    tm.next = Next(std::chrono::milliseconds(period));
+    tm.next = Next(period);
 
     mAccessGuard.lock();
     mTimers.push_back(tm);
@@ -84,7 +84,7 @@ void EventLoop::UpdateTimers()
     {
         if (tp >= t.next)
         {
-            t.next = Next(std::chrono::milliseconds(t.period));
+            t.next = Next(t.period);
             t.callBack();
         }
         i++;
