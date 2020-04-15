@@ -26,7 +26,7 @@ public:
     void Start();
 
     // From IEventLoop
-    void AddTimer(std::uint32_t period, CallBack callBack);
+    void AddTimer(std::chrono::milliseconds period, CallBack callBack);
 
 private:
     bool mStopRequested;
@@ -35,12 +35,13 @@ private:
 
     struct Timer
     {
-        std::uint32_t period;
+        std::chrono::milliseconds period;
         CallBack callBack;
-        long long next;
+        std::chrono::steady_clock::time_point next;
     };
 
     std::vector<Timer> mTimers;
+    uint32_t mWaitDelay;
 
     void UpdateTimers();
 };

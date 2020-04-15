@@ -112,7 +112,7 @@ bool TcpSocket::AnalyzeSocketError(const char* context)
     e = errno;
     const char* msg = strerror( e );
     if ((e == EAGAIN) // equals EWOULDBLOCK
-        || (e == EINPROGRESS) || EINTR)
+        || (e == EINPROGRESS))
     {
         ok = true;
     }
@@ -141,7 +141,7 @@ bool TcpSocket::IsConnected()
          * for connect into optval so 0 means
          * no-error.
          */
-        if (optval == 0)
+        if ((optval == 0) && (mPeer.IsValid()))
         {
             connected = true;
         }

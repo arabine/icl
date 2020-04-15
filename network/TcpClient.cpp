@@ -14,19 +14,37 @@ TcpClient::TcpClient()
 
 }
 /*****************************************************************************/
-bool TcpClient::Initialize()
+bool TcpClient::Initialize(int timeout)
 {
+    bool ok = false;
     /*************************************************************/
     /* Create an AF_INET stream socket                           */
     /*************************************************************/
-    if (!Create())
+    if (Create())
     {
-        return false;
+        ok = true;
+        SetNonBlocking(GetSocket());
+
+        if (timeout > 0)
+        {
+            // LINUX
+            struct timeval tv;
+            tv.tv_sec = timeout / 1000;
+            tv.tv_usec = (timeout % 1000) * 1000;
+            int success = setsockopt(mPeer.socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+
+            if (success != 0)
+            {
+                ok = false;
+            }
+            // WINDOWS
+    //        DWORD timeout = timeout_in_seconds * 1000;
+    //        setsockopt(socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&timeout, sizeof timeout);
+
+        }
     }
 
-    SetNonBlocking(GetSocket());
-
-    return true;
+    return ok;
 }
 /*****************************************************************************/
 bool TcpClient::Connect(const std::string &host, const int port)
@@ -96,6 +114,30 @@ bool TcpClient::Connect(const std::string &host, const int port)
 /*****************************************************************************/
 bool TcpClient::DataWaiting(std::uint32_t timeout)
 {
+    bool ok = false;
+
+#ifdef USE_UNIX_OS
+
+    struct pollfd fd;
+    int ret;
+
+    fd.fd =  mPeer.socket; // your socket handler
+    fd.events = POLLIN;
+    ret = poll(&fd, 1, timeout);
+    switch (ret) {
+        case -1:
+            // Error
+            break;
+        case 0:
+            // Timeout
+            break;
+        default:
+            ok = true; // then call rcv to read data
+            break;
+    }
+#else
+
+
     fd_set fds;
     FD_ZERO( &fds );
     FD_SET( mPeer.socket, &fds );
@@ -104,7 +146,7 @@ bool TcpClient::DataWaiting(std::uint32_t timeout)
     tv.tv_sec = 0;
     tv.tv_usec = ((long)timeout)*1000;
 
-    bool ok = false;
+
     int r = select( mPeer.socket + 1, &fds, NULL, NULL, &tv);
     if (r < 0)
     {
@@ -122,6 +164,8 @@ bool TcpClient::DataWaiting(std::uint32_t timeout)
             ok = true;
         }
     }
+#endif
+
     return ok;
 }
 

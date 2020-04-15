@@ -100,6 +100,7 @@ public:
     static std::string ToHex(const char *buf, size_t size);
     static std::string FileToString(const std::string &filePath);
     static bool IsDigitOrAlpha(const std::string &s);
+    static int32_t GetRandom(int32_t from, int32_t to);
 };
 
 #endif // ICL_UTIL_H

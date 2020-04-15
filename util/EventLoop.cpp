@@ -5,15 +5,16 @@
 
 #include "EventLoop.h"
 
-static long long Next(long long p)
+static std::chrono::steady_clock::time_point Next(std::chrono::milliseconds delay)
 {
-    long long tp = std::chrono::steady_clock::now().time_since_epoch().count();
-    return ((tp / p) * p) + p;
+    std::chrono::steady_clock::time_point tp = std::chrono::steady_clock::now();
+    return tp + delay;
 }
 
 /*****************************************************************************/
 EventLoop::EventLoop()
     : mStopRequested(false)
+    , mWaitDelay(200)
 {
 
 }
@@ -35,7 +36,7 @@ void EventLoop::Stop()
     }
 }
 /*****************************************************************************/
-void EventLoop::AddTimer(uint32_t period, CallBack callBack)
+void EventLoop::AddTimer(std::chrono::milliseconds period, CallBack callBack)
 {
     Timer tm;
 
@@ -60,7 +61,12 @@ void EventLoop::Loop()
 
     while(!stop)
     {
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        // create a time point pointing to 10 second in future
+        std::chrono::steady_clock::time_point tp = std::chrono::steady_clock::now() + std::chrono::milliseconds(mWaitDelay);
+
+        // Sleep Till specified time point
+        // Accepts std::chrono::system_clock::time_point as argument
+        std::this_thread::sleep_until(tp);
 
         mAccessGuard.lock();
         UpdateTimers();
@@ -71,13 +77,12 @@ void EventLoop::Loop()
 /*****************************************************************************/
 void EventLoop::UpdateTimers()
 {
-    std::chrono::system_clock::time_point time_now = std::chrono::system_clock::now();
-    time_t epoch_time = std::chrono::system_clock::to_time_t(time_now);
+    std::chrono::steady_clock::time_point tp = std::chrono::steady_clock::now();
 
     int i = 0;
     for (auto &t : mTimers)
     {
-        if (!(epoch_time % t.period))
+        if (tp >= t.next)
         {
             t.next = Next(t.period);
             t.callBack();
