@@ -67,9 +67,9 @@ bool WebSocketRequest::IsValid()
 {
     bool valid = false;
     if ((resource.size() != 0) &&
-            (host.size() != 0) &&
-            (origin.size() != 0) &&
-            (key.size() != 0))
+//            (host.size() != 0) &&
+//            (origin.size() != 0) &&
+            (key.size() != 0)) // client must provide a key!
     {
         valid = true;
     }
