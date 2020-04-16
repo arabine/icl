@@ -68,7 +68,7 @@ int UdpSocket::WaitForData(UdpPeer &peer)
     return n;
 }
 
-int UdpSocket::SendTo(const UdpPeer &peer, const std::string &data)
+int UdpSocket::SendTo(const UdpPeer &peer, const uint8_t *data, uint32_t size)
 {
-    return sendto(sockfd, data.c_str(), data.size(), MSG_CONFIRM, &peer.addr, sizeof(peer.addr));
+    return sendto(sockfd, data, size, MSG_CONFIRM, &peer.addr, sizeof(peer.addr));
 }

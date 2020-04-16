@@ -64,7 +64,7 @@ public:
     void CreateServer(uint16_t port);
 
     int WaitForData(UdpPeer &peer);
-    int SendTo(const UdpPeer &peer, const std::string &data);
+    int SendTo(const UdpPeer &peer, const uint8_t *data, uint32_t size);
 
     void CreateClient();
 

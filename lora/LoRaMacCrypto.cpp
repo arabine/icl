@@ -60,7 +60,6 @@ static mbedtls_aes_context AesContext;
 /*!
  * CMAC computation context variable
  */
-//static mbedtls_cmac_context_t AesCmacCtx;
 
 static mbedtls_cipher_context_t AesCmacCtx;
 
@@ -91,14 +90,13 @@ void LoRaMacComputeMic( const uint8_t *buffer, uint16_t size, const uint8_t *key
 
     MicBlockB0[15] = size & 0xFF;
 
+    const mbedtls_cipher_info_t *cipher_info = mbedtls_cipher_info_from_type( MBEDTLS_CIPHER_AES_128_ECB );
+
     mbedtls_cipher_init(&AesCmacCtx);
-
+    mbedtls_cipher_setup( &AesCmacCtx, cipher_info);
     mbedtls_cipher_cmac_starts( &AesCmacCtx, key, 128 );
-
     mbedtls_cipher_cmac_update( &AesCmacCtx, MicBlockB0, LORAMAC_MIC_BLOCK_B0_SIZE );
-
     mbedtls_cipher_cmac_update( &AesCmacCtx, buffer, size & 0xFF );
-
     mbedtls_cipher_cmac_finish( &AesCmacCtx, Mic );
 
     *mic = ( uint32_t )( ( uint32_t )Mic[3] << 24 | ( uint32_t )Mic[2] << 16 | ( uint32_t )Mic[1] << 8 | ( uint32_t )Mic[0] );
@@ -156,7 +154,10 @@ void LoRaMacPayloadDecrypt( const uint8_t *buffer, uint16_t size, const uint8_t 
 
 void LoRaMacJoinComputeMic( const uint8_t *buffer, uint16_t size, const uint8_t *key, uint32_t *mic )
 {
+    const mbedtls_cipher_info_t *cipher_info = mbedtls_cipher_info_from_type( MBEDTLS_CIPHER_AES_128_ECB );
+
     mbedtls_cipher_init(&AesCmacCtx);
+    mbedtls_cipher_setup( &AesCmacCtx, cipher_info);
     mbedtls_cipher_cmac_starts( &AesCmacCtx, key, 128 );
     mbedtls_cipher_cmac_update( &AesCmacCtx, buffer, size & 0xFF );
     mbedtls_cipher_cmac_finish( &AesCmacCtx, Mic );

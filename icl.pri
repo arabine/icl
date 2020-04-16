@@ -2,6 +2,7 @@
 # Util files
 # ------------------------------------------------------------------------------
 HEADERS += Log.h \
+    $$PWD/protocol/TinyMac.h \
     ErrorHelper.h \
     Observer.h \
     Util.h \
@@ -17,6 +18,7 @@ HEADERS += Log.h \
     libutil.h
 
 SOURCES += Log.cpp \
+    $$PWD/protocol/TinyMac.cpp \
     Util.cpp \
     Value.cpp \
     UniqueId.cpp \
@@ -38,6 +40,7 @@ SOURCES += ByteArray.cpp \
 # ------------------------------------------------------------------------------
 # LoRa MAC layer
 # ------------------------------------------------------------------------------
+icl_lora {
 HEADERS += LoRaMac-api-v3.h \
     LoRaMac.h \
     LoRaMacCrypto.h
@@ -45,6 +48,7 @@ HEADERS += LoRaMac-api-v3.h \
 SOURCES += LoRaMac-api-v3.cpp \
     LoRaMac.cpp \
     LoRaMacCrypto.cpp
+}
 
 # ------------------------------------------------------------------------------
 # Network files
