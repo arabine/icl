@@ -2,7 +2,7 @@
 # Util files
 # ------------------------------------------------------------------------------
 HEADERS += Log.h \
-    $$PWD/util/ErrorHelper.h \
+    ErrorHelper.h \
     Observer.h \
     Util.h \
     ThreadQueue.h \
@@ -34,18 +34,32 @@ SOURCES += ByteArray.cpp \
     ByteStreamReader.cpp \
     ByteStreamWriter.cpp
 
+
+# ------------------------------------------------------------------------------
+# LoRa MAC layer
+# ------------------------------------------------------------------------------
+HEADERS += LoRaMac-api-v3.h \
+    LoRaMac.h \
+    LoRaMacCrypto.h
+
+SOURCES += LoRaMac-api-v3.cpp \
+    LoRaMac.cpp \
+    LoRaMacCrypto.cpp
+
 # ------------------------------------------------------------------------------
 # Network files
 # ------------------------------------------------------------------------------
 HEADERS += TcpSocket.h \
     TcpServer.h \
     TcpClient.h \
+    UdpSocket.h \
     WebSocket.h \
     TcpServerBase.h
 
 SOURCES += TcpSocket.cpp \
     TcpServerBase.cpp \
     TcpClient.cpp \
+    UdpSocket.cpp \
     WebSocket.cpp
 
 DEFINES += ASIO_STANDALONE
@@ -136,7 +150,7 @@ VPATH += $$ICL_DIR/protocol
 VPATH += $$ICL_DIR/json
 VPATH += $$ICL_DIR/io
 VPATH += $$ICL_DIR/db
-VPATH += $$ICL_DIR/date
+VPATH += $$ICL_DIR/lora
 
 INCLUDEPATH += $$ICL_DIR/network
 INCLUDEPATH += $$ICL_DIR/network/asio
@@ -148,5 +162,6 @@ INCLUDEPATH += $$ICL_DIR/protocol
 INCLUDEPATH += $$ICL_DIR/json
 INCLUDEPATH += $$ICL_DIR/io
 INCLUDEPATH += $$ICL_DIR/db
+INCLUDEPATH += $$ICL_DIR/lora
 INCLUDEPATH += $$ICL_DIR/date
 INCLUDEPATH += $$ICL_DIR
