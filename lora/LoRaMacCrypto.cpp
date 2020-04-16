@@ -20,12 +20,8 @@ Maintainer: Miguel Luis ( Semtech ), Gregory Cristian ( Semtech ) and Daniel Jä
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-//#include "utilities.h"
+#include "board.h"
 
-#include "mbedtls/aes.h"
-#include "mbedtls/cmac.h"
-#include "mbedtls/cipher.h"
-#include "MacCrypto.h"
 
 /*!
  * CMAC/AES Message Integrity Code (MIC) Block B0 size

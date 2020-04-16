@@ -37,34 +37,42 @@ TcpServer::~TcpServer()
 bool TcpServer::Start(std::int32_t maxConnections, bool localHostOnly, std::uint16_t tcpPort, std::uint16_t wsPort)
 {
     Stop();
+    bool isTcpServerValid = false;
+    bool isWsServerValid = false;
 
-    bool valid = mTcpServer.CreateServer(tcpPort, localHostOnly, maxConnections);
-
-    if (valid)
+    if (tcpPort > 0U)
     {
-        if (wsPort > 0U)
-        {
-            valid = mWsServer.CreateServer(wsPort, localHostOnly, maxConnections);
-        }
 
-        if (valid)
+        isTcpServerValid = mTcpServer.CreateServer(tcpPort, localHostOnly, maxConnections);
+        if (!isTcpServerValid)
         {
-            // Create the thread the first time only
-            if (!mInitialized)
-            {
-                mThread = std::thread(&TcpServer::Run, this);
-                mInitialized = true;
-            }
+            std::cerr << "TCP Server creation failure (port maybe not free)" << std::endl;
         }
-        else
+    }
+
+    if (wsPort > 0U)
+    {
+        isWsServerValid = mWsServer.CreateServer(wsPort, localHostOnly, maxConnections);
+        if (!isWsServerValid)
         {
              std::cerr << "Websocket Server creation failure (port maybe not free)" << std::endl;
         }
     }
+
+    if (isTcpServerValid || isWsServerValid)
+    {
+        // Create the thread the first time only
+        if (!mInitialized)
+        {
+            mThread = std::thread(&TcpServer::Run, this);
+            mInitialized = true;
+        }
+    }
     else
     {
-        std::cerr << "TCP Server creation failure (port maybe not free)" << std::endl;
+         std::cerr << "No any TCP server created" << std::endl;
     }
+
     return mInitialized;
 }
 /*****************************************************************************/
@@ -107,24 +115,29 @@ void TcpServer::Run()
         exit(1);
     }
 
-    // Add TCP server
-    ev.data.fd = mTcpServer.GetSocket();
-    ev.events = EPOLLIN | EPOLLET;
-    if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mTcpServer.GetSocket(), &ev) == -1)
+    if (mTcpServer.IsValid())
     {
-        perror("epoll_ctl");
-        exit(1);
+        // Add TCP server
+        ev.data.fd = mTcpServer.GetSocket();
+        ev.events = EPOLLIN | EPOLLET;
+        if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mTcpServer.GetSocket(), &ev) == -1)
+        {
+            perror("epoll_ctl");
+            exit(1);
+        }
     }
 
-    // Add Websocket server
-    ev.data.fd = mWsServer.GetSocket();
-    ev.events = EPOLLIN | EPOLLET;
-    if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mWsServer.GetSocket(), &ev) == -1)
+    if (mWsServer.IsValid())
     {
-        perror("epoll_ctl");
-        exit(1);
+        // Add Websocket server
+        ev.data.fd = mWsServer.GetSocket();
+        ev.events = EPOLLIN | EPOLLET;
+        if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mWsServer.GetSocket(), &ev) == -1)
+        {
+            perror("epoll_ctl");
+            exit(1);
+        }
     }
-
 
 #ifdef USE_UNIX_OS
     /*************************************************************/

@@ -20,8 +20,6 @@
 #include <netinet/tcp.h>
 #include <poll.h>
 
-typedef std::int32_t  SocketType;
-static const std::int32_t cSocketInvalid = -1;
 
 #endif
 
@@ -69,6 +67,13 @@ public:
     int SendTo(const UdpPeer &peer, const std::string &data);
 
     void CreateClient();
+
+    /**
+     * @brief SetTimeout
+     * @param timeout in ms
+     * @return
+     */
+    bool SetTimeout(uint32_t timeout);
 private:
     int sockfd;
 };

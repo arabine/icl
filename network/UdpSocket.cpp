@@ -7,6 +7,21 @@ UdpSocket::UdpSocket()
 
 }
 
+bool UdpSocket::SetTimeout(uint32_t timeout)
+{
+    bool success = false;
+    if (timeout > 0)
+    {
+        // LINUX
+        struct timeval tv;
+        tv.tv_sec = timeout / 1000;
+        tv.tv_usec = (timeout % 1000) * 1000;
+        int ret = setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+        success = (ret == 0);
+    }
+    return success;
+}
+
 
 void UdpSocket::CreateClient()
 {
