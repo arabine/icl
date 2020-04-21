@@ -95,6 +95,7 @@ public:
         return ret;
     }
 
+    static void HexStringToUint8(const std::string &input, uint8_t *output);
     static std::string GenerateRandomString(uint32_t length);
     static void ByteToHex(const char byte, char *out);
     static std::string ToHex(const char *buf, size_t size);

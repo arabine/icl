@@ -577,6 +577,18 @@ bool Util::Contains(const std::string &str, const std::string &lookfor)
     return str.find(lookfor) != std::string::npos;
 }
 /*****************************************************************************/
+void Util::HexStringToUint8(const std::string &input, uint8_t *output)
+{
+    for(size_t i = 0; i < input.length(); i += 2)
+    {
+        std::stringstream converter;
+        converter << std::hex << input.substr(i,2);
+        int byte;
+        converter >> byte;
+        output[i/2] = byte & 0xFF;
+    }
+}
+/*****************************************************************************/
 /**
  * Portable wrapper for mkdir. Internally used by mkdir()
  * @param[in] path the full path of the directory to create.

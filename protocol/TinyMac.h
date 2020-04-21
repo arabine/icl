@@ -5,10 +5,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "mbedtls/aes.h"
-#include "mbedtls/cmac.h"
-#include "mbedtls/cipher.h"
-
 typedef enum {
     TM_JOIN_REQ,
     TM_JOIN_ACCEPT,
@@ -18,20 +14,38 @@ typedef enum {
     TM_DATA_DENIED,
 } TmFrameType_t;
 
+#define TM_MAX_PAYLOAD_SIZE 240
+#define TM_MAC_HEADER_SIZE  (1 + 4 + 4) // 1 cmd + 4 addr + 4 fc +
+#define TM_MAC_SIZE         (TM_MAC_HEADER_SIZE + 4) //   4 MIC
+#define TM_MAX_PACKET_SIZE (TM_MAX_PAYLOAD_SIZE + TM_MAC_SIZE)
 
 class TinyMac
 {
 public:
     TinyMac();
 
-    void MacComputeMic(const uint8_t *buffer, uint16_t size, const uint8_t *key, uint32_t *mic);
-    void DecryptBuffer(const uint8_t *buffer, uint16_t size, const uint8_t *key, uint8_t *decBuffer);
-    void EncryptBuffer(const uint8_t *buffer, uint16_t size, const uint8_t *key, uint8_t *encBuffer);
-    uint8_t BuildJoinNetwork(uint8_t *packet, const uint8_t *devEui, const uint8_t *appEui, const uint8_t *key);
-    bool ParseJoinNetwork(const uint8_t *packet, uint8_t size, uint8_t *devEui, uint8_t *appEui, const uint8_t *key);
+    void MacFinish(uint8_t *output);
+    void BuildJoinNetwork(const uint8_t *devEui, const uint8_t *appEui);
+
+    const uint8_t *GetPacket() { return mPacket; };
+    uint8_t GetSize() { return TM_MAC_SIZE + mPayloadSize; }
+
+    void SetKey(uint8_t *key);
 private:
-    mbedtls_aes_context AesContext;
-    mbedtls_cipher_context_t AesCmacCtx;
+    uint8_t AddPadding(uint8_t *packet, uint8_t size);
+    void AddHeader(uint8_t cmd);
+    void Reset();
+
+    uint8_t mScratch[TM_MAX_PACKET_SIZE];
+    uint8_t mPacket[TM_MAX_PACKET_SIZE];
+
+    uint8_t mKey[16];
+
+    uint8_t mPayloadSize;
+    uint8_t mWrIndex;
+    uint32_t mFrameCounter;
+    uint32_t mDevAddr;
+    void AddBuffer(const uint8_t *data, uint8_t size);
 };
 
 #endif // TINYMAC_H
