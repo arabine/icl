@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string>
 
 typedef enum {
     TM_JOIN_REQ,
@@ -24,13 +25,20 @@ class TinyMac
 public:
     TinyMac();
 
-    void MacFinish(uint8_t *output);
+    void MacFinish(bool replace);
     void BuildJoinNetwork(const uint8_t *devEui, const uint8_t *appEui);
 
     const uint8_t *GetPacket() { return mPacket; };
     uint8_t GetSize() { return TM_MAC_SIZE + mPayloadSize; }
 
+    const uint8_t *GetData() { return mScratch; };
+    uint8_t GetDataSize() { return mPayloadSize; }
+
     void SetKey(uint8_t *key);
+
+    bool Decrypt(const uint8_t *data, uint8_t size);
+    void SetAddress(uint32_t addr);
+    void BuildData(const std::string &data);
 private:
     uint8_t AddPadding(uint8_t *packet, uint8_t size);
     void AddHeader(uint8_t cmd);
