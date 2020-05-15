@@ -234,7 +234,6 @@ JsonValue JsonObject::GetValue(const std::string &key) const
 std::string JsonValue::ToString(std::int32_t level) const
 {
     std::string text;
-    std::stringstream ss;
 
     if (IsString())
     {
@@ -244,8 +243,7 @@ std::string JsonValue::ToString(std::int32_t level) const
     }
     else if (GetTag() == INTEGER)
     {
-        ss << GetInteger();
-        text = ss.str();
+        text = std::to_string(GetInteger());
     }
     else if (GetTag() == BOOLEAN)
     {
@@ -260,8 +258,7 @@ std::string JsonValue::ToString(std::int32_t level) const
     }
     else if (GetTag() == DOUBLE)
     {
-        ss << GetDouble();
-        text = ss.str();
+        text = std::to_string(GetDouble());
     }
     else if (GetTag() == NULL_VAL)
     {
