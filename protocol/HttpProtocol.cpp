@@ -118,6 +118,63 @@ bool HttpProtocol::ParseHeader(const std::string &payload, HttpRequest &request)
     return valid;
 }
 
+bool HttpProtocol::ParseReplyHeader(const std::string &payload, HttpReply &reply)
+{
+    std::string line;
+    std::istringstream iss(payload);
+
+    bool valid = false;
+
+    // separate the first 3 main parts
+    if (std::getline(iss, line))
+    {
+        line.pop_back(); // remove \r
+        std::vector<std::string> parts = Util::Split(line, " ");
+
+        if (parts.size() == 3)
+        {
+            reply.protocol = parts[0];
+            reply.code = parts[1];
+            reply.result = parts[2];
+            valid = true;
+        }
+    }
+
+    if (valid)
+    {
+        // Continue parsing the header
+        std::string::size_type index;
+
+        while (std::getline(iss, line))
+        {
+            if (line != "\r")
+            {
+                line.pop_back();
+                index = line.find(':', 0);
+                if(index != std::string::npos)
+                {
+                    // Convert all header options to lower case (header params are case insensitive in the HTTP spec
+                    std::string option = line.substr(0, index);
+                    std::transform(option.begin(), option.end(), option.begin(), ::tolower);
+                    reply.headers.insert(std::make_pair(option, line.substr(index + 1)));
+                }
+            }
+            else
+            {
+                break; // detected HTTP separator \r\n between header and body
+            }
+        }
+
+        uint32_t body_start = static_cast<uint32_t>(iss.tellg());
+        if (body_start < payload.length())
+        {
+            reply.body = payload.substr(body_start);
+        }
+    }
+
+    return valid;
+}
+
 
 std::string HttpProtocol::GenerateRequest(const HttpRequest &request)
 {
