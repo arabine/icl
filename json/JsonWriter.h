@@ -16,7 +16,7 @@
 class JsonWriter
 {
 public:
-    static bool SaveToFile(JsonObject &i_value, const std::string &fileName);
+    static bool SaveToFile(const JsonObject &i_value, const std::string &fileName);
 };
 
 

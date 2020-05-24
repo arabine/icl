@@ -572,6 +572,26 @@ std::uint32_t Util::Exec(
 #endif
 }
 /*****************************************************************************/
+bool Util::ExecWithFork(const std::string &cmd)
+{
+    bool success = false;
+    int pid = fork();
+    if (pid == 0)
+    {
+        // We are in the child process, execute the command
+        execl(cmd.c_str(), cmd.c_str(), nullptr);
+        // Exit child process
+        exit(1);
+    }
+    else if (pid > 0)
+    {
+        // The parent process, do whatever is needed
+        // The parent process can even exit while the child process is running, since it's independent
+        success = true;
+    }
+    return success;
+}
+/*****************************************************************************/
 bool Util::Contains(const std::string &str, const std::string &lookfor)
 {
     return str.find(lookfor) != std::string::npos;
@@ -925,6 +945,19 @@ std::string Util::FileToString(const std::string &filePath)
     std::string str = ss.str(); //str holds the content of the file
     inFile.close();
     return str;
+}
+
+bool Util::StringToFile(const std::string &data, const std::string &filePath)
+{
+    bool success = false;
+    std::ofstream outFile(filePath, std::ifstream::out);
+
+    if (outFile.is_open())
+    {
+        outFile << data << std::endl;
+        outFile.close();
+    }
+    return success;
 }
 
 bool Util::IsDigitOrAlpha(const std::string &s)

@@ -8,7 +8,7 @@
 #include "JsonWriter.h"
 
 /*****************************************************************************/
-bool JsonWriter::SaveToFile(JsonObject &i_value, const std::string &fileName)
+bool JsonWriter::SaveToFile(const JsonObject &i_value, const std::string &fileName)
 {
     std::ofstream f;
     f.open(fileName, std::ios_base::out | std::ios_base::binary);

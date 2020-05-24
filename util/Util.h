@@ -100,8 +100,10 @@ public:
     static void ByteToHex(const char byte, char *out);
     static std::string ToHex(const char *buf, size_t size);
     static std::string FileToString(const std::string &filePath);
+    static bool StringToFile(const std::string &data, const std::string &filePath);
     static bool IsDigitOrAlpha(const std::string &s);
     static int32_t GetRandom(int32_t from, int32_t to);
+    static bool ExecWithFork(const std::string &cmd);
 };
 
 #endif // ICL_UTIL_H
