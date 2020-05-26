@@ -580,6 +580,7 @@ bool Util::ExecWithFork(const std::string &cmd)
     {
         // We are in the child process, execute the command
         execl(cmd.c_str(), cmd.c_str(), nullptr);
+//        system(cmd.c_str());
         // Exit child process
         exit(1);
     }
@@ -947,7 +948,7 @@ std::string Util::FileToString(const std::string &filePath)
     return str;
 }
 
-bool Util::StringToFile(const std::string &data, const std::string &filePath)
+bool Util::StringToFile(const std::string &filePath, const std::string &data, bool makeExecutable)
 {
     bool success = false;
     std::ofstream outFile(filePath, std::ifstream::out);
@@ -956,7 +957,17 @@ bool Util::StringToFile(const std::string &data, const std::string &filePath)
     {
         outFile << data << std::endl;
         outFile.close();
+        success = true;
     }
+
+    if (makeExecutable)
+    {
+        char mode[] = "0777";
+        int i;
+        i = strtol(mode, 0, 8);
+        (void) chmod (filePath.c_str(), i);
+    }
+
     return success;
 }
 
