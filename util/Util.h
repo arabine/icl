@@ -41,6 +41,7 @@ public:
     static bool FileExists(const std::string &fileName);
     static bool Mkdir(const std::string &fullPath);
     static void ReplaceCharacter(std::string &theString, const std::string &toFind, const std::string &toReplace);
+    static void EraseString(std::string &theString, const std::string &toErase);
     static std::string EscapeChar(const std::string &str);
     static std::vector<std::string> Split(const std::string &theString, const std::string &delimiter);
     static std::string Join(const std::vector<std::string> &tokens, const std::string &delimiter);
