@@ -687,6 +687,16 @@ void Util::ReplaceCharacter(std::string &theString, const std::string &toFind, c
     while (found != std::string::npos);
 }
 /*****************************************************************************/
+void Util::EraseString(std::string &theString, const std::string &toErase)
+{
+    std::size_t found;
+    found = theString.find(toErase);
+    if (found != std::string::npos)
+    {
+        theString.erase(found, toErase.size());
+    }
+}
+/*****************************************************************************/
 std::vector<std::string> Util::Split(const std::string &theString, const std::string &delimiter)
 {
     std::vector<std::string> theStringVector;
