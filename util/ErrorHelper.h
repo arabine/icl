@@ -34,7 +34,7 @@ struct ErrorHelper
         return stream.str();
     }
 
-    void Initialize()
+    void ClearAllErrors()
     {
         flags = 0;
     }
