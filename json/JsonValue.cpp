@@ -243,7 +243,7 @@ std::string JsonValue::ToString(std::int32_t level) const
     }
     else if (GetTag() == INTEGER)
     {
-        text = std::to_string(GetInteger());
+        text = std::to_string(GetInteger64());
     }
     else if (GetTag() == BOOLEAN)
     {
