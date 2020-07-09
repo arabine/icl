@@ -2,7 +2,6 @@
 # Util files
 # ------------------------------------------------------------------------------
 HEADERS += Log.h \
-    $$PWD/protocol/TinyMac.h \
     ErrorHelper.h \
     Observer.h \
     Util.h \
@@ -18,7 +17,6 @@ HEADERS += Log.h \
     libutil.h
 
 SOURCES += Log.cpp \
-    $$PWD/protocol/TinyMac.cpp \
     Util.cpp \
     Value.cpp \
     UniqueId.cpp \
