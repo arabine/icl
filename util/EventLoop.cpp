@@ -61,7 +61,7 @@ void EventLoop::Loop()
 
     while(!stop)
     {
-        // create a time point pointing to 10 second in future
+        // create a time point pointing to n milliseconds in future
         std::chrono::steady_clock::time_point tp = std::chrono::steady_clock::now() + std::chrono::milliseconds(mWaitDelay);
 
         // Sleep Till specified time point
