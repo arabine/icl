@@ -112,7 +112,8 @@ bool TcpSocket::AnalyzeSocketError(const char* context)
     e = errno;
     const char* msg = strerror( e );
     if ((e == EAGAIN) // equals EWOULDBLOCK
-        || (e == EINPROGRESS))
+        || (e == EINPROGRESS)
+        || (e == EINTR))
     {
         ok = true;
     }
