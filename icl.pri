@@ -80,8 +80,13 @@ windows {
 # Protocol files
 # ------------------------------------------------------------------------------
 icl_http {
-    HEADERS += Http.h HttpFileServer.h HttpProtocol.h
-    SOURCES += Http.cpp HttpFileServer.cpp HttpProtocol.cpp
+    HEADERS += Http.h HttpProtocol.h
+    SOURCES += Http.cpp HttpProtocol.cpp
+}
+
+icl_http_server {
+    HEADERS += HttpFileServer.h
+    SOURCES += HttpFileServer.cpp
 }
 
 # ------------------------------------------------------------------------------
