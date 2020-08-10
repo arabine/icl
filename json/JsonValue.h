@@ -40,8 +40,8 @@ public:
 
     std::string ToString(std::int32_t level = -1) const;
     std::string ToCBor() const;
-    bool HasValue(const std::string &key);
-    JsonValue GetValue(const std::string &key) const;
+    bool HasValue(const std::string &keyPath) const;
+    JsonValue GetValue(const std::string &keyPath) const;
     void Clear();
     void AddValue(const std::string &name, const JsonValue &value);
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
@@ -150,6 +150,7 @@ public:
      * @param keyPath
      * @return
      */
+    bool HasValue(const std::string &keyPath) const;
     JsonValue FindValue(const std::string &keyPath) const;
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
 
