@@ -2,6 +2,7 @@
 # Util files
 # ------------------------------------------------------------------------------
 HEADERS += Log.h \
+    $$PWD/util/Jwt.h \
     ErrorHelper.h \
     Observer.h \
     Util.h \

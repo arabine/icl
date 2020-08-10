@@ -200,27 +200,51 @@ bool JsonObject::ReplaceValue(const std::string &keyPath, const JsonValue &value
     return ret;
 }
 /*****************************************************************************/
-bool JsonObject::HasValue(const std::string &key)
+bool JsonObject::HasValue(const std::string &keyPath) const
 {
     bool ret = false;
-    for (std::map<std::string, JsonValue>::iterator it = mObject.begin(); it != mObject.end(); ++it)
+    std::vector<std::string> keys = Util::Split(keyPath, ":");
+    std::string name = keys[0];
+    keys.erase(keys.begin());
+
+    for (std::map<std::string, JsonValue>::const_iterator it = mObject.begin(); it != mObject.end(); ++it)
     {
-        if (it->first == key)
+        if (it->first == name)
         {
-            ret = true;
+            if (keys.size() == 0)
+            {
+                // The key is in this object
+                ret = true;
+            }
+            else
+            {
+                ret = it->second.HasValue(Util::Join(keys, ":")); // go deeper
+            }
         }
     }
     return ret;
 }
 /*****************************************************************************/
-JsonValue JsonObject::GetValue(const std::string &key) const
+JsonValue JsonObject::GetValue(const std::string &keyPath) const
 {
     JsonValue value;
+    std::vector<std::string> keys = Util::Split(keyPath, ":");
+    std::string name = keys[0];
+    keys.erase(keys.begin());
+
     for (std::map<std::string, JsonValue>::const_iterator it = mObject.begin(); it != mObject.end(); ++it)
     {
-        if (it->first == key)
+        if (it->first == name)
         {
-            value = it->second;
+            if (keys.size() == 0)
+            {
+                // The key is in this object
+                value = it->second;
+            }
+            else
+            {
+                value = it->second.FindValue(Util::Join(keys, ":")); // go deeper
+            }
         }
     }
 
@@ -494,11 +518,18 @@ bool JsonValue::GetValue(const std::string &nodePath, double &value) const
     return ret;
 }
 /*****************************************************************************/
+bool JsonValue::HasValue(const std::string &keyPath) const
+{
+    JsonValue val = FindValue(keyPath);
+    return val.IsValid();
+}
+/*****************************************************************************/
 JsonValue JsonValue::FindValue(const std::string &keyPath) const
 {
     std::vector<std::string> keys = Util::Split(keyPath, ":");
-
+    bool found = false;
     JsonValue temp = *this;
+
     for (std::uint32_t i = 0U; i < keys.size(); i++)
     {
         if (temp.IsObject())
@@ -506,6 +537,7 @@ JsonValue JsonValue::FindValue(const std::string &keyPath) const
             if (temp.GetObj().HasValue(keys[i]))
             {
                 temp = temp.GetObj().GetValue(keys[i]);
+                found = true;
             }
         }
         else if (temp.IsArray())
@@ -517,6 +549,7 @@ JsonValue JsonValue::FindValue(const std::string &keyPath) const
                     if (iter->GetObj().HasValue(keys[i]))
                     {
                         temp = iter->GetObj().GetValue(keys[i]);
+                        found = true;
                         break;
                     }
                 }
@@ -527,7 +560,7 @@ JsonValue JsonValue::FindValue(const std::string &keyPath) const
             break;
         }
     }
-    return temp;
+    return found ? temp : JsonValue();
 }
 /*****************************************************************************/
 bool JsonValue::ReplaceValue(const std::string &keyPath, const JsonValue &value)
