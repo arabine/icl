@@ -56,14 +56,12 @@ HEADERS += TcpSocket.h \
     TcpServer.h \
     TcpClient.h \
     UdpSocket.h \
-    WebSocket.h \
     TcpServerBase.h
 
 SOURCES += TcpSocket.cpp \
     TcpServerBase.cpp \
     TcpClient.cpp \
-    UdpSocket.cpp \
-    WebSocket.cpp
+    UdpSocket.cpp
 
 DEFINES += ASIO_STANDALONE
 

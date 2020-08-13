@@ -13,7 +13,7 @@
 #include "TcpServerBase.h"
 #include "Observer.h"
 #include "ThreadQueue.h"
-#include "WebSocket.h"
+#include "HttpProtocol.h"
 #include "Pool.h"
 
 #ifdef USE_LINUX_OS

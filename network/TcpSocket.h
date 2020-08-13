@@ -227,8 +227,9 @@ public:
     bool Listen(std::int32_t maxConnections) const;
     bool HostNameToIpAddress(const std::string &address, sockaddr_in &ipv4);
     int Accept() const;
-    bool Recv();
-    bool Recv(std::string &output);
+    bool Recv(size_t max = 0);
+    bool Recv(std::string &output, size_t max = 0);
+    bool RecvWithTimeout(std::string &output, size_t max_size, uint32_t timeout_ms);
     bool Send(const std::string &input);
     bool ProceedWsHandshake();
     bool DecodeWsData(Conn &conn);
@@ -243,7 +244,7 @@ public:
     static bool Send(const std::string &input, const Peer &peer);
     static void Close(Peer &peer);
     static std::string BuildWsFrame(std::uint8_t opcode, const std::string &data);
-    static bool Recv(std::string &output, const Peer &peer);
+    static bool Recv(std::string &output, const Peer &peer, size_t max = 0);
     static bool SendToSocket(const std::string &input, const Peer &peer);
 
     //Convert a struct sockaddr address to a string, IPv4 and IPv6

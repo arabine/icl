@@ -1,5 +1,6 @@
 #include "HttpProtocol.h"
-
+#include "Sha1.h"
+#include "Base64.h"
 #include "Util.h"
 
 static const std::string cSupportedMethods[] = { "GET", "POST" };
@@ -37,7 +38,7 @@ void HttpProtocol::ParseUrlParameters(HttpRequest &request)
     }
 }
 
-bool HttpProtocol::ParseHeader(const std::string &payload, HttpRequest &request)
+bool HttpProtocol::ParseRequestHeader(const std::string &payload, HttpRequest &request)
 {
  //   std::string request = "GET /index.asp?param1=hello&param2=128 HTTP/1.1";
     // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
@@ -203,4 +204,91 @@ std::string HttpProtocol::GenerateHttpJsonResponse(const std::string &data)
     ss << data;
 
     return ss.str();
+}
+
+std::string HttpProtocol::GenerateWebSocketRequest(WebSocketRequest &ws)
+{
+    ws.request.headers["Sec-WebSocket-Key"] = Base64::Encode(Util::GenerateRandomString(23));
+    ws.request.headers["Sec-WebSocket-Protocol"] = ws.protocol;
+
+    return GenerateRequest(ws.request);
+}
+
+bool HttpProtocol::ParseWebSocketRequest(const std::string &payload, WebSocketRequest &ws)
+{
+    bool ok = false;
+    if (ParseRequestHeader(payload, ws.request))
+    {
+
+        ok = GetRequestHeaderValue(ws.request, "Sec-WebSocket-Key", ws.key);
+        ok = ok && GetRequestHeaderValue(ws.request, "Sec-WebSocket-Protocol", ws.protocol);
+    }
+    return ok;
+}
+
+bool HttpProtocol::GetRequestHeaderValue(const HttpRequest &request, const std::string &option, std::string &value)
+{
+    bool ok = false;
+
+    std::string opt = option;
+    std::transform(opt.begin(), opt.end(), opt.begin(), ::tolower);
+    if (request.headers.count(opt))
+    {
+        ok = true;
+        value = request.headers.at(opt);
+    }
+
+    return ok;
+}
+
+bool HttpProtocol::GetReplyHeaderValue(const HttpReply &reply, const std::string &option, std::string &value)
+{
+    bool ok = false;
+
+    std::string opt = option;
+    std::transform(opt.begin(), opt.end(), opt.begin(), ::tolower);
+    if (reply.headers.count(opt))
+    {
+        ok = true;
+        value = reply.headers.at(opt);
+    }
+
+    return ok;
+}
+
+std::string WebSocketRequest::Accept()
+{
+    /*
+            The client sends a Sec-WebSocket-Key which is a random value that has been base64 encoded.
+            To form a response, the magic string 258EAFA5-E914-47DA-95CA-C5AB0DC85B11 is appended to this (undecoded) key.
+            The resulting string is then hashed with SHA-1, then base64 encoded. Finally, the resulting reply occurs in
+            the header Sec-WebSocket-Accept.
+        */
+    std::string magic = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11";
+    std::string encoded = key + magic;
+
+    Sha1 sha;
+    sha.Update(encoded);
+    encoded = sha.Final(false);
+    encoded = Base64::Encode(encoded);
+    return encoded;
+}
+
+std::string WebSocketRequest::Upgrade()
+{
+    std::string accept = Accept();
+
+    std::string header = "HTTP/1.1 101 Switching Protocols\r\n";
+    header += "Upgrade: websocket\r\n";
+    header += "Connection: Upgrade\r\n";
+    header += "Sec-WebSocket-Version: 13\r\n";
+    header += "Sec-WebSocket-Accept: " + accept + "\r\n";
+
+    if (protocol.size() != 0)
+    {
+        header += "Sec-WebSocket-Protocol: " + protocol + "\r\n";
+    }
+    header += "\r\n";
+
+    return header;
 }

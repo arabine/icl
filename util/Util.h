@@ -68,6 +68,7 @@ public:
     static uint32_t Exec(std::string exePath, std::string params, std::string& ListStdOut, std::string& ListStdErr, int32_t& RetCode);
 
     static bool Contains(const std::string &str, const std::string &lookfor);
+    static std::string Match(const std::string &msg, const std::string &patternString);
 
     template<typename T>
     static T GenerateRandom(T min, T max)

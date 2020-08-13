@@ -4,7 +4,7 @@
  */
 
 #include "TcpSocket.h"
-#include "WebSocket.h"
+#include "HttpProtocol.h"
 #include "Log.h"
 
 #include <errno.h>  // errno, just like it says.
@@ -245,8 +245,7 @@ bool TcpSocket::ProceedWsHandshake()
     // Process the handshake, upgrade into our own protocol
     WebSocketRequest ws;
 
-    ws.Parse(mBuff);
-    if (ws.IsValid())
+    if (HttpProtocol::ParseWebSocketRequest(mBuff, ws))
     {
         // Trick here: send handshake using raw tcp, not with websocket framing
         TcpSocket::SendToSocket(ws.Upgrade(), mPeer);
@@ -256,21 +255,21 @@ bool TcpSocket::ProceedWsHandshake()
     return ret;
 }
 /*****************************************************************************/
-bool TcpSocket::Recv()
+bool TcpSocket::Recv(size_t max)
 {
-    return Recv(mBuff, mPeer);
+    return Recv(mBuff, mPeer, max);
 }
 /*****************************************************************************/
-bool TcpSocket::Recv(std::string &output)
+bool TcpSocket::Recv(std::string &output, size_t max)
 {
-    return Recv(output, mPeer);
+    return Recv(output, mPeer, max);
 }
 /*****************************************************************************/
 /**
  * @brief TcpSocket::Recv
  * @return > 0 if data has been read
  */
-bool TcpSocket::Recv(std::string &output, const Peer &peer)
+bool TcpSocket::Recv(std::string &output, const Peer &peer, size_t max)
 {
     // Most likely, we will read a packet, or if the message
     // is very short, we will receive the entire message in
@@ -288,10 +287,15 @@ bool TcpSocket::Recv(std::string &output, const Peer &peer)
     if (count > 0)
     {
         char buff[MAXRECV];
+        count = count > MAXRECV ? MAXRECV : count;
+        if (max > 0)
+        {
+            count = count > max ? max : count;
+        }
         long n;
         do
         {
-            n = ::recv(peer.socket, &buff[0], sizeof(buff), 0);
+            n = ::recv(peer.socket, &buff[0], count, 0);
 
             if (n < 0)
             {
@@ -314,6 +318,35 @@ bool TcpSocket::Recv(std::string &output, const Peer &peer)
     }
 
     return ret;
+}
+/*****************************************************************************/
+bool TcpSocket::RecvWithTimeout(std::string &output, size_t max_size, uint32_t timeout_ms)
+{
+    struct pollfd fd;
+    int ret;
+    bool ok = false;
+
+    fd.fd = mPeer.socket; // your socket handler
+    fd.events = POLLIN;
+    ret = poll(&fd, 1, timeout_ms);
+    switch (ret) {
+        case -1:
+            // Error
+            break;
+        case 0:
+            // Timeout
+            break;
+        default:
+            ok = true; // then call rcv to read data
+            break;
+    }
+
+    if (ok)
+    {
+        ok = Recv(output, mPeer, max_size);
+    }
+
+    return ok;
 }
 /*****************************************************************************/
 void TcpSocket::Close(Peer &peer)
