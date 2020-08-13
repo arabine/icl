@@ -58,6 +58,7 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFU
 #include <codecvt>
 #include <array>
 #include <thread>
+#include <regex>
 #include <random>
 //#include "date.h"
 //#include "tz.h"
@@ -596,6 +597,22 @@ bool Util::ExecWithFork(const std::string &cmd)
 bool Util::Contains(const std::string &str, const std::string &lookfor)
 {
     return str.find(lookfor) != std::string::npos;
+}
+/*****************************************************************************/
+std::string Util::Match(const std::string &msg, const std::string &patternString)
+{
+    std::regex pattern(patternString);
+    std::smatch matcher;
+    std::string subMatch;
+
+    std::regex_search(msg, matcher, pattern);
+
+    if (matcher.size() == 2)
+    {
+        // Extracted value is located at index 1
+        subMatch = matcher[1].str();
+    }
+    return subMatch; // empty string if not found
 }
 /*****************************************************************************/
 void Util::HexStringToUint8(const std::string &input, uint8_t *output)
