@@ -4,6 +4,9 @@
  */
 
 #include "TcpClient.h"
+#include "HttpProtocol.h"
+
+#include <iostream>
 
 namespace tcp
 {
@@ -112,61 +115,27 @@ bool TcpClient::Connect(const std::string &host, const int port)
     return ret;
 }
 /*****************************************************************************/
-bool TcpClient::DataWaiting(std::uint32_t timeout)
+bool TcpClient::WebSocketHandshake(const std::string &path)
 {
-    bool ok = false;
+    // Si c'est un websocket, on envoie la demande WebSocket
+    WebSocketRequest ws;
 
-#ifdef USE_UNIX_OS
+    ws.request.method = "POST";
+    ws.request.protocol = "HTTP/1.1";
+    ws.request.query = path; // eg: "/api/v1/machines/upstream/data"
+    ws.request.body = "";
+    ws.request.headers["Host"] = "www." + mHost;
+    ws.request.headers["Content-length"] = std::to_string(0);
 
-    struct pollfd fd;
-    int ret;
-
-    fd.fd =  mPeer.socket; // your socket handler
-    fd.events = POLLIN;
-    ret = poll(&fd, 1, timeout);
-    switch (ret) {
-        case -1:
-            // Error
-            break;
-        case 0:
-            // Timeout
-            break;
-        default:
-            ok = true; // then call rcv to read data
-            break;
-    }
-#else
-
-
-    fd_set fds;
-    FD_ZERO( &fds );
-    FD_SET( mPeer.socket, &fds );
-
-    struct timeval tv;
-    tv.tv_sec = 0;
-    tv.tv_usec = ((long)timeout)*1000;
-
-
-    int r = select( mPeer.socket + 1, &fds, NULL, NULL, &tv);
-    if (r < 0)
+    if (Send(HttpProtocol::GenerateWebSocketRequest(ws)))
     {
-        ok = AnalyzeSocketError("select()");
-
-        if (!ok)
+        std::string output;
+        if (RecvWithTimeout(output, 512, 5000))
         {
-            Close();
+            std::cout << output << std::endl;
         }
     }
-    else
-    {
-        if( FD_ISSET( mPeer.socket, &fds ) )
-        {
-            ok = true;
-        }
-    }
-#endif
-
-    return ok;
+    return true;
 }
 
 

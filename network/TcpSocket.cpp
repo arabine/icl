@@ -320,15 +320,18 @@ bool TcpSocket::Recv(std::string &output, const Peer &peer, size_t max)
     return ret;
 }
 /*****************************************************************************/
-bool TcpSocket::RecvWithTimeout(std::string &output, size_t max_size, uint32_t timeout_ms)
+bool TcpSocket::DataWaiting(std::uint32_t timeout)
 {
-    struct pollfd fd;
-    int ret;
     bool ok = false;
 
-    fd.fd = mPeer.socket; // your socket handler
+#ifdef USE_UNIX_OS
+
+    struct pollfd fd;
+    int ret;
+
+    fd.fd =  mPeer.socket; // your socket handler
     fd.events = POLLIN;
-    ret = poll(&fd, 1, timeout_ms);
+    ret = poll(&fd, 1, timeout);
     switch (ret) {
         case -1:
             // Error
@@ -340,8 +343,45 @@ bool TcpSocket::RecvWithTimeout(std::string &output, size_t max_size, uint32_t t
             ok = true; // then call rcv to read data
             break;
     }
+#else
 
-    if (ok)
+
+    fd_set fds;
+    FD_ZERO( &fds );
+    FD_SET( mPeer.socket, &fds );
+
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = ((long)timeout)*1000;
+
+
+    int r = select( mPeer.socket + 1, &fds, NULL, NULL, &tv);
+    if (r < 0)
+    {
+        ok = AnalyzeSocketError("select()");
+
+        if (!ok)
+        {
+            Close();
+        }
+    }
+    else
+    {
+        if( FD_ISSET( mPeer.socket, &fds ) )
+        {
+            ok = true;
+        }
+    }
+#endif
+
+    return ok;
+}
+/*****************************************************************************/
+bool TcpSocket::RecvWithTimeout(std::string &output, size_t max_size, uint32_t timeout_ms)
+{
+    bool ok = false;
+
+    if (DataWaiting(timeout_ms))
     {
         ok = Recv(output, mPeer, max_size);
     }
@@ -386,10 +426,11 @@ TcpSocket::~TcpSocket()
  * Server initialization
  * @return
  */
-bool TcpSocket::Create()
+bool TcpSocket::Create(bool isWebSocket)
 {
     bool ret = false;
     mPeer.socket = socket(AF_INET, SOCK_STREAM, 0);
+    mPeer.isWebSocket = isWebSocket;
 
     if (IsValid())
     {

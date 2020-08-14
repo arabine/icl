@@ -221,7 +221,7 @@ public:
         return mPeer.IsValid();
     }
 
-    bool Create();
+    bool Create(bool isWebSocket = false);
     bool Bind(std::uint16_t port, bool localHostOnly);
     void Close();
     bool Listen(std::int32_t maxConnections) const;
@@ -235,6 +235,7 @@ public:
     bool DecodeWsData(Conn &conn);
     void DeliverData(Conn &conn);
     bool IsConnected();
+    bool DataWaiting(std::uint32_t timeout); // in ms
 
     // Static
     static bool Initialize();
@@ -250,6 +251,7 @@ public:
     //Convert a struct sockaddr address to a string, IPv4 and IPv6
 	static std::string ToString(const struct sockaddr *sa);
     static std::string GetPeerName(int s);
+
 
 protected:
     std::string mHost;
