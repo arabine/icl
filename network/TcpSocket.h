@@ -61,6 +61,13 @@ namespace tcp
 {
 
 /*****************************************************************************/
+class ISocket
+{
+public:
+    virtual bool Send(const std::string &input) = 0;
+    virtual bool RecvWithTimeout(std::string &output, size_t max_size, uint32_t timeout_ms) = 0;
+};
+/*****************************************************************************/
 /**
  * @brief Simple wrapper around the socket
  */
@@ -78,6 +85,11 @@ struct Peer
         , isWebSocket(ws)
     {
 
+    }
+
+    Peer(const Peer &p)
+    {
+        *this = p;
     }
 
     bool IsValid() const
@@ -183,7 +195,7 @@ struct Conn
     std::string payload;
 };
 /*****************************************************************************/
-class TcpSocket
+class TcpSocket : public ISocket
 {
 public:
     // Websocket opcodes, from http://tools.ietf.org/html/rfc6455
@@ -196,6 +208,8 @@ public:
 
     // Larger values will read larger chunks of data at one time (without fragmentation)
     static const std::int32_t MAXRECV = 16*1024;
+
+    enum WS_RESULT { WS_SEND_PONG, WS_PARTIAL, WS_DATA, WS_CLOSE };
 
     TcpSocket();
     TcpSocket(const Peer &peer);
@@ -210,10 +224,6 @@ public:
     {
         return mAddr.sin_addr.s_addr;
     }
-    int  GetRealPort() const
-    {
-        return mPort;
-    }
 
     // Helpers
     bool IsValid() const
@@ -225,37 +235,37 @@ public:
     bool Bind(std::uint16_t port, bool localHostOnly);
     void Close();
     bool Listen(std::int32_t maxConnections) const;
+    bool Connect(const std::string &host, const int port);
     bool HostNameToIpAddress(const std::string &address, sockaddr_in &ipv4);
     int Accept() const;
     bool Recv(size_t max = 0);
     bool Recv(std::string &output, size_t max = 0);
-    bool RecvWithTimeout(std::string &output, size_t max_size, uint32_t timeout_ms);
-    bool Send(const std::string &input);
     bool ProceedWsHandshake();
     bool DecodeWsData(Conn &conn);
     void DeliverData(Conn &conn);
     bool IsConnected();
     bool DataWaiting(std::uint32_t timeout); // in ms
 
+    // From ISocket
+    virtual bool RecvWithTimeout(std::string &output, size_t max_size, uint32_t timeout_ms);
+    virtual bool Send(const std::string &input);
+
     // Static
     static bool Initialize();
     // return true if socket has data waiting to be read
     static bool AnalyzeSocketError(const char* context);
     static void SetNonBlocking(SocketType socket);
-    static bool Send(const std::string &input, const Peer &peer);
     static void Close(Peer &peer);
     static std::string BuildWsFrame(std::uint8_t opcode, const std::string &data);
+    static WS_RESULT DecodeWsData(std::string &buf, std::string &payload);
     static bool Recv(std::string &output, const Peer &peer, size_t max = 0);
-    static bool SendToSocket(const std::string &input, const Peer &peer);
+    static bool Send(const std::string &input, const Peer &peer);
 
     //Convert a struct sockaddr address to a string, IPv4 and IPv6
 	static std::string ToString(const struct sockaddr *sa);
     static std::string GetPeerName(int s);
 
-
 protected:
-    std::string mHost;
-    std::uint16_t mPort;
     Peer mPeer;
     std::string mBuff;
     sockaddr_in mAddr;

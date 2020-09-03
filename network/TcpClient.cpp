@@ -12,9 +12,28 @@ namespace tcp
 {
 
 /*****************************************************************************/
-TcpClient::TcpClient()
+TcpClient::TcpClient(bool isWebSocket)
+    : mIsWebSocket(isWebSocket)
+    , mWsUri("/")
+    , mTls(&mSocket)
 {
 
+}
+/*****************************************************************************/
+void TcpClient::Close()
+{
+    mSocket.Close();
+    mTls.Close();
+}
+/*****************************************************************************/
+void TcpClient::SetWebSocket(bool enable)
+{
+    mIsWebSocket = enable;
+}
+/*****************************************************************************/
+void TcpClient::SetSecured(bool enable)
+{
+    mIsSecured = enable;
 }
 /*****************************************************************************/
 bool TcpClient::Initialize(int timeout)
@@ -23,10 +42,10 @@ bool TcpClient::Initialize(int timeout)
     /*************************************************************/
     /* Create an AF_INET stream socket                           */
     /*************************************************************/
-    if (Create())
+    if (mSocket.Create())
     {
         ok = true;
-        SetNonBlocking(GetSocket());
+        mSocket.SetNonBlocking(mSocket.GetSocket());
 
         if (timeout > 0)
         {
@@ -34,7 +53,7 @@ bool TcpClient::Initialize(int timeout)
             struct timeval tv;
             tv.tv_sec = timeout / 1000;
             tv.tv_usec = (timeout % 1000) * 1000;
-            int success = setsockopt(mPeer.socket, SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
+            int success = setsockopt(mSocket.GetSocket(), SOL_SOCKET, SO_RCVTIMEO, (const char*)&tv, sizeof tv);
 
             if (success != 0)
             {
@@ -57,85 +76,123 @@ bool TcpClient::Connect(const std::string &host, const int port)
     mHost = host;
     mPort = port;
 
-    if (HostNameToIpAddress(host, mAddr))
+    if (mSocket.Connect(host, port))
     {
-   //     mAddr.sin_family = AF_INET;
-   //     mAddr.sin_port = htons(port);
-   //     mAddr.sin_addr.s_addr = inet_addr(mHost.c_str()); // Convert a string IPv4 into a structure
-
-        if (mAddr.sin_addr.s_addr == INADDR_NONE)
+        if (mIsSecured)
         {
-            //printf("inet_addr failed and returned INADDR_NONE\n");
-            //     WSACleanup();
-            return false;
-        }
-        if (mAddr.sin_addr.s_addr == INADDR_ANY)
-        {
-            //    printf("inet_addr failed and returned INADDR_ANY\n");
-            return false;
-        }
-        mAddr.sin_port = htons(mPort);
-        int retcode = ::connect(mPeer.socket, reinterpret_cast<sockaddr *>(&mAddr), sizeof(mAddr));
-        if (retcode == 0)
-        {
-            ret = true;
-        }
-        else if (retcode < 0)
-        {
-            /* This is what we expect for non-blocking connect. */
-            if (TcpSocket::AnalyzeSocketError("connect()"))
+            if (mTls.Connect(mHost.data()))
             {
-                fd_set wrfds;
-                struct timeval tout;
-
-                tout.tv_sec = 5;
-                tout.tv_usec = 0;
-
-                FD_ZERO(&wrfds);
-
-                FD_SET(mPeer.socket, &wrfds);
-
-                // Wait for connection ...
-                int result = select(mPeer.socket + 1, NULL, &wrfds, NULL, &tout); // FD_SETSIZE ?
-
-                // Do we have one connection?
-                if (result == 1)
+                ret = true;
+                if (mIsWebSocket)
                 {
-                    ret = IsConnected();
+                    std::string req = BuildWebSocketHandshake(mWsUri);
+                //    std::cout << "-----------------------------" << std::endl;
+                //    std::cout << wreq << std::endl;
+                //    std::cout << "-----------------------------" << std::endl;
+
+                    if (mIsSecured)
+                    {
+                        mTls.Write(reinterpret_cast<const uint8_t *>(req.data()), req.size());
+                    }
+                    else
+                    {
+                        mSocket.Send(req);
+                    }
+
                 }
             }
-            else
-            {
-                // error, close the socket
-                Close();
-            }
+            //WebSocketHandshake(mWsUri);
         }
+    }
+    else
+    {
+        Close();
     }
 
     return ret;
 }
 /*****************************************************************************/
-bool TcpClient::WebSocketHandshake(const std::string &path)
+std::string TcpClient::BuildWebSocketHandshake(const std::string &path)
 {
-    // Si c'est un websocket, on envoie la demande WebSocket
     WebSocketRequest ws;
 
-    ws.request.method = "POST";
+    ws.request.method = "GET";
     ws.request.protocol = "HTTP/1.1";
     ws.request.query = path; // eg: "/api/v1/machines/upstream/data"
     ws.request.body = "";
-    ws.request.headers["Host"] = "www." + mHost;
-    ws.request.headers["Content-length"] = std::to_string(0);
+    ws.protocol = "tarotclub";
+    ws.request.headers["Host"] = mHost;
+//    ws.request.headers["Content-length"] = std::to_string(0);
 
-    if (Send(HttpProtocol::GenerateWebSocketRequest(ws)))
+    return HttpProtocol::GenerateWebSocketRequest(ws);
+}
+/*****************************************************************************/
+void TcpClient::SetWebSocketUri(const std::string &uri)
+{
+    mWsUri = uri;
+}
+/*****************************************************************************/
+bool TcpClient::Send(const std::string &input)
+{
+    std::string data = mIsWebSocket ? TcpSocket::BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_TEXT, input) : input;
+
+    bool success = false;
+    if (mIsSecured)
     {
-        std::string output;
-        if (RecvWithTimeout(output, 512, 5000))
+        success = mTls.Write(reinterpret_cast<const uint8_t *>(data.data()), data.size());
+    }
+    else
+    {
+        success = mSocket.Send(data);
+    }
+
+    return success;
+}
+/*****************************************************************************/
+bool TcpClient::RecvWithTimeout(std::string &output, size_t max_size, uint32_t timeout_ms)
+{
+    bool hasData = false;
+    std::string buffer;
+
+    if (mIsSecured)
+    {
+        read_buff_t rb;
+        mTls.WaitData(&rb);
+        if (rb.size > 0)
         {
-            std::cout << output << std::endl;
+            buffer.assign(reinterpret_cast<char *>(rb.data), rb.size);
+            hasData = true;
         }
     }
-    return true;
+    else
+    {
+        hasData = mSocket.RecvWithTimeout(buffer, max_size, timeout_ms);
+    }
+
+    if (hasData && mIsWebSocket)
+    {
+        TcpSocket::WS_RESULT res = TcpSocket::DecodeWsData(buffer, output);
+
+        if (res != TcpSocket::WS_DATA)
+        {
+            hasData = false;
+            if (res == TcpSocket::WS_SEND_PONG)
+            {
+
+                std::string pongData = TcpSocket::BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_PONG, std::string());
+                if (mIsSecured)
+                {
+                    mTls.Write(reinterpret_cast<const uint8_t *>(pongData.data()), pongData.size());
+                }
+                else
+                {
+                    mSocket.Send(pongData);
+                }
+            }
+        }
+    }
+
+    return hasData;
 }
 
 

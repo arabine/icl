@@ -208,8 +208,13 @@ std::string HttpProtocol::GenerateHttpJsonResponse(const std::string &data)
 
 std::string HttpProtocol::GenerateWebSocketRequest(WebSocketRequest &ws)
 {
+    ws.request.headers["Connection"] = "keep-alive, Upgrade";
+    ws.request.headers["Upgrade"] = "websocket";
     ws.request.headers["Sec-WebSocket-Key"] = Base64::Encode(Util::GenerateRandomString(23));
-    ws.request.headers["Sec-WebSocket-Protocol"] = ws.protocol;
+    ws.request.headers["Sec-WebSocket-Version"] = "13";
+//    ws.request.headers["Origin"] = "http://127.0.0.1:8080";
+
+//    ws.request.headers["Sec-WebSocket-Protocol"] = ws.protocol;
 
     return GenerateRequest(ws.request);
 }

@@ -2,7 +2,7 @@
 # Util files
 # ------------------------------------------------------------------------------
 HEADERS += Log.h \
-    $$PWD/util/Jwt.h \
+    Jwt.h \
     ErrorHelper.h \
     Observer.h \
     Util.h \
@@ -56,11 +56,13 @@ HEADERS += TcpSocket.h \
     TcpServer.h \
     TcpClient.h \
     UdpSocket.h \
+    TlsClient.h \
     TcpServerBase.h
 
 SOURCES += TcpSocket.cpp \
     TcpServerBase.cpp \
     TcpClient.cpp \
+    TlsClient.cpp \
     UdpSocket.cpp
 
 DEFINES += ASIO_STANDALONE
@@ -79,8 +81,8 @@ windows {
 # Protocol files
 # ------------------------------------------------------------------------------
 icl_http {
-    HEADERS += Http.h HttpProtocol.h
-    SOURCES += Http.cpp HttpProtocol.cpp
+    HEADERS += HttpProtocol.h
+    SOURCES += HttpProtocol.cpp
 }
 
 icl_http_server {
