@@ -3,8 +3,8 @@
  * Copyright (c) 2019 Anthony Rabine
  */
 
-#define ZIP_CPP_INCLUDED
-#include "miniz.h"
+
+#include "miniz.c"
 #include "Zip.h"
 #include <fstream>
 #include <cstring>

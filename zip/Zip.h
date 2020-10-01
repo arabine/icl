@@ -10,10 +10,8 @@
 #include <string>
 #include <vector>
 
-#ifndef ZIP_CPP_INCLUDED
-#define MINIZ_HEADER_FILE_ONLY
-#include "miniz.c"
-#endif
+
+#include "miniz.h"
 
 /*****************************************************************************/
 class Zip
