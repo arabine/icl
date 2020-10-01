@@ -47,6 +47,7 @@ bool Zip::Open(const std::string &zip, bool isFile)
 
     if (status)
     {
+        mFiles.clear();
         // Get and print information about each file in the archive.
         for (std::uint32_t i = 0; i < mz_zip_reader_get_num_files(&mZipArchive); i++)
         {
@@ -54,6 +55,7 @@ bool Zip::Open(const std::string &zip, bool isFile)
             if (mz_zip_reader_file_stat(&mZipArchive, i, &file_stat))
             {
                 mNumberOfFiles++;
+                mFiles.push_back(file_stat.m_filename);
                 //printf("Filename: \"%s\", Comment: \"%s\", Uncompressed size: %u, Compressed size: %u\n", file_stat.m_filename, file_stat.m_comment, (std::uint32_t)file_stat.m_uncomp_size, (std::uint32_t)file_stat.m_comp_size);
             }
         }
@@ -132,6 +134,11 @@ bool Zip::GetFile(const std::string &fileName, std::string &contents)
         }
     }
     return ret;
+}
+/*****************************************************************************/
+std::vector<std::string> Zip::ListFiles()
+{
+    return mFiles;
 }
 
 //=============================================================================
