@@ -13,5 +13,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_definitions(-DUSE_UNIX_OS)
 
-add_library(icl STATIC zip/Zip.cpp util/Util.cpp)
-target_include_directories (icl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/zip ${CMAKE_CURRENT_SOURCE_DIR}/util)
+add_library(icl STATIC zip/Zip.cpp util/Util.cpp security/Base64.cpp)
+target_include_directories (icl PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/zip ${CMAKE_CURRENT_SOURCE_DIR}/util ${CMAKE_CURRENT_SOURCE_DIR}/security)
