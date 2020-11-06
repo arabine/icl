@@ -80,6 +80,13 @@ struct Peer
 
     }
 
+    Peer(const Peer &p)
+        : socket(p.socket)
+        , isWebSocket(p.isWebSocket)
+    {
+
+    }
+
     bool IsValid() const
     {
         return socket != cSocketInvalid;
