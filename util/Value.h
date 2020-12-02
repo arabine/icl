@@ -80,7 +80,7 @@ public:
         return mStringValue;
     }
 
-    bool IsJsonString()
+    bool IsJsonString() const
     {
         return mJsonString;
     }

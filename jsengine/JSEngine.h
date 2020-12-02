@@ -38,6 +38,8 @@ public:
     bool HasError();
     std::string GetLastError();
     void ClearError();
+    void RegisterString(const std::string &name, const std::string &value);
+    void SetModuleSearchPath(const std::string &path);
 
 private:
     duk_context *mCtx;

@@ -44,6 +44,8 @@ public:
     virtual bool HasError() = 0;
     virtual std::string GetLastError() = 0;
     virtual void ClearError() = 0;
+    virtual void RegisterString(const std::string &name, const std::string &value) = 0;
+    virtual void SetModuleSearchPath(const std::string &path) = 0;
 };
 
 #endif // I_SCRIPT_ENGINE_H

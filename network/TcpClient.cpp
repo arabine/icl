@@ -23,7 +23,10 @@ TcpClient::TcpClient(bool isWebSocket)
 void TcpClient::Close()
 {
     mSocket.Close();
-    mTls.Close();
+    if (mIsSecured)
+    {
+        mTls.Close();
+    }
 }
 /*****************************************************************************/
 void TcpClient::SetWebSocket(bool enable)
