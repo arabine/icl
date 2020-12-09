@@ -34,6 +34,11 @@ tcp::TcpServer::IEvent::~IEvent(){
 
 }
 
+void HttpFileServer::SetLocalhostOnly(bool enable)
+{
+    mLocalHostOnly = enable;
+}
+
 void HttpFileServer::NewConnection(const tcp::Conn &conn) {
     (void) conn;
 }
@@ -259,15 +264,15 @@ bool HttpFileServer::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
             request.body = conn.payload.substr(body_start);
         }
        // std::cout << request.body << std::endl;
-    /*
-        for(auto& kv: m) {
-            std::cout << "KEY: `" << kv.first << "`, VALUE: `" << kv.second << '`' << std::endl;
-        }
-
-        std::cout << "protocol: " << header.protocol << '\n';
-        std::cout << "method  : " << header.method << '\n';
-        std::cout << "query   : " << header.query << '\n';
-    */
+    
+        // for( auto const& [key, val] : request.headers )
+        // {
+        //     std::cout << key         // string (key)
+        //             << ':'  
+        //             << val        // string's value
+        //             << std::endl ;
+        // }
+    
     }
 
     return valid;
@@ -463,6 +468,19 @@ void HttpFileServer::ReadData(const tcp::Conn &conn)
         }
     }
 
+    if (mLocalHostOnly)
+    {
+        // Forbid external access
+        if (request.headers.count("x-real-ip") > 0)
+        {
+            std::string fromIP = request.headers["x-real-ip"];
+            if (fromIP != "127.0.0.1")
+            {
+                Send403(conn, request);
+                process = false;
+            }
+        }
+    }
 
     if (process)
     {
@@ -477,6 +495,15 @@ void HttpFileServer::ReadData(const tcp::Conn &conn)
             }
         }
     }
+}
+
+void HttpFileServer::Send403(const tcp::Conn &conn, const HttpRequest &header)
+{
+    std::stringstream ss;
+
+    ss << "HTTP/1.1 403 Forbidden\r\n\r\n";
+
+    tcp::TcpSocket::SendToSocket(ss.str(), conn.peer);
 }
 
 void HttpFileServer::Send404(const tcp::Conn &conn, const HttpRequest &header)
