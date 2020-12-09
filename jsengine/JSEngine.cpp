@@ -17,6 +17,8 @@
 #include <map>
 #include <thread>
 
+#include "duk_module_duktape.h"
+
 #define DUKTAPE_DEBUG
 
 static const char *gIdName = "ctx_id";
@@ -29,6 +31,9 @@ static std::mutex gFunctionsMutex;
 static std::uint32_t gMagicIdCounter = 1U;
 static std::map<std::int32_t, IScriptEngine::IFunction*> gFunctionList;
 
+// modules directory search
+// FIXME: make it dependant to the JSEngine instance
+static std::string moduleSearchPath;
 
 static duk_ret_t GenericCallback(duk_context *ctx)
 {
@@ -50,6 +55,13 @@ static duk_ret_t GenericCallback(duk_context *ctx)
             args.push_back(Value(value));
         }
         else if (duk_is_object(ctx, i))
+        {
+            std::string value = duk_json_encode(ctx, i);
+            Value argVal = Value(value);
+            argVal.SetJsonString(true);
+            args.push_back(argVal);
+        }
+        else if (duk_is_array(ctx, i))
         {
             std::string value = duk_json_encode(ctx, i);
             Value argVal = Value(value);
@@ -220,6 +232,30 @@ static int eval_string_raw(duk_context *ctx, void *udata)
     return 1;
 }
 
+static duk_ret_t mod_search(duk_context* ctx)
+{
+    int  len;
+
+    const char *filename = duk_require_string(ctx, 0);
+
+    std::string path = moduleSearchPath + "/" + std::string(filename);
+    FILE* f = fopen(path.c_str(), "rb");
+    if (!f)
+        return -1;
+    fseek(f, 0, SEEK_END);
+    len = (int) ftell(f);
+
+    // Rewind
+    fseek(f, 0, SEEK_SET);
+
+    char* src = (char*)malloc(len);
+    fread(src, 1, len,f);
+    fclose(f);
+    duk_push_lstring(ctx, src, len);
+    free(src);
+    return 1;
+}
+
 /*****************************************************************************/
 JSEngine::JSEngine()
     : mCtx(nullptr)
@@ -234,6 +270,11 @@ JSEngine::JSEngine()
 JSEngine::~JSEngine()
 {
     Close();
+}
+/*****************************************************************************/
+void JSEngine::SetModuleSearchPath(const std::string &path)
+{
+    moduleSearchPath = path;
 }
 /*****************************************************************************/
 void JSEngine::Initialize()
@@ -269,6 +310,15 @@ void JSEngine::Initialize()
         duk_push_uint(mCtx, mId);
         (void) duk_put_global_string(mCtx, "ctx_id");
 
+        // Custom module search function
+        duk_get_global_string(mCtx, "Duktape");
+        duk_push_c_function(mCtx, mod_search, 4 /*num_args*/);
+        duk_put_prop_string(mCtx, -2, "modSearch");
+        duk_pop(mCtx);
+
+        // init module extension
+        duk_module_duktape_init(mCtx);
+
         mValidContext = true;
 
         ClearError();
@@ -303,6 +353,13 @@ void JSEngine::RegisterFunction(const std::string &name, IScriptEngine::IFunctio
 
         gFunctionsMutex.unlock();
     }
+}
+/*****************************************************************************/
+void JSEngine::RegisterString(const std::string &name, const std::string &value)
+{
+    std::string var = name + "\x00ignored";
+    duk_push_string(mCtx, value.c_str());
+    duk_put_global_string(mCtx, var.c_str());
 }
 /*****************************************************************************/
 bool JSEngine::HasError()

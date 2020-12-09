@@ -224,7 +224,7 @@ void Connection::endheaders()
 
 void Connection::send( const char* buf, int numbytes )
 {
-    if (mClient.IsValid())
+    if (mClient.IsConnected())
     {
         std::string bytes;
         bytes.append(buf, static_cast<size_t>(numbytes));
@@ -238,11 +238,8 @@ bool Connection::pump()
     if (m_Outstanding.empty())
         return false;		// no requests outstanding
 
-    if (!mClient.DataWaiting(2000U))
-        return true;				// recv will block
-
     std::string buf;
-    if (!mClient.Recv(buf))
+    if (!mClient.RecvWithTimeout(buf, 10*1024, 2000))
 	{
 		// connection has closed
 		Response* r = m_Outstanding.front();

@@ -576,6 +576,7 @@ std::uint32_t Util::Exec(
 bool Util::ExecWithFork(const std::string &cmd)
 {
     bool success = false;
+#ifdef USE_LINUX_OS
     int pid = fork();
     if (pid == 0)
     {
@@ -591,6 +592,7 @@ bool Util::ExecWithFork(const std::string &cmd)
         // The parent process can even exit while the child process is running, since it's independent
         success = true;
     }
+#endif
     return success;
 }
 /*****************************************************************************/

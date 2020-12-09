@@ -7,6 +7,7 @@
 #define GETOPTIONS_H
 
 #include <algorithm>
+#include <string>
 
 class CommandLine
 {

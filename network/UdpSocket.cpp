@@ -70,5 +70,5 @@ int UdpSocket::WaitForData(UdpPeer &peer)
 
 int UdpSocket::SendTo(const UdpPeer &peer, const uint8_t *data, uint32_t size)
 {
-    return sendto(sockfd, data, size, MSG_CONFIRM, &peer.addr, sizeof(peer.addr));
+    return sendto(sockfd, reinterpret_cast<const char *>(data), size, 0, &peer.addr, sizeof(peer.addr));
 }

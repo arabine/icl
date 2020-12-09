@@ -48,6 +48,7 @@ static const std::int32_t cSocketInvalid = -1;
 #ifdef __MINGW32__
 #include <unistd.h>
 
+#include <WinSock2.h>
 #include <ws2tcpip.h>
 #include <windows.h>
 #endif

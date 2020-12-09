@@ -23,6 +23,40 @@
 
 #endif
 
+#ifdef USE_WINDOWS_OS
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
+#ifdef _MSC_VER
+#include <io.h>
+
+#include <WS2tcpip.h>
+#include <Windows.h>
+#include <WinSock2.h>
+
+#endif
+
+
+#ifdef __MINGW32__
+#include <unistd.h>
+
+#include <ws2tcpip.h>
+#include <windows.h>
+#endif
+
+typedef SOCKET  SocketType;
+static const SOCKET cSocketInvalid = INVALID_SOCKET;
+
+#endif // USE_WINDOWS_OS
+
+#ifndef bzero
+#define bzero(b,len) (memset((b), '\0', (len)), (void) 0)
+#endif
+
+
+
 struct UdpPeer
 {
     struct sockaddr addr;
