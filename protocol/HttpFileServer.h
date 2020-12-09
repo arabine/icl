@@ -52,7 +52,8 @@ public:
 
     std::string Match(const std::string &msg, const std::string &patternString);
     void Send404(const tcp::Conn &conn, const HttpRequest &header);
-
+    void Send403(const tcp::Conn &conn, const HttpRequest &header);
+    void SetLocalhostOnly(bool enable);
     void SendHttpJson(const tcp::Conn &conn, const std::string &data);
     std::string GenerateJWT(const std::string &payload);
     bool CheckJWT(const std::string &header, const std::string &payload, const std::string &hash, JsonValue &json);
@@ -60,6 +61,7 @@ public:
 private:
     std::string mRootDir;
     std::string mSessionSecret;
+    bool mLocalHostOnly = false;
 
     std::vector<ChunkedData> mPartials;
 

@@ -251,6 +251,18 @@ JsonValue JsonObject::GetValue(const std::string &keyPath) const
     return value;
 }
 /*****************************************************************************/
+std::vector<std::string> JsonObject::GetKeys() const
+{
+    std::vector<std::string> keys;
+
+    for (std::map<std::string, JsonValue>::const_iterator it = mObject.begin(); it != mObject.end(); ++it)
+    {
+        keys.push_back(it->first);
+    }
+
+    return keys;
+}
+/*****************************************************************************/
 
 //          *                          *                                  *
 

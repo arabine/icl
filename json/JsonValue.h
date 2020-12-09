@@ -46,6 +46,7 @@ public:
     void AddValue(const std::string &name, const JsonValue &value);
     bool ReplaceValue(const std::string &keyPath, const JsonValue &value);
     std::uint32_t GetSize() { return static_cast<std::uint32_t>(mObject.size()); }
+    std::vector<std::string> GetKeys() const;
 
     JsonObject &operator = (JsonObject const &rhs);
 
