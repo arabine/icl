@@ -108,9 +108,9 @@ icl_couchdb {
 # ------------------------------------------------------------------------------
 # Security files
 # ------------------------------------------------------------------------------
-HEADERS += Base64.h Sha1.h Sha256.h
+HEADERS += Base64Util.h ShaOne.h ShaTwo.h
 
-SOURCES += Base64.cpp Sha1.cpp Sha256.cpp
+SOURCES += Base64Util.cpp ShaOne.cpp ShaTwo.cpp
 
 # ------------------------------------------------------------------------------
 # ZIP files
@@ -154,7 +154,7 @@ SOURCES += duktape.c duk_module_duktape.c \
 # ------------------------------------------------------------------------------
 #DEFINES += -DMBEDTLS_CONFIG_FILE='<foo.h>'"
 
-HEADERS +=  mbedtls/aes.h mbedtls/config.h
+HEADERS +=  mbedtls/aes.h mbedtls/config.h mbedtls/sha1.h mbedtls/sha256.h
 
 SOURCES +=  aes.c \
 aesni.c \

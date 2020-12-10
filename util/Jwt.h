@@ -1,8 +1,8 @@
 #ifndef JWT_H
 #define JWT_H
 
-#include "Sha256.h"
-#include "Base64.h"
+#include "ShaTwo.h"
+#include "Base64Util.h"
 #include "JsonValue.h"
 #include "JsonReader.h"
 #include "Util.h"

@@ -4,7 +4,7 @@
  * Original source code: forgot!
  */
 
-#include "Sha1.h"
+#include "ShaOne.h"
 #include <sstream>
 #include <iomanip>
 #include <fstream>
