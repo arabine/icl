@@ -8,9 +8,9 @@
 
 struct HttpRequest
 {
-    std::string method;
-    std::string query;
-    std::string protocol;
+    std::string method;  // "GET" "PUT"
+    std::string query;  //  /path/to/go
+    std::string protocol;  // HTTP/1.1
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> headers;
     std::string body;

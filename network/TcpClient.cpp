@@ -81,30 +81,30 @@ bool TcpClient::Connect(const std::string &host, const int port)
 
     if (mSocket.Connect(host, port))
     {
+        ret = true;
         if (mIsSecured)
         {
             if (mTls.Connect(mHost.data()))
             {
                 ret = true;
-                if (mIsWebSocket)
-                {
-                    std::string req = BuildWebSocketHandshake(mWsUri);
-                //    std::cout << "-----------------------------" << std::endl;
-                //    std::cout << wreq << std::endl;
-                //    std::cout << "-----------------------------" << std::endl;
-
-                    if (mIsSecured)
-                    {
-                        mTls.Write(reinterpret_cast<const uint8_t *>(req.data()), req.size());
-                    }
-                    else
-                    {
-                        mSocket.Send(req);
-                    }
-
-                }
             }
-            //WebSocketHandshake(mWsUri);
+        }
+
+        if (ret && mIsWebSocket)
+        {
+            std::string req = BuildWebSocketHandshake(mWsUri);
+            //    std::cout << "-----------------------------" << std::endl;
+            //    std::cout << wreq << std::endl;
+            //    std::cout << "-----------------------------" << std::endl;
+
+            if (mIsSecured)
+            {
+                mTls.Write(reinterpret_cast<const uint8_t *>(req.data()), req.size());
+            }
+            else
+            {
+                mSocket.Send(req);
+            }
         }
     }
     else
@@ -172,26 +172,33 @@ bool TcpClient::RecvWithTimeout(std::string &output, size_t max_size, uint32_t t
         hasData = mSocket.RecvWithTimeout(buffer, max_size, timeout_ms);
     }
 
-    if (hasData && mIsWebSocket)
+    if (hasData)
     {
-        TcpSocket::WS_RESULT res = TcpSocket::DecodeWsData(buffer, output);
-
-        if (res != TcpSocket::WS_DATA)
+        if (mIsWebSocket)
         {
-            hasData = false;
-            if (res == TcpSocket::WS_SEND_PONG)
-            {
+            TcpSocket::WS_RESULT res = TcpSocket::DecodeWsData(buffer, output);
 
-                std::string pongData = TcpSocket::BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_PONG, std::string());
-                if (mIsSecured)
+            if (res != TcpSocket::WS_DATA)
+            {
+                hasData = false;
+                if (res == TcpSocket::WS_SEND_PONG)
                 {
-                    mTls.Write(reinterpret_cast<const uint8_t *>(pongData.data()), pongData.size());
-                }
-                else
-                {
-                    mSocket.Send(pongData);
+
+                    std::string pongData = TcpSocket::BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_PONG, std::string());
+                    if (mIsSecured)
+                    {
+                        mTls.Write(reinterpret_cast<const uint8_t *>(pongData.data()), pongData.size());
+                    }
+                    else
+                    {
+                        mSocket.Send(pongData);
+                    }
                 }
             }
+        }
+        else
+        {
+            output = buffer;
         }
     }
 

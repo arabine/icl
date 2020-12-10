@@ -89,8 +89,10 @@ struct Peer
     }
 
     Peer(const Peer &p)
+        : socket(p.socket)
+        , isWebSocket(p.isWebSocket)
     {
-        *this = p;
+
     }
 
     bool IsValid() const
