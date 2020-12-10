@@ -66,29 +66,7 @@ struct UdpPeer
         memset(&addr, 0, sizeof(addr));
     }
 
-    bool SetAddress(const std::string &host, uint16_t port)
-    {
-        struct sockaddr_in     servaddr;
-        struct hostent *he;
-
-        if ((he=gethostbyname(host.c_str())) == NULL) {  /* get the host info */
-            return false;
-        }
-
-        memset(&servaddr, 0, sizeof(servaddr));
-
-        // Filling server information
-        servaddr.sin_family = AF_INET;
-        servaddr.sin_port = htons(port);
-
-        /* build the server's Internet address */
-         // bzero((char *) &serveraddr, sizeof(serveraddr));
-        memcpy((char *)&servaddr.sin_addr.s_addr, (char *)he->h_addr, he->h_length);
-        bzero(&(servaddr.sin_zero), 8);     /* zero the rest of the struct */
-
-        memcpy(&addr, &servaddr, sizeof(addr));
-        return true;
-    }
+    bool SetAddress(const std::string &host, uint16_t port);
 };
 
 class UdpSocket
@@ -99,6 +77,8 @@ public:
 
     int WaitForData(UdpPeer &peer);
     int SendTo(const UdpPeer &peer, const uint8_t *data, uint32_t size);
+
+    void SetBroadcast();
 
     void CreateClient();
 
