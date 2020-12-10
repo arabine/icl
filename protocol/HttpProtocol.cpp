@@ -1,6 +1,6 @@
 #include "HttpProtocol.h"
-#include "Sha1.h"
-#include "Base64.h"
+#include "ShaOne.h"
+#include "Base64Util.h"
 #include "Util.h"
 
 static const std::string cSupportedMethods[] = { "GET", "POST" };

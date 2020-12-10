@@ -10,8 +10,8 @@
 #include "Util.h"
 #include "Log.h"
 #include "Zip.h"
-#include "Sha256.h"
-#include "Base64.h"
+#include "ShaTwo.h"
+#include "Base64Util.h"
 #include "JsonReader.h"
 
 #ifdef USE_UNIX_OS

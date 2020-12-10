@@ -27,26 +27,13 @@
 #ifndef SHA256_H
 #define SHA256_H
 
+
+#include "mbedtls/sha256.h"
+
 #include <stddef.h>
 #include <cstdint>
 #include <string>
 
-/**
- * \brief          The SHA-256 context structure.
- *
- *                 The structure is used both for SHA-256 and for SHA-224
- *                 checksum calculations. The choice between these two is
- *                 made in the call to mbedtls_sha256_starts_ret().
- */
-typedef struct mbedtls_sha256_context
-{
-    uint32_t total[2];          /*!< The number of Bytes processed.  */
-    uint32_t state[8];          /*!< The intermediate digest state.  */
-    unsigned char buffer[64];   /*!< The data block being processed. */
-    int is224;                  /*!< Determines which function to use:
-                                     0: Use SHA-256, or 1: Use SHA-224. */
-}
-mbedtls_sha256_context;
 
 class Sha256
 {
