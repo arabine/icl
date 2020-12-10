@@ -72,3 +72,19 @@ int UdpSocket::SendTo(const UdpPeer &peer, const uint8_t *data, uint32_t size)
 {
     return sendto(sockfd, data, size, MSG_CONFIRM, &peer.addr, sizeof(peer.addr));
 }
+
+void UdpSocket::SetBroadcast()
+{
+    char broadcast = '1';
+
+    if(setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST,& broadcast,sizeof(broadcast)) < 0)
+    {
+#ifdef USE_UNIX_OS
+        ::shutdown(sockfd, SHUT_RDWR);
+        ::close(sockfd);
+#else
+        ::shutdown(sockfd, SD_BOTH);
+        ::closesocket(sockfd);
+#endif
+    }
+}
