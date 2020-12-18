@@ -154,7 +154,7 @@ SOURCES += duktape.c duk_module_duktape.c \
 # ------------------------------------------------------------------------------
 #DEFINES += -DMBEDTLS_CONFIG_FILE='<foo.h>'"
 
-HEADERS +=  mbedtls/aes.h mbedtls/config.h mbedtls/sha1.h mbedtls/sha256.h
+HEADERS +=  mbedtls/aes.h mbedtls/config.h
 
 SOURCES +=  aes.c \
 aesni.c \
