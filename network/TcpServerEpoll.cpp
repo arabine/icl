@@ -388,6 +388,7 @@ void TcpServer::IncommingData(Conn &conn)
                 }
                 else
                 {
+                    conn.state = Conn::cStateDeleteLater;
                     TLogError("Websocket handshake failure.");
                 }
             }
@@ -399,7 +400,7 @@ void TcpServer::IncommingData(Conn &conn)
         }
         else
         {
-            // Transfer the received data to to connection paypload
+            // Transfer the received data to to connection payload
             socket.DeliverData(conn);
         }
 

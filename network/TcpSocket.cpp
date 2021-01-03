@@ -260,7 +260,7 @@ std::string TcpSocket::BuildWsFrame(std::uint8_t opcode, const std::string &data
     return std::string(reinterpret_cast<char *>(&ws_header[0]), header_len) + data;
 }
 /*****************************************************************************/
-bool TcpSocket::Send(const std::string &input, const Peer &peer)
+bool TcpSocket::Write(const std::string &input, const Peer &peer)
 {
     bool ret = true;
     size_t size = input.size();
@@ -294,7 +294,7 @@ bool TcpSocket::ProceedWsHandshake()
     if (HttpProtocol::ParseWebSocketRequest(mBuff, ws))
     {
         // Trick here: send handshake using raw tcp, not with websocket framing
-        TcpSocket::Send(ws.Upgrade(), mPeer);
+        TcpSocket::Write(ws.Upgrade(), mPeer);
         ret = true;
     }
 
@@ -606,9 +606,25 @@ int TcpSocket::Accept() const
     return new_sd;
 }
 /*****************************************************************************/
-bool TcpSocket::Send(const std::string &input)
+bool TcpSocket::Send(const std::string &input, const Peer &peer)
 {
-    return Send(input, mPeer);
+    bool ret = false;
+
+    if (peer.isWebSocket)
+    {
+        ret = Write(BuildWsFrame(WEBSOCKET_OPCODE_TEXT, input), peer);
+    }
+    else
+    {
+        ret = Write(input, peer);
+    }
+
+    return ret;
+}
+/*****************************************************************************/
+bool TcpSocket::Write(const std::string &input)
+{
+    return Write(input, mPeer);
 }
 /*****************************************************************************/
 /**
@@ -702,7 +718,7 @@ bool TcpSocket::DecodeWsData(Conn &conn)
     }
     else if (res == WS_SEND_PONG)
     {
-        Send(BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_PONG, std::string()));
+        Write(BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_PONG, std::string()));
     }
     else if (res == WS_DATA)
     {
@@ -799,7 +815,7 @@ TcpSocket::WS_RESULT TcpSocket::DecodeWsData(std::string &buf, std::string &payl
         if ((opcode == TcpSocket::WEBSOCKET_OPCODE_TEXT) ||
             (opcode == TcpSocket::WEBSOCKET_OPCODE_BINARY))
         {
-            payload += buf.substr(header_len, data_len);
+            payload = buf.substr(header_len, data_len);
         }
         else if(opcode == TcpSocket::WEBSOCKET_OPCODE_CONTINUATION)
         {

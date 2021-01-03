@@ -122,7 +122,7 @@ static int send_cb( void *ctx, unsigned char const *buf, size_t len )
 
 //    return( mbedtls_net_send( io_ctx->net, buf, len ) );
 
-    bool ret = io_ctx->client->Send(std::string(reinterpret_cast<const char *>(buf), len));
+    bool ret = io_ctx->client->Write(std::string(reinterpret_cast<const char *>(buf), len));
 
     if (ret)
     {

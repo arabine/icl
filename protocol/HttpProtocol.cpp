@@ -38,6 +38,14 @@ void HttpProtocol::ParseUrlParameters(HttpRequest &request)
     }
 }
 
+std::string_view trim(std::string_view s)
+{
+    s.remove_prefix(std::min(s.find_first_not_of(" \t\r\v\n"), s.size()));
+    s.remove_suffix(std::min(s.size() - s.find_last_not_of(" \t\r\v\n") - 1, s.size()));
+
+    return s;
+}
+
 bool HttpProtocol::ParseRequestHeader(const std::string &payload, HttpRequest &request)
 {
  //   std::string request = "GET /index.asp?param1=hello&param2=128 HTTP/1.1";
@@ -90,7 +98,8 @@ bool HttpProtocol::ParseRequestHeader(const std::string &payload, HttpRequest &r
                     // Convert all header options to lower case (header params are case insensitive in the HTTP spec
                     std::string option = line.substr(0, index);
                     std::transform(option.begin(), option.end(), option.begin(), ::tolower);
-                    request.headers.insert(std::make_pair(option, line.substr(index + 1)));
+                    std::string optionValue = std::string(trim(line.substr(index + 1)));
+                    request.headers.insert(std::make_pair(option, optionValue));
                 }
             }
             else
@@ -224,9 +233,14 @@ bool HttpProtocol::ParseWebSocketRequest(const std::string &payload, WebSocketRe
     bool ok = false;
     if (ParseRequestHeader(payload, ws.request))
     {
-
+        std::string mustBeWebsocket;
         ok = GetRequestHeaderValue(ws.request, "Sec-WebSocket-Key", ws.key);
-        ok = ok && GetRequestHeaderValue(ws.request, "Sec-WebSocket-Protocol", ws.protocol);
+        ok = ok && GetRequestHeaderValue(ws.request, "Upgrade", mustBeWebsocket);
+
+        if (mustBeWebsocket != "websocket")
+        {
+            ok = false;
+        }
     }
     return ok;
 }
