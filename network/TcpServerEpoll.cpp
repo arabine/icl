@@ -100,6 +100,26 @@ void TcpServer::Join()
     }
 }
 /*****************************************************************************/
+bool TcpServer::SendToAllClients(const std::string &data, bool wsOnly)
+{
+    bool success = true;
+    mMutex.lock();
+    for (auto &c : mClients)
+    {
+        bool canSend = wsOnly ? c.peer.isWebSocket : true;
+        if (canSend)
+        {
+            if (!tcp::TcpSocket::Send(data, c.peer))
+            {
+                c.state = Conn::cStateDeleteLater;
+                success = false;
+            }
+        }
+    }
+    mMutex.unlock();
+    return success;
+}
+/*****************************************************************************/
 void TcpServer::Run()
 {
     bool end_server = false;
@@ -209,7 +229,7 @@ void TcpServer::Run()
                         printf("error = %s\n", strerror(error));
                     }
 
-                    close (events[i].data.fd);
+                    RemoveClient(events[i].data.fd);
                     continue;
                 }
                 else if (events[i].events & EPOLLRDHUP)
@@ -221,7 +241,6 @@ void TcpServer::Run()
                 {
                     end_server = true;
                     mEventHandler.ServerTerminated(IEvent::CLOSED);
-
                 }
                 else if (mTcpServer.GetSocket() == events[i].data.fd)
                 {
@@ -409,10 +428,20 @@ void TcpServer::IncommingData(Conn &conn)
             mEventHandler.ReadData(conn);
         }
     }
-    else
+}
+/*****************************************************************************/
+void TcpServer::RemoveClient(int fd)
+{
+    mMutex.lock();
+    for (auto &c : mClients)
     {
-        conn.state = Conn::cStateDeleteLater;
+        if (c.peer.socket == fd)
+        {
+            c.state = Conn::cStateDeleteLater;
+        }
     }
+    UpdateClients();
+    mMutex.unlock();
 }
 /*****************************************************************************/
 void TcpServer::UpdateClients()
@@ -434,7 +463,8 @@ void TcpServer::UpdateClients()
         for (size_t i = 0; i < mClients.size(); i++)
         {
             Conn conn = mClients[i];
-            if (conn.state == Conn::cStateDeleteLater)
+            if ((conn.state == Conn::cStateDeleteLater) ||
+                 !conn.peer.IsValid())
             {
                 mClients.erase(mClients.begin() + i);
 
