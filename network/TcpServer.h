@@ -92,6 +92,7 @@ public:
     void Stop();
     void Join();
     bool IsStarted() { return mInitialized; }
+    bool SendToAllClients(const std::string &data, bool wsOnly);
 
 private:
     TcpServerBase   mTcpServer;
@@ -122,6 +123,7 @@ private:
     void DeliverWsData(Conn &conn, std::string &buf);
     std::string WsOpcodeToString(std::uint8_t opcode);
     void UpdateClients();
+    void RemoveClient(int fd);
 };
 
 
