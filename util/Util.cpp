@@ -40,6 +40,12 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFU
 #include <sys/stat.h>
 #include <stdlib.h>
 #include <sys/resource.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
 #endif
 
 #ifdef USE_APPLE_OS
@@ -576,7 +582,7 @@ std::uint32_t Util::Exec(
 bool Util::ExecWithFork(const std::string &cmd)
 {
     bool success = false;
-#ifdef USE_LINUX_OS
+#ifdef USE_UNIX_OS
     int pid = fork();
     if (pid == 0)
     {
@@ -1005,6 +1011,57 @@ bool Util::IsDigitOrAlpha(const std::string &s)
     return std::any_of(s.begin(), s.end(), [](char c) {
         return isdigit(c) || isalpha(c);
     });
+}
+
+
+/* Returns the MAC Address
+   Params: int iNetType - 0: ethernet, 1: Wifi
+           char chMAC[6] - MAC Address in binary format
+   Returns: 0: success
+           -1: Failure
+    */
+int Util::GetMacAddress(const char *ifname, unsigned char chMAC[6])
+{
+    struct ifreq ifr;
+    int sock;
+
+    sock=socket(AF_INET,SOCK_DGRAM,0);
+    strcpy(ifr.ifr_name, ifname);
+    ifr.ifr_addr.sa_family = AF_INET;
+    if (ioctl( sock, SIOCGIFHWADDR, &ifr ) < 0) {
+    return -1;
+    }
+    memcpy(chMAC, ifr.ifr_hwaddr.sa_data, 6);
+    close(sock);
+    return 0;
+}
+
+std::string Util::GetIpAddress(const char *ifname)
+{
+    int fd;
+    struct ifreq ifr;
+
+    fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+    /* I want to get an IPv4 IP address */
+    ifr.ifr_addr.sa_family = AF_INET;
+
+    /* I want IP address attached to "eth0" */
+    strncpy(ifr.ifr_name, ifname, IFNAMSIZ-1);
+
+    int ret = ioctl(fd, SIOCGIFADDR, &ifr);
+
+    close(fd);
+
+    /* display result */
+    std::string ip = inet_ntoa(reinterpret_cast<struct sockaddr_in *>(&ifr.ifr_addr)->sin_addr);
+
+    if (ret != 0)
+    {
+        ip = "Not connected";
+    }
+
+    return ip;
 }
 
 //=============================================================================

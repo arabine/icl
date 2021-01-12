@@ -106,6 +106,8 @@ public:
     static bool IsDigitOrAlpha(const std::string &s);
     static int32_t GetRandom(int32_t from, int32_t to);
     static bool ExecWithFork(const std::string &cmd);
+    static int GetMacAddress(const char *ifname, unsigned char chMAC[]);
+    static std::string GetIpAddress(const char *ifname);
 };
 
 #endif // ICL_UTIL_H
