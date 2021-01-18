@@ -24,6 +24,7 @@ public:
     void Loop();
     void Stop();
     void Start();
+    void UpdateTimers();
 
     // From IEventLoop
     void AddTimer(std::chrono::milliseconds period, CallBack callBack);
@@ -42,8 +43,6 @@ private:
 
     std::vector<Timer> mTimers;
     uint32_t mWaitDelay;
-
-    void UpdateTimers();
 };
 
 #endif // EVENT_LOOP_H

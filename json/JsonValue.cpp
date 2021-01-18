@@ -323,7 +323,7 @@ JsonValue::JsonValue(std::int32_t value)
 /*****************************************************************************/
 JsonValue::JsonValue(std::uint32_t value)
     : mTag(INTEGER)
-    , mIntegerValue(static_cast<std::int32_t>(value))
+    , mIntegerValue(static_cast<std::int64_t>(value))
     , mDoubleValue(0.0)
     , mBoolValue(false)
 {
@@ -341,7 +341,7 @@ JsonValue::JsonValue(std::int64_t value)
 /*****************************************************************************/
 JsonValue::JsonValue(std::uint16_t value)
     : mTag(INTEGER)
-    , mIntegerValue(static_cast<std::int32_t>(value))
+    , mIntegerValue(static_cast<std::int64_t>(value))
     , mDoubleValue(0.0)
     , mBoolValue(false)
 {
@@ -350,7 +350,7 @@ JsonValue::JsonValue(std::uint16_t value)
 /*****************************************************************************/
 JsonValue::JsonValue(std::uint8_t value)
     : mTag(INTEGER)
-    , mIntegerValue(static_cast<std::int32_t>(value))
+    , mIntegerValue(static_cast<std::int64_t>(value))
     , mDoubleValue(0.0)
     , mBoolValue(false)
 {
