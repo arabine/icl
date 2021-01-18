@@ -138,6 +138,7 @@ void TcpServer::Run()
     if (mTcpServer.IsValid())
     {
         // Add TCP server
+        memset(&ev, 0, sizeof(ev));
         ev.data.fd = mTcpServer.GetSocket();
         ev.events = EPOLLIN | EPOLLET;
         if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mTcpServer.GetSocket(), &ev) == -1)
@@ -150,6 +151,7 @@ void TcpServer::Run()
     if (mWsServer.IsValid())
     {
         // Add Websocket server
+        memset(&ev, 0, sizeof(ev));
         ev.data.fd = mWsServer.GetSocket();
         ev.events = EPOLLIN | EPOLLET;
         if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mWsServer.GetSocket(), &ev) == -1)
@@ -175,6 +177,7 @@ void TcpServer::Run()
     mSendFd = pipefd[1];
     fcntl(mSendFd, F_SETFL, O_NONBLOCK);
 
+    memset(&ev, 0, sizeof(ev));
     ev.data.fd = mReceiveFd;
     ev.events = EPOLLIN | EPOLLET;
     if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, mReceiveFd, &ev) == -1)
@@ -352,6 +355,7 @@ void TcpServer::IncommingConnection(bool isWebSocket)
             /* master read set                            */
             /**********************************************/
             struct epoll_event ev;
+            memset(&ev, 0, sizeof(ev));
             ev.events = EPOLLIN | EPOLLET;
             ev.data.fd = new_sd;
             if (epoll_ctl(mEpollFd, EPOLL_CTL_ADD, new_sd, &ev) == -1)
