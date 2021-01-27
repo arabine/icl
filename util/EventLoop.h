@@ -7,7 +7,7 @@
 #define EVENT_LOOP_H
 
 #include <functional>
-#include <vector>
+#include <map>
 #include <thread>
 #include <chrono>
 #include <mutex>
@@ -24,10 +24,10 @@ public:
     void Loop();
     void Stop();
     void Start();
+    void UpdateTimers();
 
-    // From IEventLoop
-    void AddTimer(std::chrono::milliseconds period, CallBack callBack);
-
+    void AddTimer(const std::string &name, std::chrono::milliseconds period, CallBack callBack);
+    bool ModifyTimer(const std::string &name, std::chrono::milliseconds new_period);
 private:
     bool mStopRequested;
     std::thread mThread;
@@ -40,10 +40,9 @@ private:
         std::chrono::steady_clock::time_point next;
     };
 
-    std::vector<Timer> mTimers;
+    // name, value
+    std::map<std::string, Timer> mTimers;
     uint32_t mWaitDelay;
-
-    void UpdateTimers();
 };
 
 #endif // EVENT_LOOP_H
