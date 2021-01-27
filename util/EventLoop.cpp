@@ -36,7 +36,7 @@ void EventLoop::Stop()
     }
 }
 /*****************************************************************************/
-void EventLoop::AddTimer(std::chrono::milliseconds period, CallBack callBack)
+void EventLoop::AddTimer(const std::string &name, std::chrono::milliseconds period, CallBack callBack)
 {
     Timer tm;
 
@@ -45,8 +45,21 @@ void EventLoop::AddTimer(std::chrono::milliseconds period, CallBack callBack)
     tm.next = Next(period);
 
     mAccessGuard.lock();
-    mTimers.push_back(tm);
+    mTimers.insert(std::make_pair(name, tm));
     mAccessGuard.unlock();
+}
+/*****************************************************************************/
+bool EventLoop::ModifyTimer(const std::string &name, std::chrono::milliseconds new_period)
+{
+    bool success = false;
+    if (mTimers.count(name) > 0)
+    {
+        mAccessGuard.lock();
+        mTimers[name].period = new_period;
+        mAccessGuard.unlock();
+        success = true;
+    }
+    return success;
 }
 /*****************************************************************************/
 void EventLoop::Start()
@@ -79,14 +92,12 @@ void EventLoop::UpdateTimers()
 {
     std::chrono::steady_clock::time_point tp = std::chrono::steady_clock::now();
 
-    int i = 0;
-    for (auto &t : mTimers)
+    for (auto& [n, t] : mTimers)
     {
         if (tp >= t.next)
         {
             t.next = Next(t.period);
             t.callBack();
         }
-        i++;
     }
 }
