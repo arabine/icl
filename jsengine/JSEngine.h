@@ -11,6 +11,7 @@
 #include <iostream>
 #include <type_traits>
 #include <functional>
+#include <memory>
 
 #include "Observer.h"
 #include "duktape.h"
@@ -34,7 +35,7 @@ public:
     bool EvaluateString(const std::string &contents, std::string &output);
     Value Call(const std::string &function, const IScriptEngine::StringList &args);
     void Close();
-    void RegisterFunction(const std::string &name, IScriptEngine::IFunction *function);
+    void RegisterFunction(const std::string &name, std::shared_ptr<IFunction> function);
     bool HasError();
     std::string GetLastError();
     void ClearError();

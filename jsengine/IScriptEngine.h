@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include "Value.h"
 
 /*****************************************************************************/
@@ -40,7 +41,7 @@ public:
     virtual bool EvaluateString(const std::string &contents, std::string &output) = 0;
     virtual Value Call(const std::string &function, const StringList &args) = 0;
     virtual void Close() = 0;
-    virtual void RegisterFunction(const std::string &name, IScriptEngine::IFunction *function) = 0;
+    virtual void RegisterFunction(const std::string &name, std::shared_ptr<IScriptEngine::IFunction> function) = 0;
     virtual bool HasError() = 0;
     virtual std::string GetLastError() = 0;
     virtual void ClearError() = 0;
