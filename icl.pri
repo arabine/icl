@@ -15,6 +15,7 @@ HEADERS += Log.h \
     EventLoop.h \
     DurationTimer.h \
     Pool.h \
+    SharedLibrary.h \
     libutil.h
 
 SOURCES += Log.cpp \
@@ -22,6 +23,7 @@ SOURCES += Log.cpp \
     Value.cpp \
     UniqueId.cpp \
     Console.cpp \
+    SharedLibrary.cpp \
     EventLoop.cpp
 
 # ------------------------------------------------------------------------------
