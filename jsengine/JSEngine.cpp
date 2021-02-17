@@ -29,7 +29,7 @@ static std::map<std::uint32_t, IScriptEngine::IPrinter*> gPrintList;
 // Same thing for user defined functions
 static std::mutex gFunctionsMutex;
 static std::uint32_t gMagicIdCounter = 1U;
-static std::map<std::int32_t, IScriptEngine::IFunction*> gFunctionList;
+static std::map<std::int32_t, std::shared_ptr<IScriptEngine::IFunction>> gFunctionList;
 
 // modules directory search
 // FIXME: make it dependant to the JSEngine instance
@@ -339,7 +339,7 @@ void JSEngine::RegisterPrinter(IScriptEngine::IPrinter *printer)
     }
 }
 /*****************************************************************************/
-void JSEngine::RegisterFunction(const std::string &name, IScriptEngine::IFunction *function)
+void JSEngine::RegisterFunction(const std::string &name, std::shared_ptr<IScriptEngine::IFunction> function)
 {
     if (function != nullptr)
     {
