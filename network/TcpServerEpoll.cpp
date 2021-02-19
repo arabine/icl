@@ -213,14 +213,16 @@ void TcpServer::Run()
             if (!TcpSocket::AnalyzeSocketError("epoll_wait"))
             {
                 end_server = true;
-                mEventHandler.ServerTerminated(IEvent::WAIT_SOCK_FAILED);
+                mPool.enqueue_work([=]() {
+                    mEventHandler.ServerTerminated(IEvent::WAIT_SOCK_FAILED);
+                });
             }
         }
         else
         {
             for (int i = 0; i < n; i++)
             {
-                if (events[i].events & EPOLLERR)
+                if (events[i].events & (EPOLLHUP | EPOLLERR))
                 {
                     /* An error has occured on this fd, or the socket is not
                     * ready for reading (why were we notified then?) */
@@ -243,7 +245,9 @@ void TcpServer::Run()
                 else if (mReceiveFd == events[i].data.fd)
                 {
                     end_server = true;
-                    mEventHandler.ServerTerminated(IEvent::CLOSED);
+                    mPool.enqueue_work([=]() {
+                        mEventHandler.ServerTerminated(IEvent::CLOSED);
+                    });
                 }
                 else if (mTcpServer.GetSocket() == events[i].data.fd)
                 {
@@ -265,15 +269,14 @@ void TcpServer::Run()
                         /****************************************************/
                         /* This is the listening socket                     */
                         /****************************************************/
-                        mMutex.lock();
+                        std::lock_guard<std::mutex> lock(mMutex);
                         IncommingConnection(true);
-                        mMutex.unlock();
                     }
 
                 }
                 else
                 {
-                    mMutex.lock();
+                    std::lock_guard<std::mutex> lock(mMutex);
 
                     // Scan for already connected clients
                     for (size_t j = 0; j < mClients.size(); j++)
@@ -289,7 +292,6 @@ void TcpServer::Run()
                     }
 
                     UpdateClients(); // refresh status, manage proper closing if necessary
-                    mMutex.unlock();
                 }
             }
         }
@@ -345,7 +347,6 @@ void TcpServer::IncommingConnection(bool isWebSocket)
 
         if (new_sd >= 0)
         {
-            TcpSocket::SetNonBlocking(new_sd);
             Conn newPeer(new_sd, webSocket);
             // Save peers descriptor
             mClients.push_back(newPeer);
@@ -366,7 +367,9 @@ void TcpServer::IncommingConnection(bool isWebSocket)
             if (!webSocket)
             {
                 // Signal a new client only if not a web socket (need a handshake before considering it is connected)
-                mEventHandler.NewConnection(newPeer);
+                mPool.enqueue_work([=]() {
+                    mEventHandler.NewConnection(newPeer);
+                });
             }
         }
 
@@ -406,7 +409,9 @@ void TcpServer::IncommingData(Conn &conn)
                 {
                     // Websocket handshake success, warn the application
                     conn.state = Conn::cStateConnected;
-                    mEventHandler.NewConnection(conn);
+                    mPool.enqueue_work([=]() {
+                        mEventHandler.NewConnection(conn);
+                    });
                     hasData = false; // Handshake is not application data
                 }
                 else
@@ -429,7 +434,10 @@ void TcpServer::IncommingData(Conn &conn)
 
         if (hasData)
         {
-            mEventHandler.ReadData(conn);
+            mPool.enqueue_work([=]() {
+                mEventHandler.ReadData(conn);
+            });
+//            mEventHandler.ReadData(conn);
         }
     }
 }
@@ -476,7 +484,9 @@ void TcpServer::UpdateClients()
                 // In case of the websocket, only warn upper layers if the handshake process has been done
                 if (conn.IsConnected())
                 {
-                    mEventHandler.ClientClosed(conn);
+                    mPool.enqueue_work([=]() {
+                        mEventHandler.ClientClosed(conn);
+                    });
                 }
 
                 // Remove the socket from epoll

@@ -107,10 +107,11 @@ private:
     SocketType  mMaxSd;
     fd_set mMasterSet;
     void UpdateMaxSocket();
-    thread_pool mPool;
+
 
 #endif
 
+    thread_pool mPool;
     int mEpollFd;
 
     // Pipes on Linux to properly close the socket and quit select()
