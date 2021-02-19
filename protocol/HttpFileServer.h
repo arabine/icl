@@ -48,7 +48,7 @@ public:
     virtual void ServerTerminated(tcp::TcpServer::IEvent::CloseType type);
 
     virtual void WsReadData(const tcp::Conn &conn);
-    virtual bool ReadDataPath(const tcp::Conn &conn, const HttpRequest &header);
+    virtual void ReadDataPath(const tcp::Conn &conn, const HttpRequest &header);
 
     std::string Match(const std::string &msg, const std::string &patternString);
     void Send404(const tcp::Conn &conn, const HttpRequest &header);
