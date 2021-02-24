@@ -66,6 +66,8 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFU
 #include <thread>
 #include <regex>
 #include <random>
+#include <memory>
+#include <filesystem>
 //#include "date.h"
 //#include "tz.h"
 #include "Util.h"
@@ -1062,6 +1064,24 @@ std::string Util::GetIpAddress(const char *ifname)
     }
 
     return ip;
+}
+
+std::vector<std::string> Util::GetDirectoryFiles(const std::string &dir, const std::string &extension)
+{
+    std::vector<std::string> files;
+
+    for (const auto& entry : std::filesystem::directory_iterator(dir))
+    {
+        const auto filenameStr = entry.path().filename().string();
+        if (entry.is_regular_file())
+        {
+            if (GetFileExtension(filenameStr) == extension)
+            {
+                files.push_back(filenameStr);
+            }
+        }
+    }
+    return files;
 }
 
 //=============================================================================
