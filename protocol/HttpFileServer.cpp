@@ -334,7 +334,7 @@ bool HttpFileServer::GetFile(const tcp::Conn &conn, HttpRequest &request)
             str.assign((std::istreambuf_iterator<char>(t)),
                         std::istreambuf_iterator<char>());
 
-            char *output = new char[size*2];
+            char output[size*2];
             int compressed_size = Zip::CompressBuffer(str.c_str(), size, output);
 
          //   TLogInfo("Compressed size: " + std::to_string(compressed_size));
@@ -346,9 +346,6 @@ bool HttpFileServer::GetFile(const tcp::Conn &conn, HttpRequest &request)
                  tcp::TcpSocket::Write(ss.str(), conn.peer);
                  tcp::TcpSocket::Write(std::string(output, compressed_size), conn.peer);
             }
-            delete[] output;
-
-
             success = true;
 
 /*
@@ -488,11 +485,8 @@ void HttpFileServer::ReadData(const tcp::Conn &conn)
         if (!GetFile(conn, request))
         {
             // Then, try REST API
-            if (ReadDataPath(conn, request))
-            {
-                // Found nothing, send error
-                Send404(conn, request);
-            }
+            (void) ReadDataPath(conn, request);
+            // caller should handle error such as send 404
         }
     }
 }
@@ -537,11 +531,10 @@ void HttpFileServer::WsReadData(const tcp::Conn &conn)
     // do nothing in this default implementation
 }
 
-bool HttpFileServer::ReadDataPath(const tcp::Conn &conn, const HttpRequest &request)
+void HttpFileServer::ReadDataPath(const tcp::Conn &conn, const HttpRequest &request)
 {
     (void) conn;
     (void) request;
-    return true;
 }
 
 std::string HttpFileServer::Match(const std::string &msg, const std::string &patternString)

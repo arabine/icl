@@ -56,6 +56,7 @@ bool EventLoop::ModifyTimer(const std::string &name, std::chrono::milliseconds n
     {
         mAccessGuard.lock();
         mTimers[name].period = new_period;
+        mTimers[name].next = Next(new_period); // reload next period
         mAccessGuard.unlock();
         success = true;
     }

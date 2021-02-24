@@ -77,24 +77,21 @@ void Zip::Close()
     }
 }
 
-class Callback
+struct UserData
 {
-public:
-    static mz_bool DeflateCallback(const void *pBuf, int len, void *pUser)
-    {
-        std::memcpy(output + offset, pBuf, len);
-        offset += len;
-        (void) len;
-        (void) pUser;
-        return MZ_TRUE;
-    }
-
-    static char *output;
-    static int offset;
+    char *output;
+    int offset;
 };
 
-char * Callback::output;
-int Callback::offset;
+static mz_bool DeflateCallback(const void *pBuf, int len, void *pUser)
+{
+    UserData *ud = static_cast<UserData*>(pUser);
+    std::memcpy(ud->output + ud->offset, pBuf, len);
+    ud->offset += len;
+    (void) len;
+    (void) pUser;
+    return MZ_TRUE;
+}
 
 /*****************************************************************************/
 int Zip::CompressBuffer(const char *input, size_t input_size, char *output)
@@ -102,18 +99,18 @@ int Zip::CompressBuffer(const char *input, size_t input_size, char *output)
     int finalsize = -1;
     tdefl_compressor Comp;
 
+    UserData ud;
 
-    Callback::offset = 0U;
-    Callback::output = output;
+    ud.offset = 0U;
+    ud.output = output;
 
-    if (tdefl_init(&Comp, &Callback::DeflateCallback, nullptr, 0) == TDEFL_STATUS_OKAY)
+    if (tdefl_init(&Comp, DeflateCallback, &ud, 0) == TDEFL_STATUS_OKAY)
     {
         if(tdefl_compress_buffer(&Comp, input, input_size, TDEFL_FINISH) == TDEFL_STATUS_DONE)
         {
-            finalsize = Callback::offset;
+            finalsize = ud.offset;
         }
     }
-
 
     return finalsize;
 }
