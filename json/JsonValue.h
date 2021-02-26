@@ -111,7 +111,7 @@ public:
         return mTag;
     }
 
-    std::string ToString(int32_t level) const;
+    std::string ToString(int32_t level = -1) const;
     void Clear();
 
     JsonValue &operator = (JsonValue const &rhs);

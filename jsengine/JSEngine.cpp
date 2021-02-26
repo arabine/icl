@@ -280,6 +280,10 @@ void JSEngine::SetModuleSearchPath(const std::string &path)
 void JSEngine::Initialize()
 {
     Close();
+
+    gFunctionList.clear();
+    gPrintList.clear();
+
     mLastError = "";
     mCtx = duk_create_heap(nullptr /*duk_alloc_function alloc_func*/,
                            nullptr/*duk_realloc_function realloc_func*/,
