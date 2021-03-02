@@ -110,6 +110,7 @@ add_library(
     util/Log.cpp
     util/Value.cpp
     util/SharedLibrary.cpp
+    util/EventLoop.cpp
 
     network/TcpServerBase.cpp
     network/TcpServerBase.h

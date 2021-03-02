@@ -512,7 +512,7 @@ JsonValue JsonReader::StringToNumber(char *s, char **endptr)
     }
     else
     {
-        retVal = static_cast<std::int32_t>(result);
+        retVal = static_cast<std::int64_t>(result);
     }
 
     return retVal;
