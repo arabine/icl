@@ -334,8 +334,10 @@ bool HttpFileServer::GetFile(const tcp::Conn &conn, HttpRequest &request)
             str.assign((std::istreambuf_iterator<char>(t)),
                         std::istreambuf_iterator<char>());
 
-            char output[size*2];
-            int compressed_size = Zip::CompressBuffer(str.c_str(), size, output);
+           // char output[size*2];
+            std::vector<char> output;
+            output.reserve(size * 2);
+            int compressed_size = Zip::CompressBuffer(str.c_str(), size, output.data());
 
          //   TLogInfo("Compressed size: " + std::to_string(compressed_size));
             if (compressed_size > 0)
@@ -344,7 +346,7 @@ bool HttpFileServer::GetFile(const tcp::Conn &conn, HttpRequest &request)
                  ss << "Content-Encoding: deflate\r\n\r\n";
 
                  tcp::TcpSocket::Write(ss.str(), conn.peer);
-                 tcp::TcpSocket::Write(std::string(output, compressed_size), conn.peer);
+                 tcp::TcpSocket::Write(std::string(output.data(), compressed_size), conn.peer);
             }
             success = true;
 
