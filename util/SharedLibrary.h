@@ -2,6 +2,12 @@
 #define SHAREDLIBRARY_H
 
 #include <string>
+#ifdef USE_UNIX_OS
+typedef void* LIB_HANDLE;
+#else
+#include <Windows.h>
+typedef HMODULE LIB_HANDLE;
+#endif
 
 class SharedLibrary
 {
@@ -13,7 +19,7 @@ public:
     void Close();
     bool Sym(const char *name, void **ptr);
 private:
-    void* handle;
+    LIB_HANDLE handle;
     std::string errmsg;
 };
 

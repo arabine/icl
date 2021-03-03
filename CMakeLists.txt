@@ -16,6 +16,12 @@ if(WIN32)
     add_definitions(-DUSE_WINDOWS_OS)
 endif()
 
+if(UNIX)
+add_definitions(-fPIC)
+endif()
+
+add_definitions(-DUNICODE)
+
 set(ICL_MBEDTLS
     aes.c
     aesni.c
@@ -136,7 +142,6 @@ add_library(
     ${ICL_MBEDTLS}
 )
 
-add_definitions(-fPIC)
 
 target_include_directories (
     icl

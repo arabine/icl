@@ -64,10 +64,16 @@ public:
         return mType;
     }
 
-    std::int64_t    GetInteger() const
+    std::int32_t    GetInteger() const
+    {
+        return static_cast<int32_t>(mIntegerValue);
+    }
+
+    std::int64_t    GetInteger64() const
     {
         return mIntegerValue;
     }
+
     double          GetDouble() const
     {
         return mDoubleValue;
