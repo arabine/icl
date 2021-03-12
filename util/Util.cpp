@@ -722,6 +722,26 @@ void Util::EraseString(std::string &theString, const std::string &toErase)
     }
 }
 /*****************************************************************************/
+// trim from start (in place)
+void Util::Ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
+}
+/*****************************************************************************/
+// trim from end (in place)
+void Util::Rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+/*****************************************************************************/
+// trim from both ends (in place)
+void Util::Trim(std::string &s) {
+    Ltrim(s);
+    Rtrim(s);
+}
+/*****************************************************************************/
 std::vector<std::string> Util::Split(const std::string &theString, const std::string &delimiter)
 {
     std::vector<std::string> theStringVector;
