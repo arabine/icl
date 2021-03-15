@@ -102,12 +102,13 @@ public:
     static void ByteToHex(const char byte, char *out);
     static std::string ToHex(const char *buf, size_t size);
     static std::string FileToString(const std::string &filePath);
-    static bool StringToFile(const std::string &filePath, const std::string &data, bool makeExecutable);
+    static bool StringToFile(const std::string &filePath, const std::string &data, bool makeExecutable = false);
     static bool IsDigitOrAlpha(const std::string &s);
     static int32_t GetRandom(int32_t from, int32_t to);
     static bool ExecWithFork(const std::string &cmd);
     static int GetMacAddress(const char *ifname, unsigned char chMAC[]);
     static std::string GetIpAddress(const char *ifname);
+    static std::vector<std::string> GetDirectoryFiles(const std::string& dir, const std::string &extension);
     static std::vector<std::string> ListFiles(const std::string &dir, const std::string &expression);
 };
 

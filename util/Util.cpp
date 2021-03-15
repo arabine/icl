@@ -16,14 +16,16 @@
 
 #include <Windows.h>
 #include <Psapi.h>
-
+#include <winsock2.h>
+#include <iphlpapi.h>
+#pragma comment(lib, "iphlpapi.lib")
 
 #else
 // MINGW
 
 #include <windows.h>
 #include <psapi.h>
-
+#include <WinSock2.h>
 #endif
 
 
@@ -66,6 +68,7 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFU
 #include <thread>
 #include <regex>
 #include <random>
+#include <memory>
 #include <filesystem>
 //#include "date.h"
 //#include "tz.h"
@@ -995,7 +998,7 @@ bool Util::StringToFile(const std::string &filePath, const std::string &data, bo
         outFile.close();
         success = true;
     }
-
+#ifdef USE_UNIX_OS
     if (makeExecutable)
     {
         char mode[] = "0777";
@@ -1003,7 +1006,9 @@ bool Util::StringToFile(const std::string &filePath, const std::string &data, bo
         i = strtol(mode, 0, 8);
         (void) chmod (filePath.c_str(), i);
     }
-
+#else
+    (void) makeExecutable;
+#endif
     return success;
 }
 
@@ -1023,6 +1028,7 @@ bool Util::IsDigitOrAlpha(const std::string &s)
     */
 int Util::GetMacAddress(const char *ifname, unsigned char chMAC[6])
 {
+#ifdef USE_LINUX_OS
     struct ifreq ifr;
     int sock;
 
@@ -1034,11 +1040,35 @@ int Util::GetMacAddress(const char *ifname, unsigned char chMAC[6])
     }
     memcpy(chMAC, ifr.ifr_hwaddr.sa_data, 6);
     close(sock);
+#else
+    IP_ADAPTER_INFO AdapterInfo[16];       // Allocate information for up to 16 NICs
+    DWORD dwBufLen = sizeof(AdapterInfo);  // Save memory size of buffer
+
+    DWORD dwStatus = GetAdaptersInfo(AdapterInfo, &dwBufLen);                  // [in] size of receive data buffer
+    if (dwStatus != ERROR_SUCCESS)
+    {
+        printf("GetAdaptersInfo failed. err=%d\n", GetLastError());
+        return 0;
+    }
+
+    PIP_ADAPTER_INFO pAdapterInfo = AdapterInfo; // Contains pointer to  current adapter info
+    do
+    {
+        for (int i = 0; i < 6; i++)
+        {
+            chMAC[i] = pAdapterInfo->Address[i];
+        }
+        pAdapterInfo = pAdapterInfo->Next;    // Progress through linked list
+    } while (pAdapterInfo);
+#endif
+
     return 0;
 }
 
 std::string Util::GetIpAddress(const char *ifname)
 {
+    std::string ip;
+#ifdef USE_LINUX_OS
     int fd;
     struct ifreq ifr;
 
@@ -1055,14 +1085,114 @@ std::string Util::GetIpAddress(const char *ifname)
     close(fd);
 
     /* display result */
-    std::string ip = inet_ntoa(reinterpret_cast<struct sockaddr_in *>(&ifr.ifr_addr)->sin_addr);
+    ip = inet_ntoa(reinterpret_cast<struct sockaddr_in *>(&ifr.ifr_addr)->sin_addr);
 
     if (ret != 0)
     {
         ip = "Not connected";
     }
+#else
 
+#define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
+#define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
+
+    /* Variables used by GetIpAddrTable */
+    PMIB_IPADDRTABLE pIPAddrTable;
+    DWORD dwSize = 0;
+    DWORD dwRetVal = 0;
+    IN_ADDR IPAddr;
+
+    /* Variables used to return error message */
+    LPVOID lpMsgBuf;
+
+    // Before calling AddIPAddress we use GetIpAddrTable to get
+    // an adapter to which we can add the IP.
+    pIPAddrTable = (MIB_IPADDRTABLE*)MALLOC(sizeof(MIB_IPADDRTABLE));
+
+    if (pIPAddrTable) {
+        // Make an initial call to GetIpAddrTable to get the
+        // necessary size into the dwSize variable
+        if (GetIpAddrTable(pIPAddrTable, &dwSize, 0) ==
+            ERROR_INSUFFICIENT_BUFFER) {
+            FREE(pIPAddrTable);
+            pIPAddrTable = (MIB_IPADDRTABLE*)MALLOC(dwSize);
+
+        }
+        if (pIPAddrTable == NULL) {
+          //  printf("Memory allocation failed for GetIpAddrTable\n");
+            return ip;
+        }
+    }
+    // Make a second call to GetIpAddrTable to get the
+    // actual data we want
+    if ((dwRetVal = GetIpAddrTable(pIPAddrTable, &dwSize, 0)) != NO_ERROR) {
+      //  printf("GetIpAddrTable failed with error %d\n", dwRetVal);
+        if (FormatMessage(FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, dwRetVal, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),       // Default language
+            (LPTSTR)&lpMsgBuf, 0, NULL)) {
+         //   printf("\tError: %s", lpMsgBuf);
+            LocalFree(lpMsgBuf);
+        }
+        return ip;
+     //   exit(1);
+    }
+
+   // printf("\tNum Entries: %ld\n", pIPAddrTable->dwNumEntries);
+    for (DWORD   i = 0; i < pIPAddrTable->dwNumEntries; i++) {
+
+        IPAddr.S_un.S_addr = (u_long)(pIPAddrTable->table[i].dwAddr);
+        ip = inet_ntoa(IPAddr);
+
+        /*
+        printf("\n\tInterface Index[%d]:\t%ld\n", i, pIPAddrTable->table[i].dwIndex);
+        IPAddr.S_un.S_addr = (u_long)pIPAddrTable->table[i].dwAddr;
+        printf("\tIP Address[%d]:     \t%s\n", i, inet_ntoa(IPAddr));
+        IPAddr.S_un.S_addr = (u_long)pIPAddrTable->table[i].dwMask;
+        printf("\tSubnet Mask[%d]:    \t%s\n", i, inet_ntoa(IPAddr));
+        IPAddr.S_un.S_addr = (u_long)pIPAddrTable->table[i].dwBCastAddr;
+        printf("\tBroadCast[%d]:      \t%s (%ld%)\n", i, inet_ntoa(IPAddr), pIPAddrTable->table[i].dwBCastAddr);
+        printf("\tReassembly size[%d]:\t%ld\n", i, pIPAddrTable->table[i].dwReasmSize);
+        printf("\tType and State[%d]:", i);
+        if (pIPAddrTable->table[i].wType & MIB_IPADDR_PRIMARY)
+            printf("\tPrimary IP Address");
+        if (pIPAddrTable->table[i].wType & MIB_IPADDR_DYNAMIC)
+            printf("\tDynamic IP Address");
+        if (pIPAddrTable->table[i].wType & MIB_IPADDR_DISCONNECTED)
+            printf("\tAddress is on disconnected interface");
+        if (pIPAddrTable->table[i].wType & MIB_IPADDR_DELETED)
+            printf("\tAddress is being deleted");
+        if (pIPAddrTable->table[i].wType & MIB_IPADDR_TRANSIENT)
+            printf("\tTransient address");
+        printf("\n");
+        */
+    }
+
+    if (pIPAddrTable) {
+        FREE(pIPAddrTable);
+        pIPAddrTable = NULL;
+    }
+#endif
     return ip;
+}
+
+std::vector<std::string> Util::GetDirectoryFiles(const std::string &dir, const std::string &extension)
+{
+    std::vector<std::string> files;
+
+    if (std::filesystem::exists(dir))
+    {
+        for (const auto& entry : std::filesystem::directory_iterator(dir))
+        {
+            const auto filenameStr = entry.path().filename().string();
+            if (entry.is_regular_file())
+            {
+                if (GetFileExtension(filenameStr) == extension)
+                {
+                    files.push_back(filenameStr);
+                }
+            }
+        }
+    }
+    return files;
 }
 
 

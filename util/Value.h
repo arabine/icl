@@ -38,6 +38,7 @@ public:
     };
 
     Value(std::int32_t value);
+    Value(std::int64_t value);
     Value(double value);
     Value(const char *value);
     Value(const std::string &value);
@@ -65,8 +66,14 @@ public:
 
     std::int32_t    GetInteger() const
     {
+        return static_cast<int32_t>(mIntegerValue);
+    }
+
+    std::int64_t    GetInteger64() const
+    {
         return mIntegerValue;
     }
+
     double          GetDouble() const
     {
         return mDoubleValue;
@@ -97,7 +104,7 @@ public:
 
 private:
     Type mType;
-    std::int32_t mIntegerValue;
+    std::int64_t mIntegerValue;
     double mDoubleValue;
     std::string mStringValue;
     bool mBoolValue;

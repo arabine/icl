@@ -6,7 +6,17 @@
 #include "Value.h"
 
 /*****************************************************************************/
-Value::Value(std::int32_t value)
+Value::Value(int32_t value)
+    : mType(INTEGER)
+    , mIntegerValue(value)
+    , mDoubleValue(0.0)
+    , mBoolValue(false)
+    , mJsonString(false)
+{
+
+}
+/*****************************************************************************/
+Value::Value(int64_t value)
     : mType(INTEGER)
     , mIntegerValue(value)
     , mDoubleValue(0.0)
