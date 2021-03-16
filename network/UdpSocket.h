@@ -6,7 +6,7 @@
 #include <vector>
 #include "string.h"
 
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
 
 // FIXME: use __GNUC__ macro for GCC under Linux
 #include <arpa/inet.h>

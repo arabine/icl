@@ -161,7 +161,7 @@ void TcpServer::Run()
         }
     }
 
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
     /*************************************************************/
     /* Use a pipe on Unix to gracefully quit the select(),       */
     /* close the socket and finally exit the thread              */
@@ -220,6 +220,7 @@ void TcpServer::Run()
         }
         else
         {
+            std::lock_guard<std::mutex> lock(mMutex);
             for (int i = 0; i < n; i++)
             {
                 if (events[i].events & (EPOLLHUP | EPOLLERR))
@@ -240,6 +241,7 @@ void TcpServer::Run()
                 else if (events[i].events & EPOLLRDHUP)
                 {
                     std::cout << "EPOLLRDHUP on " << events[i].data.fd << std::endl;
+                    RemoveClient(events[i].data.fd);
                     continue;
                 }
                 else if (mReceiveFd == events[i].data.fd)
@@ -256,9 +258,7 @@ void TcpServer::Run()
                         /****************************************************/
                         /* This is the listening socket                     */
                         /****************************************************/
-                        mMutex.lock();
                         IncommingConnection(false);
-                        mMutex.unlock();
                     }
 
                 }
@@ -269,15 +269,11 @@ void TcpServer::Run()
                         /****************************************************/
                         /* This is the listening socket                     */
                         /****************************************************/
-                        std::lock_guard<std::mutex> lock(mMutex);
                         IncommingConnection(true);
                     }
-
                 }
                 else
                 {
-                    std::lock_guard<std::mutex> lock(mMutex);
-
                     // Scan for already connected clients
                     for (size_t j = 0; j < mClients.size(); j++)
                     {
@@ -290,10 +286,9 @@ void TcpServer::Run()
                             IncommingData(mClients[j]);
                         }
                     }
-
-                    UpdateClients(); // refresh status, manage proper closing if necessary
                 }
             }
+            UpdateClients(); // refresh status, manage proper closing if necessary
         }
 
     }
@@ -440,11 +435,14 @@ void TcpServer::IncommingData(Conn &conn)
 //            mEventHandler.ReadData(conn);
         }
     }
+    else
+    {
+        conn.state = Conn::cStateDeleteLater;
+    }
 }
 /*****************************************************************************/
 void TcpServer::RemoveClient(int fd)
 {
-    mMutex.lock();
     for (auto &c : mClients)
     {
         if (c.peer.socket == fd)
@@ -452,8 +450,6 @@ void TcpServer::RemoveClient(int fd)
             c.state = Conn::cStateDeleteLater;
         }
     }
-    UpdateClients();
-    mMutex.unlock();
 }
 /*****************************************************************************/
 void TcpServer::UpdateClients()

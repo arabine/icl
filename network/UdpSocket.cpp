@@ -79,7 +79,7 @@ void UdpSocket::SetBroadcast()
 
     if(setsockopt(sockfd, SOL_SOCKET, SO_BROADCAST,& broadcast,sizeof(broadcast)) < 0)
     {
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
         ::shutdown(sockfd, SHUT_RDWR);
         ::close(sockfd);
 #else
