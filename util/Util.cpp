@@ -36,7 +36,7 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(-1);
 
 #endif
 
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
 #include <cstdio>
 #include <unistd.h>
 #include <sys/stat.h>
@@ -216,7 +216,7 @@ std::string Util::ExecutablePath()
     std::wstring wstr(buf);
     path = std::string(wstr.begin(), wstr.end());
 
-#elif defined(USE_UNIX_OS)
+#elif defined(USE_LINUX_OS)
     char buf[FILENAME_MAX];
     (void) readlink("/proc/self/exe", buf, sizeof(buf));
     path = buf;
@@ -586,7 +586,7 @@ std::uint32_t Util::Exec(
 bool Util::ExecWithFork(const std::string &cmd)
 {
     bool success = false;
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
     int pid = fork();
     if (pid == 0)
     {
@@ -724,6 +724,29 @@ void Util::EraseString(std::string &theString, const std::string &toErase)
     {
         theString.erase(found, toErase.size());
     }
+}
+/*****************************************************************************/
+// trim from start (in place)
+void Util::Ltrim(std::string &s)
+{
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
+}
+/*****************************************************************************/
+// trim from end (in place)
+void Util::Rtrim(std::string &s)
+{
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+/*****************************************************************************/
+// trim from both ends (in place)
+void Util::Trim(std::string &s)
+{
+    Ltrim(s);
+    Rtrim(s);
 }
 /*****************************************************************************/
 std::vector<std::string> Util::Split(const std::string &theString, const std::string &delimiter)
@@ -998,7 +1021,7 @@ bool Util::StringToFile(const std::string &filePath, const std::string &data, bo
         outFile.close();
         success = true;
     }
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
     if (makeExecutable)
     {
         char mode[] = "0777";
@@ -1194,6 +1217,36 @@ std::vector<std::string> Util::GetDirectoryFiles(const std::string &dir, const s
     }
     return files;
 }
+
+
+std::vector<std::string> Util::ListFiles(const std::string &dir, const std::string &expression)
+{
+    std::vector<std::string> r;
+    try
+    {
+        for(auto& p : std::filesystem::directory_iterator(dir))
+        {
+           if (p.is_regular_file()) //we eliminate directories in a list
+           {
+               std::string filename = p.path().filename().string();
+               if (std::regex_match (filename, std::regex(expression) ))
+               {
+                    r.push_back(filename);
+               }
+           }
+           else
+           {
+               continue;
+           }
+        }
+    }
+    catch(const std::filesystem::filesystem_error &e)
+    {
+        (void) e;
+    }
+    return r;
+}
+
 
 //=============================================================================
 // End of file Util.cpp

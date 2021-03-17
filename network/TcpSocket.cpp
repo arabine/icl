@@ -354,13 +354,13 @@ bool TcpSocket::Recv(std::string &output, const Peer &peer, size_t max)
                 count -= n;
                 ret = true;
             }
+            else
+            {
+                ret = false;
+            }
         }
         while ((count > 0) && (n > 0));
       //  TLogNetwork("[SOCKET] Rcv size: " + std::to_string(output.size()));
-    }
-    else
-    {
-     //   TLogNetwork("[SOCKET] No data to read from socket.");
     }
 
     return ret;
@@ -370,7 +370,7 @@ bool TcpSocket::DataWaiting(std::uint32_t timeout)
 {
     bool ok = false;
 
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
 
     struct pollfd fd;
     int ret;
@@ -437,7 +437,7 @@ bool TcpSocket::RecvWithTimeout(std::string &output, size_t max_size, uint32_t t
 /*****************************************************************************/
 void TcpSocket::Close(Peer &peer)
 {
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
         ::shutdown(peer.socket, SHUT_RDWR);
         ::close(peer.socket);
 #else

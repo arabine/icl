@@ -18,7 +18,7 @@ void HttpProtocol::ParseUrlParameters(HttpRequest &request)
 
     std::string url;
 
-    if(!std::getline(iss, url, '?')) // remove the URL part
+    if (!std::getline(iss, url, '?')) // remove the URL part
     {
         return;
     }

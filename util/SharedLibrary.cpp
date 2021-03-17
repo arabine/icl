@@ -1,6 +1,6 @@
 #include "SharedLibrary.h"
 
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
 #include <dlfcn.h>
 #include <errno.h>
 #endif

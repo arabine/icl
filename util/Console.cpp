@@ -10,7 +10,7 @@
 #include <string.h>
 #include <time.h>
 
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
 #define _XOPEN_SOURCE 700
 #include <termios.h>
 #include <unistd.h>

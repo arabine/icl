@@ -7,6 +7,7 @@
 #include <locale>
 #include <string>
 #include "HttpFileServer.h"
+#include "HttpProtocol.h"
 #include "Util.h"
 #include "Log.h"
 #include "Zip.h"
@@ -14,7 +15,7 @@
 #include "Base64Util.h"
 #include "JsonReader.h"
 
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
 #include <sys/sendfile.h>
 #endif
 
@@ -171,112 +172,6 @@ void HttpFileServer::DeletePartialConn(const tcp::Conn &conn)
 static const std::string cSupportedMethods[] = { "GET", "POST" };
 
 
-void HttpFileServer::ParseUrlParameters(HttpRequest &request)
-{
-    std::istringstream iss(request.query);
-
-    std::string url;
-
-    if(!std::getline(iss, url, '?')) // remove the URL part
-    {
-        return;
-    }
-
-    // store query key/value pairs in a map
-    std::string keyval, key, val;
-
-    while(std::getline(iss, keyval, '&')) // split each term
-    {
-        std::istringstream iss(keyval);
-
-        // split key/value pairs
-        if(std::getline(std::getline(iss, key, '='), val))
-        {
-            request.params[key] = val;
-        }
-    }
-}
-
-bool HttpFileServer::ParseHeader(const tcp::Conn &conn, HttpRequest &request)
-{
- //   std::string request = "GET /index.asp?param1=hello&param2=128 HTTP/1.1";
-    // Request-Line   = Method SP Request-URI SP HTTP-Version CRLF
-
-    std::string line;
-    std::istringstream iss(conn.payload);
-
-    bool valid = false;
-
-    // separate the first 3 main parts
-    if (std::getline(iss, line))
-    {
-        line.pop_back(); // remove \r
-        std::vector<std::string> parts = Util::Split(line, " ");
-
-        if (parts.size() == 3)
-        {
-            request.method = parts[0];
-            request.query = parts[1];
-            request.protocol = parts[2];
-
-
-            for (const auto & s : cSupportedMethods)
-            {
-                if (request.method == s)
-                {
-                    valid = true;
-                }
-            }
-        }
-    }
-
-    if (valid)
-    {
-        // Parse optional URI parameters
-        ParseUrlParameters(request);
-
-        // Continue parsing the header
-        std::string::size_type index;
-
-        while (std::getline(iss, line))
-        {
-            if (line != "\r")
-            {
-                line.pop_back();
-                index = line.find(':', 0);
-                if(index != std::string::npos)
-                {
-                    // Convert all header options to lower case (header params are case insensitive in the HTTP spec
-                    std::string option = line.substr(0, index);
-                    std::transform(option.begin(), option.end(), option.begin(), ::tolower);
-                    request.headers.insert(std::make_pair(option, line.substr(index + 1)));
-                }
-            }
-            else
-            {
-                break; // detected HTTP separator \r\n between header and body
-            }
-        }
-
-        uint32_t body_start = static_cast<uint32_t>(iss.tellg());
-        if (body_start < conn.payload.length())
-        {
-            request.body = conn.payload.substr(body_start);
-        }
-       // std::cout << request.body << std::endl;
-    
-        // for( auto const& [key, val] : request.headers )
-        // {
-        //     std::cout << key         // string (key)
-        //             << ':'  
-        //             << val        // string's value
-        //             << std::endl ;
-        // }
-    
-    }
-
-    return valid;
-}
 
 bool HttpFileServer::GetFile(const tcp::Conn &conn, HttpRequest &request)
 {
@@ -402,7 +297,7 @@ void HttpFileServer::ReadData(const tcp::Conn &conn)
     HttpRequest request;
 
     bool process = true;
-    bool valid = ParseHeader(conn, request);
+    bool valid = HttpProtocol::ParseRequestHeader(conn.payload, request);
 
     if (valid)
     {
@@ -475,7 +370,7 @@ void HttpFileServer::ReadData(const tcp::Conn &conn)
             std::string fromIP = request.headers["x-real-ip"];
             if (fromIP != "127.0.0.1")
             {
-                Send403(conn, request);
+                Send403(conn);
                 process = false;
             }
         }
@@ -493,7 +388,7 @@ void HttpFileServer::ReadData(const tcp::Conn &conn)
     }
 }
 
-void HttpFileServer::Send403(const tcp::Conn &conn, const HttpRequest &header)
+void HttpFileServer::Send403(const tcp::Conn &conn)
 {
     std::stringstream ss;
 

@@ -52,7 +52,7 @@ public:
 
     std::string Match(const std::string &msg, const std::string &patternString);
     void Send404(const tcp::Conn &conn, const HttpRequest &header);
-    void Send403(const tcp::Conn &conn, const HttpRequest &header);
+    void Send403(const tcp::Conn &conn);
     void SetLocalhostOnly(bool enable);
     void SendHttpJson(const tcp::Conn &conn, const std::string &data);
     std::string GenerateJWT(const std::string &payload);
@@ -66,9 +66,7 @@ private:
     std::vector<ChunkedData> mPartials;
 
     void DeletePartialConn(const tcp::Conn &conn);
-    bool ParseHeader(const tcp::Conn &conn, HttpRequest &request);
     bool GetFile(const tcp::Conn &conn, HttpRequest &request);
-    void ParseUrlParameters(HttpRequest &request);
 };
 
 

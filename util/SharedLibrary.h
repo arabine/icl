@@ -2,7 +2,7 @@
 #define SHAREDLIBRARY_H
 
 #include <string>
-#ifdef USE_UNIX_OS
+#ifdef USE_LINUX_OS
 typedef void* LIB_HANDLE;
 #else
 #include <Windows.h>
