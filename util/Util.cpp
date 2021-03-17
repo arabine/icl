@@ -29,7 +29,7 @@
 #endif
 
 
-static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(0xFFFFFFFFUL);
+static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(-1);
 
 #define popen _popen
 #define pclose _pclose
