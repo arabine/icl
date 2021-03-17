@@ -8,15 +8,15 @@ set(CMAKE_VERBOSE_MAKEFILE on )
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-if(UNIX AND NOT APPLE)
-    add_definitions(-DUSE_UNIX_OS)
+if (UNIX AND NOT APPLE)
+    add_definitions(-DUSE_UNIX_OS -DUSE_LINUX_OS)
 endif()
 
 if(WIN32)
     add_definitions(-DUSE_WINDOWS_OS)
 endif()
 
-if(UNIX)
+if (UNIX)
 add_definitions(-fPIC)
 endif()
 
