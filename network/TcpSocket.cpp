@@ -317,53 +317,26 @@ bool TcpSocket::Recv(std::string &output, size_t max)
  */
 bool TcpSocket::Recv(std::string &output, const Peer &peer, size_t max)
 {
-    // Most likely, we will read a packet, or if the message
-    // is very short, we will receive the entire message in
-    // a short packet. But it might be a long one.
-
-    unsigned long count = 0;
-
-#ifdef USE_WINDOWS_OS
-    ioctlsocket(peer.socket, FIONREAD, &count);
-#else
-    ioctl(peer.socket, FIONREAD, &count);
-#endif
+    char buffer[1024];
     bool ret = false;
-
-    if (count > 0)
-    {
-        char buff[MAXRECV];
-        count = count > MAXRECV ? MAXRECV : count;
-        if (max > 0)
-        {
-            count = count > max ? max : count;
-        }
-        long n;
-        do
-        {
-            n = ::recv(peer.socket, &buff[0], count, 0);
-
-            if (n < 0)
-            {
-                // Other value than positive means end of recv, determine the reason
-                ret = TcpSocket::AnalyzeSocketError("recv()");
+    int nDataLength;
+    int i = 0;
+    do {
+            while ((nDataLength = recv(peer.socket, buffer, sizeof(buffer), 0)) > 0) {
+                output.append(buffer, nDataLength);
             }
-            else if (n > 0)
+            if (nDataLength == -1)
             {
-                output.insert(output.size(), &buff[0], static_cast<size_t>(n)); // append data into our procol buffer
-                count -= n;
-                ret = true;
+                ret = TcpSocket::AnalyzeSocketError("recv()"); // if not an error, maybe there is still some data to get
             }
-            else
+            else if (nDataLength == 0) // end of file
             {
                 ret = false;
             }
-        }
-        while ((count > 0) && (n > 0));
-      //  TLogNetwork("[SOCKET] Rcv size: " + std::to_string(output.size()));
-    }
+        usleep(1000);
+    } while (ret);
 
-    return ret;
+    return (output.size() > 0);
 }
 /*****************************************************************************/
 bool TcpSocket::DataWaiting(std::uint32_t timeout)
