@@ -75,7 +75,7 @@ bool SharedLibrary::Sym(const char* name, void** ptr)
     }
 
 #else
-    *ptr = GetProcAddress(handle, name);
+    *ptr = reinterpret_cast<void *>(GetProcAddress(handle, name));
     if (*ptr == nullptr)
     {
         char buf[256];

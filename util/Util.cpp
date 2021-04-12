@@ -23,8 +23,11 @@
 #else
 // MINGW
 
+
 #include <windows.h>
 #include <psapi.h>
+#include <iphlpapi.h>
+#include <iptypes.h>
 #include <WinSock2.h>
 #endif
 
