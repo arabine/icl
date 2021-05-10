@@ -35,6 +35,14 @@ bool SharedLibrary::Open(const std::string &libraryName)
     {
         return true;
     }
+    else
+    {
+        const char* err = dlerror();
+        if (err)
+        {
+            errmsg = std::string(err);
+        }
+    }
 
     return false;
 }
