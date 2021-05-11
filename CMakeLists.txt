@@ -125,6 +125,7 @@ add_library(
     network/TlsClient.cpp
 
     protocol/Http.cpp
+    protocol/HttpClient.cpp
     protocol/HttpFileServer.cpp
     protocol/HttpProtocol.cpp
 

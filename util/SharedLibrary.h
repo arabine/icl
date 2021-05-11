@@ -18,6 +18,9 @@ public:
 
     void Close();
     bool Sym(const char *name, void **ptr);
+
+    std::string GetErrorMessage() { return errmsg; }
+
 private:
     LIB_HANDLE handle;
     std::string errmsg;

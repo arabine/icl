@@ -367,6 +367,18 @@ bool TcpSocket::Recv(std::string &output, const Peer &peer, size_t max)
     return ret;
 }
 /*****************************************************************************/
+int64_t TcpSocket::SimpleRecv(std::string &output, const Peer &peer)
+{
+    char buffer[1024];
+
+    int64_t size = recv(peer.socket, buffer, sizeof(buffer), 0);
+    if (size > 0)
+    {
+        output.append(buffer, size);
+    }
+    return size;
+}
+/*****************************************************************************/
 bool TcpSocket::DataWaiting(std::uint32_t timeout)
 {
     bool ok = false;
@@ -431,6 +443,18 @@ bool TcpSocket::RecvWithTimeout(std::string &output, size_t max_size, uint32_t t
     if (DataWaiting(timeout_ms))
     {
         ok = Recv(output, mPeer, max_size);
+    }
+
+    return ok;
+}
+/*****************************************************************************/
+bool TcpSocket::SimpleRecvWithTimeout(std::string &output, uint32_t timeout_ms)
+{
+    bool ok = false;
+
+    if (DataWaiting(timeout_ms))
+    {
+        ok = SimpleRecv(output, mPeer);
     }
 
     return ok;

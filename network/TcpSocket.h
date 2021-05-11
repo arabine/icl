@@ -269,6 +269,8 @@ public:
 	static std::string ToString(const struct sockaddr *sa);
     static std::string GetPeerName(int s);
 
+    static int64_t SimpleRecv(std::string &output, const Peer &peer);
+    bool SimpleRecvWithTimeout(std::string &output, uint32_t timeout_ms);
 protected:
     Peer mPeer;
     std::string mBuff;

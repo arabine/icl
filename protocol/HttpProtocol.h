@@ -14,7 +14,7 @@ struct HttpRequest
     std::string protocol;  // HTTP/1.1
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> headers;
-    std::string body;
+    std::string body;   
 };
 
 
@@ -26,6 +26,8 @@ struct HttpReply
     std::map<std::string, std::string> params;
     std::map<std::string, std::string> headers;
     std::string body;
+    bool chunked = false;
+    uint32_t contentLength = 0;
 };
 
 struct WebSocketRequest
