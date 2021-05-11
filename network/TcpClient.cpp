@@ -156,6 +156,7 @@ bool TcpClient::RecvWithTimeout(std::string &output, size_t max_size, uint32_t t
 {
     bool hasData = false;
     std::string buffer;
+    (void) max_size;
 
     if (mIsSecured)
     {
@@ -169,7 +170,7 @@ bool TcpClient::RecvWithTimeout(std::string &output, size_t max_size, uint32_t t
     }
     else
     {
-        hasData = mSocket.RecvWithTimeout(buffer, max_size, timeout_ms);
+        hasData = mSocket.SimpleRecvWithTimeout(buffer, timeout_ms);
     }
 
     if (hasData)
@@ -183,7 +184,6 @@ bool TcpClient::RecvWithTimeout(std::string &output, size_t max_size, uint32_t t
                 hasData = false;
                 if (res == TcpSocket::WS_SEND_PONG)
                 {
-
                     std::string pongData = TcpSocket::BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_PONG, std::string());
                     if (mIsSecured)
                     {
