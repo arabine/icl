@@ -37,11 +37,16 @@ bool SharedLibrary::Open(const std::string &libraryName)
     }
     else
     {
+#ifdef USE_LINUX_OS
         const char* err = dlerror();
         if (err)
         {
             errmsg = std::string(err);
         }
+#else
+        int loadLibraryError = GetLastError();
+        errmsg = "LoadLibrary() error code: " + std::to_string(loadLibraryError);
+#endif
     }
 
     return false;
