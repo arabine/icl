@@ -65,7 +65,7 @@ namespace tcp
 class ISocket
 {
 public:
-    virtual bool Write(const std::string &input) = 0;
+    virtual bool Write(const std::string &input, uint32_t &written) = 0;
     virtual bool RecvWithTimeout(std::string &output, size_t max_size, uint32_t timeout_ms) = 0;
 };
 /*****************************************************************************/
@@ -251,7 +251,7 @@ public:
 
     // From ISocket
     virtual bool RecvWithTimeout(std::string &output, size_t max_size, uint32_t timeout_ms);
-    virtual bool Write(const std::string &input);
+    virtual bool Write(const std::string &input, uint32_t &written);
 
     // Static
     static bool Initialize();
@@ -262,7 +262,7 @@ public:
     static std::string BuildWsFrame(std::uint8_t opcode, const std::string &data);
     static WS_RESULT DecodeWsData(std::string &buf, std::string &payload);
     static bool Recv(std::string &output, const Peer &peer, size_t max = 0);
-    static bool Write(const std::string &input, const Peer &peer);
+    static bool Write(const std::string &input, const Peer &peer, uint32_t &written);
     static bool Send(const std::string &input, const Peer &peer);
 
     //Convert a struct sockaddr address to a string, IPv4 and IPv6

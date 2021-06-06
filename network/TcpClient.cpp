@@ -103,7 +103,12 @@ bool TcpClient::Connect(const std::string &host, const int port)
             }
             else
             {
-                mSocket.Write(req);
+                uint32_t written;
+                mSocket.Write(req, written);
+                if (req.size() != written)
+                {
+                    ret = false;
+                }
             }
         }
     }
@@ -146,7 +151,12 @@ bool TcpClient::Send(const std::string &input)
     }
     else
     {
-        success = mSocket.Write(data);
+        uint32_t written;
+        success = mSocket.Write(data, written);
+        if (success && (data.size() != written))
+        {
+            success = false;
+        }
     }
 
     return success;
@@ -191,7 +201,8 @@ bool TcpClient::RecvWithTimeout(std::string &output, size_t max_size, uint32_t t
                     }
                     else
                     {
-                        mSocket.Write(pongData);
+                        uint32_t written;
+                        mSocket.Write(pongData, written);
                     }
                 }
             }

@@ -260,11 +260,12 @@ std::string TcpSocket::BuildWsFrame(std::uint8_t opcode, const std::string &data
     return std::string(reinterpret_cast<char *>(&ws_header[0]), header_len) + data;
 }
 /*****************************************************************************/
-bool TcpSocket::Write(const std::string &input, const Peer &peer)
+bool TcpSocket::Write(const std::string &input, const Peer &peer, uint32_t &written)
 {
     bool ret = true;
     size_t size = input.size();
     const char *buf = input.c_str(); // bytes are linear in the string memory, so no problem to get the pointer
+    written = 0;
 
     while( size > 0 )
     {
@@ -272,13 +273,14 @@ bool TcpSocket::Write(const std::string &input, const Peer &peer)
         int n = ::send(peer.socket, buf, size, MSG_NOSIGNAL);
         if (n < 0)
         {
-            ret = TcpSocket::AnalyzeSocketError("send()");
+            ret = TcpSocket::AnalyzeSocketError("send()");     
             break;
         }
         else
         {
             size -= n;
             buf += n;
+            written += n;
         }
     }
 
@@ -287,18 +289,23 @@ bool TcpSocket::Write(const std::string &input, const Peer &peer)
 /*****************************************************************************/
 bool TcpSocket::ProceedWsHandshake()
 {
-    bool ret = false;
+    bool success = false;
     // Process the handshake, upgrade into our own protocol
     WebSocketRequest ws;
 
     if (HttpProtocol::ParseWebSocketRequest(mBuff, ws))
     {
         // Trick here: send handshake using raw tcp, not with websocket framing
-        TcpSocket::Write(ws.Upgrade(), mPeer);
-        ret = true;
+        uint32_t written;
+        std::string req = ws.Upgrade();
+        success = TcpSocket::Write(req, mPeer, written);
+        if (success && (req.size() != written))
+        {
+            success = false;
+        }
     }
 
-    return ret;
+    return success;
 }
 /*****************************************************************************/
 bool TcpSocket::Recv(size_t max)
@@ -633,23 +640,31 @@ int TcpSocket::Accept() const
 /*****************************************************************************/
 bool TcpSocket::Send(const std::string &input, const Peer &peer)
 {
-    bool ret = false;
+    bool success = false;
 
+    uint32_t written;
+    std::string req = input;
     if (peer.isWebSocket)
     {
-        ret = Write(BuildWsFrame(WEBSOCKET_OPCODE_TEXT, input), peer);
-    }
-    else if (peer.IsValid())
-    {
-        ret = Write(input, peer);
+       req = BuildWsFrame(WEBSOCKET_OPCODE_TEXT, input);
     }
 
-    return ret;
+
+    if (peer.IsValid())
+    {
+        success = Write(req, peer, written);
+        if (success && (req.size() != written))
+        {
+            success = false;
+        }
+    }
+
+    return success;
 }
 /*****************************************************************************/
-bool TcpSocket::Write(const std::string &input)
+bool TcpSocket::Write(const std::string &input, uint32_t &written)
 {
-    return Write(input, mPeer);
+    return Write(input, mPeer, written);
 }
 /*****************************************************************************/
 /**
@@ -743,7 +758,8 @@ bool TcpSocket::DecodeWsData(Conn &conn)
     }
     else if (res == WS_SEND_PONG)
     {
-        Write(BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_PONG, std::string()));
+        uint32_t written;
+        Write(BuildWsFrame(TcpSocket::WEBSOCKET_OPCODE_PONG, std::string()), written);
     }
     else if (res == WS_DATA)
     {

@@ -146,7 +146,7 @@ bool HttpProtocol::ParseReplyHeader(const std::string &payload, HttpReply &reply
         line.pop_back(); // remove \r
         std::vector<std::string> parts = Util::Split(line, " ");
 
-        if (parts.size() == 3)
+        if (parts.size() >= 3)
         {
             reply.protocol = parts[0];
             reply.code = parts[1];

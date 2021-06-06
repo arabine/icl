@@ -121,16 +121,23 @@ static int send_cb( void *ctx, unsigned char const *buf, size_t len )
     io_ctx_t *io_ctx = (io_ctx_t*) ctx;
 
 //    return( mbedtls_net_send( io_ctx->net, buf, len ) );
-
-    bool ret = io_ctx->client->Write(std::string(reinterpret_cast<const char *>(buf), len));
+    uint32_t written = 0;
+    bool ret = io_ctx->client->Write(std::string(reinterpret_cast<const char *>(buf), len), written);
 
     if (ret)
     {
-        return len;
+        if (written > 0)
+        {
+            return len;
+        }
+        else
+        {
+            return MBEDTLS_ERR_SSL_WANT_WRITE;
+        }
     }
     else
     {
-        return MBEDTLS_ERR_SSL_WANT_WRITE;
+        return MBEDTLS_ERR_SSL_INTERNAL_ERROR;
     }
 }
 
@@ -356,6 +363,7 @@ bool TlsClient::Write(const uint8_t *data, uint32_t size)
         {
             TLogError( " failed\n  ! mbedtls_ssl_write returned " + std::to_string(ret) );
             success = false;
+            break;
         }
     }
     return success;
