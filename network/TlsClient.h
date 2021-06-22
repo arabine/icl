@@ -45,7 +45,6 @@ public:
     bool Write(const uint8_t *data, uint32_t size);
 
 private:
-    mbedtls_net_context server_fd;
     mbedtls_entropy_context entropy;
     mbedtls_ctr_drbg_context ctr_drbg;
     mbedtls_ssl_context ssl;
