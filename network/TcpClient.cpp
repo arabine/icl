@@ -103,11 +103,27 @@ bool TcpClient::Connect(const std::string &host, const int port)
             }
             else
             {
+                // Envoie de la requête HTTP de protocole upgrade
                 uint32_t written;
                 mSocket.Write(req, written);
                 if (req.size() != written)
                 {
                     ret = false;
+                }
+                else
+                {
+                    std::string reply;
+                    bool hasData = mSocket.SimpleRecvWithTimeout(reply, 5000);
+
+                    if (hasData)
+                    {
+                        HttpReply http;
+                        ret = HttpProtocol::ParseReplyHeader(reply, http);
+                    }
+                    else
+                    {
+                        ret = false;
+                    }
                 }
             }
         }
@@ -204,6 +220,10 @@ bool TcpClient::RecvWithTimeout(std::string &output, size_t max_size, uint32_t t
                         uint32_t written;
                         mSocket.Write(pongData, written);
                     }
+                }
+                else if (res == TcpSocket::WS_CLOSE)
+                {
+                    mSocket.Close();
                 }
             }
         }

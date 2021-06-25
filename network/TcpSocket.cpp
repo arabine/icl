@@ -177,7 +177,7 @@ bool TcpSocket::Connect(const std::string &host, const int port)
                 // Do we have one connection?
                 if (result == 1)
                 {
-                    ret = IsConnected();
+                    ret = IsValid();
                 }
             }
             else
@@ -191,7 +191,7 @@ bool TcpSocket::Connect(const std::string &host, const int port)
     return ret;
 }
 /*****************************************************************************/
-bool TcpSocket::IsConnected()
+bool TcpSocket::IsValid()
 {
     bool connected = false;
     int optval = -1;
@@ -830,7 +830,7 @@ TcpSocket::WS_RESULT TcpSocket::DecodeWsData(std::string &buf, std::string &payl
 
     std::uint8_t opcode = static_cast<uint8_t>(buf[0]) & 0xFU;
     bool FIN = (static_cast<uint8_t>(buf[0]) & 0x80U) == 0x80U;
-    TLogNetwork("received opcode: " + WsOpcodeToString(opcode));
+//    TLogNetwork("received opcode: " + WsOpcodeToString(opcode));
 
     /*
     Manage fragmentation here: extract from the RFC:

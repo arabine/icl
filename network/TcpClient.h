@@ -26,7 +26,7 @@ public:
     bool Connect(const std::string &host, const int port);
     bool IsConnected()
     {
-        return mSocket.IsConnected();
+        return mSocket.IsValid();
     }
 
     std::string BuildWebSocketHandshake(const std::string &path);

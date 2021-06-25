@@ -246,7 +246,7 @@ public:
     bool ProceedWsHandshake();
     bool DecodeWsData(Conn &conn);
     void DeliverData(Conn &conn);
-    bool IsConnected();
+    bool IsValid();
     bool DataWaiting(std::uint32_t timeout); // in ms
 
     // From ISocket
