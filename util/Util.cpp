@@ -231,7 +231,7 @@ std::string Util::ExecutablePath()
     return (GetDirectoryPath(path));
 }
 /*****************************************************************************/
-std::string Util::Util::GetCurrentDirectory()
+std::string Util::Util::GetWorkingDirectory()
 {
     std::string currentDir;
     char cwd[4096];
