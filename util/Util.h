@@ -35,7 +35,7 @@ public:
     static int GetYear(const std::chrono::system_clock::time_point &tp);
 
     static std::string ExecutablePath();
-    static std::string GetCurrentDirectory();
+    static std::string GetWorkingDirectory();
     static std::string HomePath();
     static bool FolderExists(const std::string &foldername);
     static bool FileExists(const std::string &fileName);

@@ -45,7 +45,7 @@ bool SharedLibrary::Open(const std::string &libraryName)
         }
 #else
         int loadLibraryError = GetLastError();
-        errmsg = "LoadLibrary() error code: " + std::to_string(loadLibraryError);
+        errmsg = "LoadLibrary() error code: " + std::to_string(loadLibraryError) + " for file: " + libraryName;
 #endif
     }
 
