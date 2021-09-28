@@ -117,12 +117,14 @@ add_library(
     util/Value.cpp
     util/SharedLibrary.cpp
     util/EventLoop.cpp
+    util/UniqueId.cpp
 
     network/TcpServerBase.cpp
     network/TcpServerBase.h
     network/TcpSocket.cpp
     network/TcpClient.cpp
     network/TlsClient.cpp
+    network/TcpServerEpoll.cpp
 
     protocol/Http.cpp
     protocol/HttpClient.cpp
