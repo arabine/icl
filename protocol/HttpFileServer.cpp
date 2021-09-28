@@ -239,9 +239,9 @@ bool HttpFileServer::GetFile(const tcp::Conn &conn, HttpRequest &request)
             {
                  ss << "Content-length: " << compressed_size << "\r\n";
                  ss << "Content-Encoding: deflate\r\n\r\n";
-
-                 tcp::TcpSocket::Write(ss.str(), conn.peer);
-                 tcp::TcpSocket::Write(std::string(output.data(), compressed_size), conn.peer);
+                 uint32_t written;
+                 tcp::TcpSocket::Write(ss.str(), conn.peer, written);
+                 tcp::TcpSocket::Write(std::string(output.data(), compressed_size), conn.peer, written);
             }
             success = true;
 
@@ -277,7 +277,8 @@ void HttpFileServer::SendHttpJson(const tcp::Conn &conn, const std::string &data
     ss << "Content-length: " << data.size() << "\r\n\r\n";
     ss << data;
 
-    tcp::TcpSocket::Write(ss.str(), conn.peer);
+    uint32_t written;
+    tcp::TcpSocket::Write(ss.str(), conn.peer, written);
 }
 
 
@@ -394,7 +395,8 @@ void HttpFileServer::Send403(const tcp::Conn &conn)
 
     ss << "HTTP/1.1 403 Forbidden\r\n\r\n";
 
-    tcp::TcpSocket::Write(ss.str(), conn.peer);
+    uint32_t written;
+    tcp::TcpSocket::Write(ss.str(), conn.peer, written);
 }
 
 void HttpFileServer::Send404(const tcp::Conn &conn, const HttpRequest &header)
@@ -407,7 +409,8 @@ void HttpFileServer::Send404(const tcp::Conn &conn, const HttpRequest &header)
     ss << "Content-length: " << html.size() << "\r\n\r\n";
     ss << html << std::flush;
 
-    tcp::TcpSocket::Write(ss.str(), conn.peer);
+    uint32_t written;
+    tcp::TcpSocket::Write(ss.str(), conn.peer, written);
 
     TLogWarning("Resource not found: " + header.query);
 }
