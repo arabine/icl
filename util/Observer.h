@@ -8,6 +8,7 @@
 
 #include <list>
 #include <algorithm>
+#include <cstdint>
 
 template <class T>
 class Observer
