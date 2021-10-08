@@ -630,7 +630,7 @@ std::string Util::Match(const std::string &msg, const std::string &patternString
     return subMatch; // empty string if not found
 }
 /*****************************************************************************/
-void Util::HexStringToUint8(const std::string &input, uint8_t *output)
+void Util::HexStringToUint8(const std::string_view &input, uint8_t *output)
 {
     for(size_t i = 0; i < input.length(); i += 2)
     {
