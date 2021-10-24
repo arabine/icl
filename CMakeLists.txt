@@ -118,6 +118,7 @@ add_library(
     util/SharedLibrary.cpp
     util/EventLoop.cpp
     util/UniqueId.cpp
+    util/DurationTimer.h
 
     network/TcpServerBase.cpp
     network/TcpServerBase.h
