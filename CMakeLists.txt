@@ -4,7 +4,7 @@ project(icl LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
-set(CMAKE_VERBOSE_MAKEFILE on )
+set(CMAKE_VERBOSE_MAKEFILE ON)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -17,7 +17,7 @@ if(WIN32)
 endif()
 
 if (UNIX)
-add_definitions(-fPIC)
+    add_definitions(-fPIC)
 endif()
 
 add_definitions(-DUNICODE)
@@ -106,10 +106,15 @@ set(ICL_MBEDTLS
 
 list(TRANSFORM ICL_MBEDTLS PREPEND mbedtls/library/)
 
-add_library(
-    icl
-    STATIC 
+set(ICL_WIN32_SPECIFIC
+   network/TcpServer.cpp
+)
 
+set(ICL_LINUX_SPECIFIC
+   network/TcpServerEpoll.cpp
+)
+
+set(ICL_SRCS
     zip/Zip.cpp
 
     util/Util.cpp
@@ -125,7 +130,6 @@ add_library(
     network/TcpSocket.cpp
     network/TcpClient.cpp
     network/TlsClient.cpp
-    network/TcpServerEpoll.cpp
 
     protocol/Http.cpp
     protocol/HttpClient.cpp
@@ -142,7 +146,21 @@ add_library(
     json/JsonReader.cpp
     json/JsonWriter.cpp
     json/JsonValue.cpp
+)
 
+if(WIN32)
+    list(APPEND ICL_SRCS ${ICL_WIN32_SPECIFIC})
+endif()
+
+if (UNIX)
+    list(APPEND ICL_SRCS ${ICL_LINUX_SPECIFIC})
+endif()
+
+add_library(
+    icl
+    STATIC 
+
+    ${ICL_SRCS}
     ${ICL_MBEDTLS}
 )
 

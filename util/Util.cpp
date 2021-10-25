@@ -28,7 +28,7 @@
 #include <psapi.h>
 #include <iphlpapi.h>
 #include <iptypes.h>
-#include <WinSock2.h>
+#include <winsock2.h>
 #endif
 
 

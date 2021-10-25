@@ -5,7 +5,13 @@
 #ifdef USE_LINUX_OS
 typedef void* LIB_HANDLE;
 #else
+#ifdef _MSC_VER
 #include <Windows.h>
+#else
+// MINGW
+#include <windows.h>
+#endif
+
 typedef HMODULE LIB_HANDLE;
 #endif
 
