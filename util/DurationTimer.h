@@ -18,20 +18,15 @@ public:
     {
 
     }
-    void reset() { mBegin = clock_::now(); }
+    void Reset() { mBegin = clock_::now(); }
     uint32_t elapsed() const
     {
         return std::chrono::duration_cast<ms>(clock_::now() - mBegin).count();
     }
 
-    void Start()
+    void SetEnable(bool enable)
     {
-        mEnabled = true;
-    }
-
-    void Stop()
-    {
-        mEnabled = false;
+        mEnabled = enable;
     }
 
     void Update()
