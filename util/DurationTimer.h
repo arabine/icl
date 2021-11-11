@@ -18,10 +18,19 @@ public:
     {
 
     }
-    void Reset() { mBegin = clock_::now(); }
+
     uint32_t elapsed() const
     {
         return std::chrono::duration_cast<ms>(clock_::now() - mBegin).count();
+    }
+
+    void Start() {
+        mBegin = clock_::now();
+        mRunning = true;
+    }
+
+    void Stop() {
+        mRunning = false;
     }
 
     void SetEnable(bool enable)
@@ -44,7 +53,7 @@ public:
 
     bool IsElapsed()
     {
-        return elapsed() >= mDelay;
+        return (elapsed() >= mDelay) && mRunning;
     }
     
     void SetDelay(uint32_t delay)
@@ -62,6 +71,7 @@ private:
     typedef std::chrono::duration<uint32_t, std::ratio<1000> > ms;
     std::chrono::time_point<clock_> mBegin;
     bool mEnabled;
+    bool mRunning;
     uint32_t mDelay;
     std::function<void (void) > mElapsedFunc;
 };
