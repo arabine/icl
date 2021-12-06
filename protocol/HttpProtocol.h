@@ -9,6 +9,13 @@
 
 struct HttpRequest
 {
+    HttpRequest()
+        : method("GET")
+        , query("/")
+        , protocol("HTTP/1.1")
+    {
+
+    }
     std::string method;  // "GET" "PUT"
     std::string query;  //  /path/to/go
     std::string protocol;  // HTTP/1.1
