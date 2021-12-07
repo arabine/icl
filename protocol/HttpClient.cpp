@@ -88,7 +88,7 @@ bool HttpClient::Get(const std::string &host, const std::string &path, uint16_t 
                     if (!mFirstPacket)
                     {
                         mFirstPacket = true;
-                        proto.ParseReplyHeader(output, mReply);
+                        proto.ParseReplyHeaders(output, mReply);
 
                         if (mReply.body.size() == mReply.contentLength)
                         {

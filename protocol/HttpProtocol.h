@@ -53,13 +53,14 @@ public:
     HttpProtocol();
 
     static bool ParseRequestHeader(const std::string &payload, HttpRequest &request);
-    static bool ParseReplyHeader(const std::string &payload, HttpReply &reply);
+    static bool ParseReplyHeaders(const std::string &payload, HttpReply &reply);
     static std::string GenerateRequest(const HttpRequest &request);
     static std::string GenerateHttpJsonResponse(const std::string &data);
     static bool ParseWebSocketRequest(const std::string &payload, WebSocketRequest &ws);
     static bool GetRequestHeaderValue(const HttpRequest &request, const std::string &option, std::string &value);
     static bool GetReplyHeaderValue(const HttpReply &reply, const std::string &option, std::string &value);
     static std::string GenerateWebSocketRequest(WebSocketRequest &ws);
+    static bool ParseReplyFirstLine(const std::string &payload, HttpReply &reply);
 private:
     static void ParseUrlParameters(HttpRequest &request);
 };

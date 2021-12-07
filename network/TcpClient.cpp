@@ -118,7 +118,7 @@ bool TcpClient::Connect(const std::string &host, const int port)
                     if (hasData)
                     {
                         HttpReply http;
-                        ret = HttpProtocol::ParseReplyHeader(reply, http);
+                        ret = HttpProtocol::ParseReplyHeaders(reply, http);
                     }
                     else
                     {

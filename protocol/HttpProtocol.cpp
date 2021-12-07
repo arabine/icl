@@ -128,7 +128,7 @@ bool HttpProtocol::ParseRequestHeader(const std::string &payload, HttpRequest &r
     return valid;
 }
 
-bool HttpProtocol::ParseReplyHeader(const std::string &payload, HttpReply &reply)
+bool HttpProtocol::ParseReplyFirstLine(const std::string &payload, HttpReply &reply)
 {
     std::string line;
     std::istringstream iss(payload);
@@ -154,62 +154,62 @@ bool HttpProtocol::ParseReplyHeader(const std::string &payload, HttpReply &reply
             valid = true;
         }
     }
+    return valid;
+}
 
-    if (valid)
+bool HttpProtocol::ParseReplyHeaders(const std::string &payload, HttpReply &reply)
+{
+    bool success = true;
+    std::string line;
+    std::istringstream iss(payload);
+
+    // Continue parsing the header
+    std::string::size_type index;
+
+    while (std::getline(iss, line))
     {
-        // Continue parsing the header
-        std::string::size_type index;
-
-        while (std::getline(iss, line))
+        if (line != "\r")
         {
-            if (line != "\r")
+            line.pop_back();
+            index = line.find(':', 0);
+            if(index != std::string::npos)
             {
-                line.pop_back();
-                index = line.find(':', 0);
-                if(index != std::string::npos)
-                {
-                    // Convert all header options to lower case (header params are case insensitive in the HTTP spec)
-                    std::string option = line.substr(0, index);
-                    std::transform(option.begin(), option.end(), option.begin(), ::tolower);
-                    std::string optionValue = std::string(trim(line.substr(index + 1)));
-                    reply.headers.insert(std::make_pair(option, optionValue));
-                }
+                // Convert all header options to lower case (header params are case insensitive in the HTTP spec)
+                std::string option = line.substr(0, index);
+                std::transform(option.begin(), option.end(), option.begin(), ::tolower);
+                std::string optionValue = std::string(trim(line.substr(index + 1)));
+                reply.headers.insert(std::make_pair(option, optionValue));
             }
             else
             {
-                break; // detected HTTP separator \r\n between header and body
-            }
-        }
-
-        uint32_t body_start = static_cast<uint32_t>(iss.tellg());
-        if (body_start < payload.length())
-        {
-            reply.body = payload.substr(body_start);
-        }
-    }
-
-    if (valid)
-    {
-        auto result = reply.headers.find("content-length");
-        if (result == reply.headers.end())
-        {
-            // Pas de content-length ; chunked data?
-            auto result = reply.headers.find("transfer-encoding");
-            if (result != reply.headers.end())
-            {
-                if (result->second == "chunked")
-                {
-                    reply.chunked = true;
-                }
+                success = false;
             }
         }
         else
         {
-            reply.contentLength = Util::FromString<std::uint32_t>(result->second);
+            break; // detected HTTP separator \r\n between header and body
         }
     }
 
-    return valid;
+    auto result = reply.headers.find("content-length");
+    if (result == reply.headers.end())
+    {
+        // Pas de content-length ; chunked data?
+        auto result = reply.headers.find("transfer-encoding");
+        if (result != reply.headers.end())
+        {
+            if (result->second == "chunked")
+            {
+                reply.chunked = true;
+            }
+        }
+    }
+    else
+    {
+        reply.contentLength = Util::FromString<std::uint32_t>(result->second);
+    }
+
+    return success;
 }
 
 
