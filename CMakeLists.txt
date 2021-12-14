@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-project(icl LANGUAGES CXX)
+project(icl LANGUAGES CXX C)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
@@ -135,6 +135,9 @@ set(ICL_SRCS
     protocol/HttpClient.cpp
     protocol/HttpFileServer.cpp
     protocol/HttpProtocol.cpp
+
+    db/DataBase.cpp
+    db/sqlite3.c
 
     security/Base64Util.cpp
     security/ShaOne.cpp
