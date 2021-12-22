@@ -12,6 +12,11 @@ if (UNIX AND NOT APPLE)
     add_definitions(-DUSE_UNIX_OS -DUSE_LINUX_OS)
 endif()
 
+if (APPLE)
+    add_definitions(-DUSE_APPLE_OS)
+endif()
+
+
 if(WIN32)
     add_definitions(-DUSE_WINDOWS_OS)
 endif()
@@ -110,6 +115,10 @@ set(ICL_WIN32_SPECIFIC
    network/TcpServer.cpp
 )
 
+set(ICL_APPLE_SPECIFIC
+   network/TcpServer.cpp
+)
+
 set(ICL_LINUX_SPECIFIC
    network/TcpServerEpoll.cpp
 )
@@ -155,8 +164,12 @@ if(WIN32)
     list(APPEND ICL_SRCS ${ICL_WIN32_SPECIFIC})
 endif()
 
-if (UNIX)
+if(UNIX AND NOT APPLE)
     list(APPEND ICL_SRCS ${ICL_LINUX_SPECIFIC})
+endif()
+
+if(APPLE)
+    list(APPEND ICL_SRCS ${ICL_APPLE_SPECIFIC})
 endif()
 
 add_library(

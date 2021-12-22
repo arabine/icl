@@ -1,15 +1,16 @@
-#ifndef SHAREDLIBRARY_H
-#define SHAREDLIBRARY_H
+#ifndef SHARED_LIBRARY_H
+#define SHARED_LIBRARY_H
 
 #include <string>
-#ifdef USE_LINUX_OS
+#if defined(USE_LINUX_OS) || defined(USE_APPLE_OS)
 typedef void* LIB_HANDLE;
-#else
-#ifdef _MSC_VER
-#include <Windows.h>
-#else
-// MINGW
-#include <windows.h>
+
+#elif defined(USE_WINDOWS_OS)
+    #ifdef _MSC_VER
+        #include <Windows.h>
+    #else
+        // MINGW
+        #include <windows.h>
 #endif
 
 typedef HMODULE LIB_HANDLE;
@@ -32,4 +33,4 @@ private:
     std::string errmsg;
 };
 
-#endif // SHAREDLIBRARY_H
+#endif // SHARED_LIBRARY_H

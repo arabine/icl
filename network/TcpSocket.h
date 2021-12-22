@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#ifdef USE_LINUX_OS
+#if defined(USE_LINUX_OS) || defined(USE_APPLE_OS)
 
 // FIXME: use __GNUC__ macro for GCC under Linux
 #include <arpa/inet.h>

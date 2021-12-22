@@ -469,7 +469,7 @@ bool TcpSocket::SimpleRecvWithTimeout(std::string &output, uint32_t timeout_ms)
 /*****************************************************************************/
 void TcpSocket::Close(Peer &peer)
 {
-#ifdef USE_LINUX_OS
+#if defined(USE_LINUX_OS) || defined(USE_APPLE_OS)
         ::shutdown(peer.socket, SHUT_RDWR);
         ::close(peer.socket);
 #else

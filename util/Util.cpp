@@ -76,7 +76,18 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(-1);
 //#include "date.h"
 //#include "tz.h"
 #include "Util.h"
-
+#include <mach-o/dyld.h> // _NSGetExecutablePath
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <net/if_dl.h>
 
 // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
 template <typename Facet>
@@ -224,7 +235,10 @@ std::string Util::ExecutablePath()
     (void) readlink("/proc/self/exe", buf, sizeof(buf));
     path = buf;
 #elif defined(USE_APPLE_OS)
-    _NSGetExecutablePath(path, &size); // make it compile
+    char buf[FILENAME_MAX];
+    uint32_t size = sizeof(buf);
+    _NSGetExecutablePath(buf, &size); // make it compile
+    path = buf;
 #else
 #error "A portable code is needed here"
 #endif
@@ -1054,19 +1068,19 @@ bool Util::IsDigitOrAlpha(const std::string &s)
     */
 int Util::GetMacAddress(const char *ifname, unsigned char chMAC[6])
 {
-#ifdef USE_LINUX_OS
+#if defined(USE_LINUX_OS)
     struct ifreq ifr;
     int sock;
 
-    sock=socket(AF_INET,SOCK_DGRAM,0);
+    sock = socket(AF_INET,SOCK_DGRAM,0);
     strcpy(ifr.ifr_name, ifname);
     ifr.ifr_addr.sa_family = AF_INET;
     if (ioctl( sock, SIOCGIFHWADDR, &ifr ) < 0) {
-    return -1;
+        return -1;
     }
     memcpy(chMAC, ifr.ifr_hwaddr.sa_data, 6);
     close(sock);
-#else
+#elif  defined(USE_WINDOWS_OS)
     IP_ADAPTER_INFO AdapterInfo[16];       // Allocate information for up to 16 NICs
     DWORD dwBufLen = sizeof(AdapterInfo);  // Save memory size of buffer
 
@@ -1086,6 +1100,31 @@ int Util::GetMacAddress(const char *ifname, unsigned char chMAC[6])
         }
         pAdapterInfo = pAdapterInfo->Next;    // Progress through linked list
     } while (pAdapterInfo);
+
+#elif  defined(USE_APPLE_OS)
+    ifaddrs* iflist;
+    bool found = false;
+    if (getifaddrs(&iflist) == 0) {
+        for (ifaddrs* cur = iflist; cur; cur = cur->ifa_next) {
+            if ((cur->ifa_addr->sa_family == AF_LINK) &&
+                    (strcmp(cur->ifa_name, ifname) == 0) &&
+                    cur->ifa_addr) {
+                sockaddr_dl* sdl = (sockaddr_dl*)cur->ifa_addr;
+                memcpy(chMAC, LLADDR(sdl), sdl->sdl_alen);
+                found = true;
+                break;
+            }
+        }
+
+        freeifaddrs(iflist);
+    }
+    if (!found) {
+        return -1;
+    }
+
+#else
+#error "PORTABLE CODE NEEDED HERE"
+
 #endif
 
     return 0;
@@ -1094,7 +1133,7 @@ int Util::GetMacAddress(const char *ifname, unsigned char chMAC[6])
 std::string Util::GetIpAddress(const char *ifname)
 {
     std::string ip;
-#ifdef USE_LINUX_OS
+#if defined(USE_LINUX_OS) || defined(USE_APPLE_OS)
     int fd;
     struct ifreq ifr;
 
@@ -1117,7 +1156,7 @@ std::string Util::GetIpAddress(const char *ifname)
     {
         ip = "Not connected";
     }
-#else
+#elif defined(USE_WINDOWS_OS)
 
 #define MALLOC(x) HeapAlloc(GetProcessHeap(), 0, (x))
 #define FREE(x) HeapFree(GetProcessHeap(), 0, (x))
@@ -1196,6 +1235,8 @@ std::string Util::GetIpAddress(const char *ifname)
         FREE(pIPAddrTable);
         pIPAddrTable = NULL;
     }
+#else
+#error "PORTABLE CODE NEEDED HERE"
 #endif
     return ip;
 }

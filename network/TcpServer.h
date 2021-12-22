@@ -103,12 +103,10 @@ private:
     bool mInitialized;
     IEvent     &mEventHandler;
 
-#ifdef USE_WINDOWS_OS
+#if defined(USE_WINDOWS_OS) || defined(USE_APPLE_OS)
     SocketType  mMaxSd;
     fd_set mMasterSet;
     void UpdateMaxSocket();
-
-
 #endif
 
     thread_pool mPool;

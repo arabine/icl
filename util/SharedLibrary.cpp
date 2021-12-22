@@ -1,11 +1,9 @@
 #include "SharedLibrary.h"
 
-#ifdef USE_LINUX_OS
-#include <dlfcn.h>
-#include <errno.h>
-#endif
-
-#if USE_WINDOWS_OS
+#if defined(USE_LINUX_OS) || defined(USE_APPLE_OS)
+    #include <dlfcn.h>
+    #include <errno.h>
+#elif defined(USE_WINDOWS_OS)
 
 #endif
 
@@ -22,12 +20,11 @@ SharedLibrary::~SharedLibrary()
 
 bool SharedLibrary::Open(const std::string &libraryName)
 {
-#ifdef USE_LINUX_OS
+#if defined(USE_LINUX_OS) || defined(USE_APPLE_OS)
     dlerror(); /* Reset error status. */
     errmsg.clear();
     handle = dlopen(libraryName.c_str(), RTLD_LAZY); // RTLD_NOW
-#else
-
+#elif defined(USE_WINDOWS_OS)
     handle = LoadLibraryA(libraryName.c_str());
 #endif
 
@@ -37,13 +34,13 @@ bool SharedLibrary::Open(const std::string &libraryName)
     }
     else
     {
-#ifdef USE_LINUX_OS
+#if defined(USE_LINUX_OS) || defined(USE_APPLE_OS)
         const char* err = dlerror();
         if (err)
         {
             errmsg = std::string(err);
         }
-#else
+#elif defined(USE_WINDOWS_OS)
         int loadLibraryError = GetLastError();
         errmsg = "LoadLibrary() error code: " + std::to_string(loadLibraryError) + " for file: " + libraryName;
 #endif
@@ -58,9 +55,9 @@ void SharedLibrary::Close()
     if (handle != nullptr)
     {
         /* Ignore errors. No good way to signal them without leaking memory. */
-#ifdef USE_LINUX_OS
+#if defined(USE_LINUX_OS) || defined(USE_APPLE_OS)
         dlclose(handle);
-#else
+#elif defined(USE_WINDOWS_OS)
         FreeLibrary(handle);
 #endif
         handle = nullptr;
@@ -72,7 +69,7 @@ bool SharedLibrary::Sym(const char* name, void** ptr)
 {
     bool success = false;
 
-#ifdef USE_LINUX_OS
+#if defined(USE_LINUX_OS) || defined(USE_APPLE_OS)
     dlerror(); /* Reset error status. */
     *ptr = dlsym(handle, name);
     const char* err = dlerror();
@@ -87,7 +84,7 @@ bool SharedLibrary::Sym(const char* name, void** ptr)
         success = true;
     }
 
-#else
+#elif defined(USE_WINDOWS_OS)
     *ptr = reinterpret_cast<void *>(GetProcAddress(handle, name));
     if (*ptr == nullptr)
     {
