@@ -55,6 +55,18 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(-1);
 
 #ifdef USE_APPLE_OS
 #include <mach/mach.h>
+#include <mach-o/dyld.h> // _NSGetExecutablePath
+#include <unistd.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <net/if_dl.h>
 #endif
 
 #include <algorithm>
@@ -76,18 +88,7 @@ static const HANDLE WIN_INVALID_HND_VALUE = reinterpret_cast<HANDLE>(-1);
 //#include "date.h"
 //#include "tz.h"
 #include "Util.h"
-#include <mach-o/dyld.h> // _NSGetExecutablePath
-#include <unistd.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <net/if.h>
-#include <string.h>
-#include <netinet/in.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <sys/types.h>
-#include <ifaddrs.h>
-#include <net/if_dl.h>
+
 
 // utility wrapper to adapt locale-bound facets for wstring/wbuffer convert
 template <typename Facet>
