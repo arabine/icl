@@ -56,7 +56,12 @@ TcpServer::~TcpServer()
 /*****************************************************************************/
 bool TcpServer::Start(std::int32_t maxConnections, bool localHostOnly, std::uint16_t tcpPort, std::uint16_t wsPort)
 {
-    mTcpServer.CreateServer(tcpPort, localHostOnly, maxConnections);
+    mInitialized = false;
+    if (!mTcpServer.CreateServer(tcpPort, localHostOnly, maxConnections))
+    {
+        return false;
+    }
+
     if (wsPort > 0U)
     {
         mWsServer.CreateServer(wsPort, localHostOnly, maxConnections);
